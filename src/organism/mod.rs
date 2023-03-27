@@ -1,10 +1,14 @@
 pub mod anatomy;
+pub mod direction;
 use crate::environment::Environment;
+
+use anatomy::Anatomy;
+use direction::Direction;
 
 pub struct Organism {
     c: u64,
     r: u64,
-    env: dyn Environment,
+    env: Box<dyn Environment>,
     lifetime: u64,
     food_collected: u64,
     living: bool,
@@ -26,7 +30,7 @@ impl Default for Organism {
         Organism {
             c: 0,
             r: 0,
-            env: Environment::default(),
+            env: Box<<dyn Environment>::default()>,
             lifetime: 0,
             food_collected: 0,
             living: true,
