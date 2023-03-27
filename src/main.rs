@@ -1,3 +1,4 @@
+pub mod environment;
 pub mod organism;
 
 use bevy::prelude::*;

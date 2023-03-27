@@ -1,7 +1,10 @@
+pub mod anatomy;
+use crate::environment::Environment;
+
 pub struct Organism {
     c: u64,
     r: u64,
-    env: Environment,
+    env: dyn Environment,
     lifetime: u64,
     food_collected: u64,
     living: bool,
@@ -43,6 +46,6 @@ impl Default for Organism {
 
 impl Organism {
     pub fn inherit(parent: &Organism) -> Self {
-        Organism::default();
+        Organism::default()
     }
 }
