@@ -4,6 +4,11 @@ pub enum Direction {
     Down,
     Left,
 }
+impl Default for Direction {
+    fn default() -> Self {
+        Direction::Up
+    }
+}
 impl Direction {
     pub fn get_clockwise(&self) -> Direction {
         match self {

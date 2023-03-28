@@ -1,7 +1,24 @@
+use crate::organism::cell::Cell;
+
 pub struct Anatomy {
     cells: Vec<Cell>,
-    is_producer: bool,
-    is_mover: bool,
+    anatomy_function: AnatomyFunction,
     has_eyes: bool,
     birth_distance: u64,
+}
+
+impl Default for Anatomy {
+    fn default() -> Self {
+        Anatomy {
+            cells: Vec::new(),
+            anatomy_function: AnatomyFunction::Producer,
+            has_eyes: false,
+            birth_distance: 0,
+        }
+    }
+}
+
+pub enum AnatomyFunction {
+    Mover,
+    Producer,
 }

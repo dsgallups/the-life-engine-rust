@@ -1,14 +1,17 @@
 pub mod anatomy;
+pub mod cell;
 pub mod direction;
-use crate::environment::Environment;
+pub mod perception;
+use crate::environment::*;
 
 use anatomy::Anatomy;
 use direction::Direction;
+use perception::Brain;
 
 pub struct Organism {
     c: u64,
     r: u64,
-    env: Box<dyn Environment>,
+    //env: Box<dyn Environment>,
     lifetime: u64,
     food_collected: u64,
     living: bool,
@@ -22,6 +25,7 @@ pub struct Organism {
     mutability: u16,
     damage: u16,
     brain: Brain,
+    //this will be a problem
     parent: Option<Box<Organism>>,
 }
 
@@ -30,7 +34,7 @@ impl Default for Organism {
         Organism {
             c: 0,
             r: 0,
-            env: Box<<dyn Environment>::default()>,
+            //env: Box::new(WorldEnvironment::default()),
             lifetime: 0,
             food_collected: 0,
             living: true,
@@ -44,6 +48,7 @@ impl Default for Organism {
             mutability: 0,
             damage: 0,
             brain: Brain::default(),
+            parent: None,
         }
     }
 }
