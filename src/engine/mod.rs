@@ -2,14 +2,14 @@ use crate::environment::WorldEnvironment;
 use bevy::prelude::*;
 
 #[derive(Component)]
-pub struct Engine {
+pub struct Engine<'a> {
     fps: u16,
-    env: WorldEnvironment,
+    env: WorldEnvironment<'a>,
     running: bool,
     actual_fps: u16,
 }
 
-impl Default for Engine {
+impl Default for Engine<'_> {
     fn default() -> Self {
         Engine {
             fps: 60,
@@ -20,4 +20,4 @@ impl Default for Engine {
     }
 }
 
-impl Engine {}
+impl Engine<'_> {}

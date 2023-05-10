@@ -8,42 +8,30 @@ use anatomy::Anatomy;
 use direction::Direction;
 use perception::Brain;
 
-pub struct Organism {
-    x: u64,
-    y: u64,
+pub struct Organism<'a> {
+    abs_x: u64,
+    abs_y: u64,
     //env: Box<dyn Environment>,
-    lifetime: u64,
-    food_collected: u64,
+    tick_born: u64,
     living: bool,
     anatomy: Anatomy,
-    direction: Direction,
-    rotation: Direction,
-    can_rotate: bool,
-    move_count: u64,
-    move_range: u64,
     ignore_brain_for: u64,
     mutability: u16,
     damage: u16,
     brain: Brain,
     //this will be a problem
-    parent: Option<Box<Organism>>,
+    parent: Option<Box<&'a Organism<'a>>>,
 }
 
-impl Default for Organism {
+impl Default for Organism<'_> {
     fn default() -> Self {
         Organism {
-            x: 0,
-            y: 0,
+            abs_x: 0,
+            abs_y: 0,
             //env: Box::new(WorldEnvironment::default()),
-            lifetime: 0,
-            food_collected: 0,
+            tick_born: 0,
             living: true,
             anatomy: Anatomy::default(),
-            direction: Direction::default(),
-            rotation: Direction::default(),
-            can_rotate: true,
-            move_count: 0,
-            move_range: 0,
             ignore_brain_for: 0,
             mutability: 0,
             damage: 0,
@@ -53,24 +41,18 @@ impl Default for Organism {
     }
 }
 
-impl Organism {
+impl Organism<'_> {
     pub fn inherit(parent: &Organism) -> Self {
         Organism::default()
     }
-    pub fn new(anatomy: Anatomy, direction: Direction, rotation: Direction) -> Self {
+    pub fn new_with_anatomy(anatomy: Anatomy) -> Self {
         Organism {
-            x: 0,
-            y: 0,
+            abs_x: 0,
+            abs_y: 0,
             //env: Box::new(WorldEnvironment::default()),
-            lifetime: 0,
-            food_collected: 0,
+            tick_born: 0,
             living: true,
             anatomy,
-            direction,
-            rotation,
-            can_rotate: true,
-            move_count: 0,
-            move_range: 0,
             ignore_brain_for: 0,
             mutability: 0,
             damage: 0,

@@ -32,7 +32,7 @@ pub fn spawn_camera(mut commands: Commands, window_query: Query<&Window, With<Pr
     });
 }
 
-pub fn spawn_first_organism(mut commands: Commands, mut env: ResMut<WorldEnvironment>) {
+pub fn spawn_first_organism(mut commands: Commands, mut env: ResMut<WorldEnvironment<'static>>) {
     //We spawn a producer that is green yellow green
     let first_organism_anatomy = Anatomy::new(vec![
         Cell {
@@ -46,7 +46,7 @@ pub fn spawn_first_organism(mut commands: Commands, mut env: ResMut<WorldEnviron
             local_y: 0,
         },
         Cell {
-            cell_type: CellType::Mouth,
+            cell_type: CellType::Producer,
             local_x: 1,
             local_y: 1,
         },

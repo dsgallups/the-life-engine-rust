@@ -7,10 +7,10 @@ pub trait Environment {
 }
 
 #[derive(Resource)]
-pub struct WorldEnvironment {
+pub struct WorldEnvironment<'a> {
     // /controller: EnvironmentController,
     pub grid_map: GridMap,
-    organisms: Vec<Organism>,
+    organisms: Vec<Organism<'a>>,
     //walls: Vec<Wall>,
     total_mutability: u64,
     largest_cell_count: u64,
@@ -19,7 +19,7 @@ pub struct WorldEnvironment {
     data_update_rate: u64,
 }
 
-impl Default for WorldEnvironment {
+impl Default for WorldEnvironment<'_> {
     fn default() -> Self {
         WorldEnvironment {
             grid_map: GridMap::default(),
