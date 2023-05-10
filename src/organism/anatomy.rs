@@ -11,7 +11,7 @@ impl Default for Anatomy {
     fn default() -> Self {
         Anatomy {
             cells: Vec::new(),
-            anatomy_function: AnatomyFunction::Producer,
+            anatomy_function: AnatomyFunction::None,
             has_eyes: false,
             birth_distance: 0,
         }
@@ -21,4 +21,5 @@ impl Default for Anatomy {
 pub enum AnatomyFunction {
     Mover,
     Producer,
+    None,
 }
