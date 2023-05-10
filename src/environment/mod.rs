@@ -1,13 +1,15 @@
 use crate::organism::Organism;
+use bevy::prelude::Resource;
 use primitive_types::U256;
 pub trait Environment {
     fn update(&mut self);
     fn change_cell(&mut self, c: u64, r: u64, state: u64, owner: Organism);
 }
 
+#[derive(Resource)]
 pub struct WorldEnvironment {
     // /controller: EnvironmentController,
-    grid_map: GridMap,
+    pub grid_map: GridMap,
     organisms: Vec<Organism>,
     //walls: Vec<Wall>,
     total_mutability: u64,
@@ -47,8 +49,8 @@ pub struct GridMap {
 impl Default for GridMap {
     fn default() -> Self {
         GridMap {
-            num_rows: 0,
-            num_cols: 0,
+            num_rows: 64,
+            num_cols: 64,
         }
     }
 }

@@ -8,16 +8,18 @@ pub mod organism;
 
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
+use environment::WorldEnvironment;
+use organism::anatomy::Anatomy;
+use organism::cell::{Cell, CellType};
 use organism::Organism;
 
 fn main() {
     println!("Hello, world!");
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(Engine)
+        .init_resource::<WorldEnvironment>()
         .add_startup_system(spawn_camera)
-        .add_startup_system(spawn_environment)
-        .add_system(use_engine)
+        .add_startup_system(spawn_first_organism)
         .run();
 }
 
@@ -29,15 +31,26 @@ pub fn spawn_camera(mut commands: Commands, window_query: Query<&Window, With<Pr
         ..default()
     });
 }
-pub fn spawn_environment(mut commands: Commands) {
-    //create a 2d pixel grid
-    let engine = engine::Engine::default();
-}
 
-pub fn use_engine(mut commands: Commands) {}
+pub fn spawn_first_organism(mut commands: Commands, mut env: ResMut<WorldEnvironment>) {
+    //We spawn a producer that is green yellow green
+    let first_organism_anatomy = Anatomy::new(vec![
+        Cell {
+            cell_type: CellType::Producer,
+            local_x: -1,
+            local_y: -1,
+        },
+        Cell {
+            cell_type: CellType::Mouth,
+            local_x: 0,
+            local_y: 0,
+        },
+        Cell {
+            cell_type: CellType::Mouth,
+            local_x: 1,
+            local_y: 1,
+        },
+    ]);
 
-pub struct Engine;
-
-impl Plugin for Engine {
-    fn build(&self, app: &mut App) {}
+    let mut first_organism = Organism::default();
 }

@@ -9,8 +9,8 @@ use direction::Direction;
 use perception::Brain;
 
 pub struct Organism {
-    c: u64,
-    r: u64,
+    x: u64,
+    y: u64,
     //env: Box<dyn Environment>,
     lifetime: u64,
     food_collected: u64,
@@ -32,8 +32,8 @@ pub struct Organism {
 impl Default for Organism {
     fn default() -> Self {
         Organism {
-            c: 0,
-            r: 0,
+            x: 0,
+            y: 0,
             //env: Box::new(WorldEnvironment::default()),
             lifetime: 0,
             food_collected: 0,
@@ -56,5 +56,26 @@ impl Default for Organism {
 impl Organism {
     pub fn inherit(parent: &Organism) -> Self {
         Organism::default()
+    }
+    pub fn new(anatomy: Anatomy, direction: Direction, rotation: Direction) -> Self {
+        Organism {
+            x: 0,
+            y: 0,
+            //env: Box::new(WorldEnvironment::default()),
+            lifetime: 0,
+            food_collected: 0,
+            living: true,
+            anatomy,
+            direction,
+            rotation,
+            can_rotate: true,
+            move_count: 0,
+            move_range: 0,
+            ignore_brain_for: 0,
+            mutability: 0,
+            damage: 0,
+            brain: Brain::default(),
+            parent: None,
+        }
     }
 }

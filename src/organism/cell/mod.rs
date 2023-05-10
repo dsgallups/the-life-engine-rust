@@ -1,4 +1,5 @@
-enum CellType {
+#[derive(PartialEq)]
+pub enum CellType {
     Armor,
     Body,
     Eye,
@@ -12,7 +13,7 @@ enum CellType {
 }
 
 pub struct Cell {
-    cell_type: CellType,
-    local_row: u64,
-    local_col: u64,
+    pub cell_type: CellType,
+    pub local_x: i64,
+    pub local_y: i64,
 }
