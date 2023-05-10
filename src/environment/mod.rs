@@ -1,4 +1,4 @@
-use crate::organism::Organism;
+use crate::organism::{cell::Cell, Organism};
 use bevy::prelude::Resource;
 use primitive_types::U256;
 pub trait Environment {
@@ -42,8 +42,8 @@ pub struct OrganismEditor {
 }
 
 pub struct GridMap {
-    num_rows: u64,
-    num_cols: u64,
+    pub num_rows: u64,
+    pub num_cols: u64,
 }
 
 impl Default for GridMap {

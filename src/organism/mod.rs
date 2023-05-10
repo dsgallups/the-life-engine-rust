@@ -9,8 +9,8 @@ use direction::Direction;
 use perception::Brain;
 
 pub struct Organism<'a> {
-    abs_x: u64,
-    abs_y: u64,
+    pub abs_x: u64,
+    pub abs_y: u64,
     //env: Box<dyn Environment>,
     tick_born: u64,
     living: bool,
