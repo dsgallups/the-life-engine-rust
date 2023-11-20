@@ -42,8 +42,8 @@ pub struct OrganismEditor {
 }
 
 pub struct GridMap {
-    pub num_rows: u64,
-    pub num_cols: u64,
+    pub num_rows: usize,
+    pub num_cols: usize,
 }
 
 impl Default for GridMap {

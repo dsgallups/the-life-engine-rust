@@ -1,7 +1,9 @@
-#![allow(dead_code)]
 #![allow(unused_imports)]
 #![allow(unused_variables)]
+#![allow(dead_code)]
 
+pub mod consts;
+pub use consts::*;
 pub mod engine;
 pub mod environment;
 pub mod organism;
@@ -18,11 +20,10 @@ use rand::prelude::*;
 use startup::StartupPlugin;
 
 fn main() {
-    println!("Hello, world!");
     App::new()
         .add_plugins((DefaultPlugins, StartupPlugin))
         .init_resource::<WorldEnvironment>()
-        .add_systems(Update, print_mouse_pos)
+        .add_systems(Update, (print_mouse_pos, update_camera_pos))
         .run();
 }
 
@@ -39,5 +40,27 @@ pub fn print_mouse_pos(
     match pos {
         Some(pos) => text.sections[0].value = format!("({}, {})", pos.x, pos.y),
         None => text.sections[0].value = "(n/a, n/a)".to_string(),
+    }
+}
+
+pub fn update_camera_pos(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut camera: Query<&mut Transform, With<Camera2d>>,
+) {
+    let Ok(mut camera) = camera.get_single_mut() else {
+        return;
+    };
+
+    if keyboard_input.pressed(KeyCode::W) {
+        camera.translation.y += 1.;
+    }
+    if keyboard_input.pressed(KeyCode::A) {
+        camera.translation.x -= 1.;
+    }
+    if keyboard_input.pressed(KeyCode::S) {
+        camera.translation.y -= 1.;
+    }
+    if keyboard_input.pressed(KeyCode::D) {
+        camera.translation.x += 1.;
     }
 }
