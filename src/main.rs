@@ -7,6 +7,7 @@ pub mod environment;
 pub mod organism;
 
 use bevy::prelude::*;
+use bevy::sprite::MaterialMesh2dBundle;
 use bevy::text::{BreakLineOn, Text2dBounds};
 use bevy::window::PrimaryWindow;
 use environment::WorldEnvironment;
@@ -21,20 +22,20 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .init_resource::<WorldEnvironment>()
-        .add_startup_system(spawn_camera)
-        .add_startup_system(setup)
-        .add_startup_system(spawn_first_organism)
-        .add_system(print_mouse_pos)
+        .add_systems(Startup, (spawn_camera, setup, spawn_first_organism))
+        .add_systems(Update, print_mouse_pos)
         .run();
 }
 
 pub fn spawn_camera(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
     let window = window_query.get_single().unwrap();
 
-    commands.spawn(Camera2dBundle {
+    /*commands.spawn(Camera2dBundle {
         transform: Transform::from_xyz(window.width() / 2.0, window.height() / 2.0, 2.0),
         ..default()
-    });
+    });*/
+
+    commands.spawn(Camera2dBundle::default());
 }
 
 pub fn setup(
@@ -42,6 +43,8 @@ pub fn setup(
     asset_server: Res<AssetServer>,
     mut env: ResMut<WorldEnvironment<'static>>,
     window_query: Query<&Window, With<PrimaryWindow>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let (num_rows, num_cols) = (env.grid_map.num_rows, env.grid_map.num_cols);
     let window = window_query.get_single().unwrap();
@@ -57,6 +60,8 @@ pub fn setup(
     } else {
         num_cols as f32
     };
+    env.grid_map.num_rows = (CELL_SIZE / window.height()) as u64;
+    env.grid_map.num_cols = (CELL_SIZE / window.width()) as u64;
 
     let mut x: f32 = 0.0;
     while x < window.width() {
@@ -75,6 +80,13 @@ pub fn setup(
         }
         x += CELL_SIZE;
     }
+    //center
+    commands.spawn(MaterialMesh2dBundle {
+        mesh: meshes.add(shape::Circle::new(4.0).into()).into(),
+        material: materials.add(ColorMaterial::from(Color::RED)),
+        transform: Transform::from_translation(Vec3::new(0., 0., 2.)),
+        ..default()
+    });
 
     let font = asset_server.load("fonts/fira.ttf");
     //create box for the mouse position
@@ -101,7 +113,7 @@ pub fn setup(
                     text: Text {
                         sections: vec![TextSection::new("(000.0, 000.0)", text_style.clone())],
                         alignment: TextAlignment::Left,
-                        linebreak_behaviour: BreakLineOn::AnyCharacter,
+                        linebreak_behavior: BreakLineOn::AnyCharacter,
                     },
                     text_2d_bounds: Text2dBounds {
                         // Wrap text in the rectangle
@@ -114,23 +126,6 @@ pub fn setup(
                 MousePosBox,
             ));
         });
-    /*commands.spawn(Text2dBundle {
-        text: Text::from_section(
-            // Accepts a String or any type that converts into a String, such as &str.
-            "hello world!",
-            TextStyle {
-                font: font.clone(),
-                font_size: 60.0,
-                color: Color::WHITE,
-            },
-        ),
-        transform: Transform {
-            translation: Vec3::new(0.0, 0.0, 0.1),
-            ..default()
-        },
-        // ensure the text is drawn on top of the box
-        ..default()
-    });*/
 }
 
 pub fn spawn_first_organism(
