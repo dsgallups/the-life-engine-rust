@@ -20,7 +20,7 @@ pub struct Organism<'a> {
     damage: u16,
     brain: Brain,
     //this will be a problem
-    parent: Option<Box<&'a Organism<'a>>>,
+    parent: Option<&'a Organism<'a>>,
 }
 
 impl Default for Organism<'_> {
