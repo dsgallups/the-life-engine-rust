@@ -1,4 +1,4 @@
-use crate::life_engine::{Drawable, OrganismCell};
+use crate::life_engine::OrganismCell;
 use bevy::math::I64Vec3;
 use bevy::math::U64Vec3;
 use bevy::prelude::*;
@@ -21,9 +21,7 @@ impl Organ {
     pub fn position(&self) -> &I64Vec3 {
         &self.relative_location
     }
-    pub fn color(&self) -> Color {
-        self.cell.color()
-    }
+
     pub fn cell(&self) -> OrganismCell {
         self.cell.clone()
     }
@@ -47,14 +45,6 @@ impl Organism {
         }
     }
 
-    pub fn update_request(&self) -> UpdateRequest {
-        UpdateRequest {
-            place_food: Vec::new(),
-        }
-    }
-
-    pub fn tick_response(&mut self, _response: TickResponse) {}
-
     pub fn id(&self) -> Uuid {
         self.id
     }
@@ -67,9 +57,3 @@ impl Organism {
         &self.organs
     }
 }
-
-pub struct UpdateRequest {
-    place_food: Vec<I64Vec3>,
-}
-
-pub struct TickResponse {}

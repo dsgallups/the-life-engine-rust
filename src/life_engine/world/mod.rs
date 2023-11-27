@@ -1,8 +1,8 @@
-use bevy::{prelude::*, utils::Uuid};
+use bevy::prelude::*;
 
 use crate::life_engine::{Organ, Organism, OrganismCell};
 
-use super::{Cell, Drawable, TickResponse};
+use super::{Cell, Drawable};
 
 #[derive(Resource)]
 pub struct LEWorld {
@@ -42,19 +42,11 @@ impl LEWorld {
         }
     }
 
-    pub fn add_organism(&mut self, organism: Organism) {
-        self.organisms.push(organism);
-    }
-
     pub fn width(&self) -> usize {
         self.width
     }
     pub fn height(&self) -> usize {
         self.height
-    }
-
-    pub fn organisms(&self) -> &[Organism] {
-        &self.organisms
     }
 
     pub fn refresh_map(&mut self) {
@@ -71,10 +63,26 @@ impl LEWorld {
     }
 
     pub fn tick(&mut self) {
-        for organism in self.organisms.iter_mut() {
-            let request = organism.update_request();
-            let response = TickResponse {};
-            organism.tick_response(response);
+        for _organism in self.organisms.iter_mut() {
+            //world will provide the organism with a request for its context requirements
+            //given the requirements provided by the organism, the world will provide the organism with the information it knows
+            //the organism will then provide the world with a request to update the world
+            //the world will then provide the organism with a response to the request, as its request may not always be fulfilled
+
+            /*
+               let requested_context = organism.context_request();
+
+               // Do something
+               let context_response = ...
+
+               let requested_update = organism.update_request(context_response);
+
+               let update_response = ...
+
+               organism.tick(update_response);
+            */
+
+            //organism.tick_response(response);
         }
     }
 
@@ -95,9 +103,4 @@ impl LEWorld {
             }
         }
     }
-}
-
-#[derive(Component)]
-pub enum ItemType {
-    Organism(Uuid),
 }

@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 mod life_engine;
 
 use life_engine::LEWorld;
