@@ -25,7 +25,7 @@ fn spawn_camera(mut commands: Commands, world: Res<LEWorld>) {
 }
 
 fn init_world(mut commands: Commands, mut world: ResMut<LEWorld>) {
-    world.update_map();
+    world.refresh_map();
 
     world.draw(&mut commands);
 }

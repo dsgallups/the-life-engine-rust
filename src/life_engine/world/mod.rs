@@ -1,6 +1,8 @@
 use bevy::{prelude::*, utils::Uuid};
 
-use crate::life_engine::{Organ, Organism};
+use crate::life_engine::{Organ, Organism, OrganismCell};
+
+use super::{Cell, Drawable, TickResponse};
 
 #[derive(Resource)]
 pub struct LEWorld {
@@ -55,7 +57,7 @@ impl LEWorld {
         &self.organisms
     }
 
-    pub fn update_map(&mut self) {
+    pub fn refresh_map(&mut self) {
         for organism in self.organisms.iter() {
             let position = organism.origin();
             for organ in organism.organs() {
@@ -65,6 +67,14 @@ impl LEWorld {
                 println!("position = {:?}", position);
                 self.map[position.x as usize][position.y as usize] = Cell::Organism(organ.cell());
             }
+        }
+    }
+
+    pub fn tick(&mut self) {
+        for organism in self.organisms.iter_mut() {
+            let request = organism.update_request();
+            let response = TickResponse {};
+            organism.tick_response(response);
         }
     }
 
@@ -90,62 +100,4 @@ impl LEWorld {
 #[derive(Component)]
 pub enum ItemType {
     Organism(Uuid),
-}
-
-pub trait Drawable {
-    fn color(&self) -> Color;
-}
-
-#[derive(Clone, Debug)]
-pub enum Cell {
-    Inert(InertCell),
-    Organism(OrganismCell),
-}
-impl Default for Cell {
-    fn default() -> Self {
-        Cell::Inert(InertCell::Empty)
-    }
-}
-
-impl Drawable for Cell {
-    fn color(&self) -> Color {
-        match self {
-            Cell::Inert(inert_cell) => inert_cell.color(),
-            Cell::Organism(organism_cell) => organism_cell.color(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Default)]
-pub enum InertCell {
-    Food,
-    Wall,
-    #[default]
-    Empty,
-}
-
-impl Drawable for InertCell {
-    fn color(&self) -> Color {
-        match self {
-            InertCell::Food => Color::GREEN,
-            InertCell::Wall => Color::BLUE,
-            InertCell::Empty => Color::BLACK,
-        }
-    }
-}
-
-#[derive(Clone, Debug, Default)]
-pub enum OrganismCell {
-    Mouth,
-    #[default]
-    Producer,
-}
-
-impl Drawable for OrganismCell {
-    fn color(&self) -> Color {
-        match self {
-            OrganismCell::Producer => Color::GREEN,
-            OrganismCell::Mouth => Color::RED,
-        }
-    }
 }

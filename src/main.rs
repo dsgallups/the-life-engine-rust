@@ -48,7 +48,15 @@ fn frame_update(mut last_time: Local<f32>, time: Res<Time>) {
     *last_time = time.elapsed_seconds();
 }
 
-fn fixed_update(mut last_time: Local<f32>, time: Res<Time>, fixed_time: Res<Time<Fixed>>) {
+fn fixed_update(
+    mut commands: Commands,
+    mut last_time: Local<f32>,
+    time: Res<Time>,
+    fixed_time: Res<Time<Fixed>>,
+    mut world: ResMut<LEWorld>,
+) {
+    world.tick();
+    world.draw(&mut commands);
     // Default `Time`is `Time<Fixed>` here
     info!(
         "time since last fixed_update: {}\n",
