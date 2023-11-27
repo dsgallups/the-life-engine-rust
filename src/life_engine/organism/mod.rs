@@ -68,7 +68,7 @@ impl Organism {
         OrganismContextRequest {}
     }
 
-    pub fn update_request(&self, context_response: WorldContextResponse) -> OrganismUpdateRequest {
+    pub fn update_request(&self, _context_response: WorldContextResponse) -> OrganismUpdateRequest {
         let mut request = OrganismUpdateRequest::default();
 
         /*if !self.has_eye {
@@ -86,11 +86,16 @@ impl Organism {
         todo!();
     }
 
-    pub fn tick(&mut self, context_response: WorldUpdateResponse) {
+    pub fn tick(
+        &mut self,
+        _context_response: &WorldUpdateResponse,
+    ) -> Option<OrganismUpdateRequest> {
         for organ in self.organs.iter_mut() {
             if let OrganismCell::Producer(ref mut count) = organ.cell() {
                 *count += 1;
             }
         }
+
+        None
     }
 }

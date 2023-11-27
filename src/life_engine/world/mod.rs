@@ -1,10 +1,8 @@
-use bevy::{math::I64Vec3, prelude::*};
+use bevy::prelude::*;
 
 use crate::life_engine::{Organ, Organism, OrganismCell};
 
-use super::{
-    Cell, Drawable, InertCell, OrganismContextRequest, WorldContextResponse, WorldUpdateResponse,
-};
+use super::{Cell, Drawable, WorldContextResponse, WorldUpdateResponse};
 
 #[derive(Resource)]
 pub struct LEWorld {
@@ -110,9 +108,16 @@ impl LEWorld {
      */
     pub fn tick(&mut self) {
         for organism in self.organisms.iter_mut() {
-            let ctx_req = organism.context_request();
+            let _ctx_req = organism.context_request();
             let response = WorldContextResponse {};
-            let update_req = organism.update_request(response);
+            let _update_req = organism.update_request(response);
+
+            let response = WorldUpdateResponse {};
+
+            while let Some(_update_req) = organism.tick(&response) {
+                //Maybe it just ate its own food or something? idk
+                //self.update(update_req);
+            }
         }
     }
 
