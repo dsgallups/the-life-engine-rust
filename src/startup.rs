@@ -1,9 +1,6 @@
-use bevy::{prelude::*, utils::Uuid};
+use bevy::prelude::*;
 
-use crate::{
-    organism::Organism,
-    world::{ItemType, LEWorld},
-};
+use crate::world::{ItemType, LEWorld};
 
 pub struct StartupPlugin;
 
@@ -59,7 +56,7 @@ fn init_world(mut commands: Commands, world: Res<LEWorld>) {
         let sprites = organism.draw();
 
         for sprite in sprites {
-            commands.spawn((sprite, ItemType::Organism(Uuid::new_v4())));
+            commands.spawn((sprite, ItemType::Organism(organism.id())));
         }
     }
 }

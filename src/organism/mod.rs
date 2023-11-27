@@ -1,17 +1,12 @@
+use crate::world::OrganismCell;
+use bevy::math::I64Vec3;
 use bevy::prelude::*;
-use bevy::{ecs::bundle::Bundle, math::I64Vec3};
+use bevy::utils::Uuid;
 use std::fmt::Debug;
 
-#[derive(Clone, Debug, Default)]
-pub enum Cell {
-    Mouth,
-    #[default]
-    Producer,
-}
-
-impl Cell {
+impl OrganismCell {
     pub fn color(&self) -> Color {
-        use Cell::*;
+        use OrganismCell::*;
         match self {
             Mouth => Color::rgb(0.5, 0.4, 0.8),
             Producer => Color::rgb(0.2, 0.7, 0.1),
@@ -21,12 +16,12 @@ impl Cell {
 
 #[derive(Clone, Debug, Default)]
 pub struct Organ {
-    cell: Cell,
+    cell: OrganismCell,
     relative_location: I64Vec3,
 }
 
 impl Organ {
-    pub fn new(cell: Cell, relative_location: I64Vec3) -> Organ {
+    pub fn new(cell: OrganismCell, relative_location: I64Vec3) -> Organ {
         Organ {
             cell,
             relative_location,
@@ -42,13 +37,22 @@ impl Organ {
 
 #[derive(Default, Component)]
 pub struct Organism {
+    id: Uuid,
     organs: Vec<Organ>,
     location: I64Vec3,
 }
 
 impl Organism {
     pub fn new(organs: Vec<Organ>, location: I64Vec3) -> Organism {
-        Organism { organs, location }
+        Organism {
+            id: Uuid::new_v4(),
+            organs,
+            location,
+        }
+    }
+
+    pub fn id(&self) -> Uuid {
+        self.id
     }
 
     pub fn origin(&self) -> &I64Vec3 {

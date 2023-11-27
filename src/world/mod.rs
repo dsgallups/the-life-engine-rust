@@ -1,6 +1,6 @@
 use bevy::{prelude::*, utils::Uuid};
 
-use crate::organism::{Cell, Organ, Organism};
+use crate::organism::{Organ, Organism};
 
 #[derive(Resource)]
 pub struct LEWorld {
@@ -11,11 +11,11 @@ pub struct LEWorld {
 
 impl Default for LEWorld {
     fn default() -> Self {
-        pub use Cell::*;
+        pub use OrganismCell::*;
         let organs = vec![
-            Organ::new(Producer, (-1, -1, 1).into()),
+            Organ::new(Producer, (-1, 1, 1).into()),
             Organ::new(Mouth, (0, 0, 1).into()),
-            Organ::new(Producer, (1, 1, 1).into()),
+            Organ::new(Producer, (1, -1, 1).into()),
         ];
 
         let first_organism = Organism::new(organs, (0, 0, 1).into());
@@ -55,4 +55,22 @@ impl LEWorld {
 #[derive(Component)]
 pub enum ItemType {
     Organism(Uuid),
+}
+
+pub enum Cell {
+    Inert(InertCell),
+    Organism(OrganismCell),
+}
+
+pub enum InertCell {
+    Food,
+    Wall,
+    Empty,
+}
+
+#[derive(Clone, Debug, Default)]
+pub enum OrganismCell {
+    Mouth,
+    #[default]
+    Producer,
 }
