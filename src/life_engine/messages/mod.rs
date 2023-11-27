@@ -1,4 +1,6 @@
-use bevy::math::I64Vec3;
+use bevy::{math::I64Vec3, utils::Uuid};
+
+use super::Organ;
 
 /// The organism will provide the world for the context it needs in order for it to make a request
 pub struct OrganismContextRequest {}
@@ -8,15 +10,18 @@ pub struct WorldContextResponse {}
 
 /// From the context provided by the world, the organism will provide the world with a request to update the world
 #[derive(Default)]
-pub struct OrganismUpdateRequest {
-    gen_food: Vec<I64Vec3>,
+pub struct OrganismUpdateRequest<'a> {
+    pub gen_food: Vec<&'a Organ>,
 }
 
-impl OrganismUpdateRequest {
-    pub fn add_gen_food(&mut self, position: I64Vec3) {
-        self.gen_food.push(position);
+impl<'a> OrganismUpdateRequest<'a> {
+    pub fn add_gen_food(&mut self, organ: &'a Organ) {
+        self.gen_food.push(organ);
     }
 }
 
 /// The world will provide the organism with a response to its update request
-pub struct WorldUpdateResponse {}
+#[derive(Default)]
+pub struct WorldUpdateResponse<'a> {
+    pub gen_food: Vec<&'a Organ>,
+}

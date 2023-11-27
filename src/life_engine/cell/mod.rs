@@ -43,12 +43,12 @@ impl Drawable for InertCell {
 #[derive(Clone, Debug)]
 pub enum OrganismCell {
     Mouth,
-    Producer(u8),
+    Producer(Producer),
 }
 
 impl Default for OrganismCell {
     fn default() -> Self {
-        OrganismCell::Producer(0)
+        OrganismCell::Producer(Producer::default())
     }
 }
 
@@ -57,6 +57,23 @@ impl Drawable for OrganismCell {
         match self {
             OrganismCell::Producer(_) => Color::GREEN,
             OrganismCell::Mouth => Color::RED,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct Producer {
+    pub food_produced: u8,
+    pub counter: u8,
+    pub threshold: u8,
+}
+
+impl Producer {
+    pub fn new(threshold: u8) -> Producer {
+        Producer {
+            food_produced: 0,
+            counter: 0,
+            threshold,
         }
     }
 }

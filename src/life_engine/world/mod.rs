@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
-use crate::life_engine::{Organ, Organism, OrganismCell};
+use crate::life_engine::{Organ, Organism, OrganismCell, Producer};
 
-use super::{Cell, Drawable, WorldContextResponse, WorldUpdateResponse};
+use super::{Cell, Drawable, InertCell, WorldContextResponse, WorldUpdateResponse};
 
 #[derive(Resource)]
 pub struct LEWorld {
@@ -23,14 +23,19 @@ impl Default for LEWorld {
 
 impl LEWorld {
     pub fn new(width: usize, height: usize) -> LEWorld {
+        let settings = WorldSettings::default();
         let map = vec![vec![Cell::default(); width]; height];
 
-        pub use OrganismCell::*;
-
         let organs = vec![
-            Organ::new(Producer(0), (-1, 1, 1).into()),
-            Organ::new(Mouth, (0, 0, 1).into()),
-            Organ::new(Producer(0), (1, -1, 1).into()),
+            Organ::new(
+                OrganismCell::Producer(Producer::new(settings.producer_threshold)),
+                (-1, 1, 1).into(),
+            ),
+            Organ::new(OrganismCell::Mouth, (0, 0, 1).into()),
+            Organ::new(
+                OrganismCell::Producer(Producer::new(settings.producer_threshold)),
+                (1, -1, 1).into(),
+            ),
         ];
 
         let first_organism =
@@ -110,9 +115,19 @@ impl LEWorld {
         for organism in self.organisms.iter_mut() {
             let _ctx_req = organism.context_request();
             let response = WorldContextResponse {};
-            let _update_req = organism.update_request(response);
+            let update_req = organism.update_request(response);
 
-            let response = WorldUpdateResponse {};
+            let mut response = WorldUpdateResponse::default();
+            if !update_req.gen_food.is_empty() {
+                for organ in update_req.gen_food {
+                    let position =
+                        (*organ.position() + (*organism.origin()).as_i64vec3()).as_u64vec3();
+                    self.map[position.x as usize][position.y as usize] =
+                        Cell::Inert(InertCell::Food);
+
+                    response.gen_food.push(organ);
+                }
+            }
 
             while let Some(_update_req) = organism.tick(&response) {
                 //Maybe it just ate its own food or something? idk
@@ -126,13 +141,11 @@ impl LEWorld {
 
         for (x, col) in map.iter().enumerate() {
             for (y, cell) in col.iter().enumerate() {
-                let x = x as f32;
-                let y = y as f32;
                 let color = cell.color();
 
                 commands.spawn(SpriteBundle {
                     sprite: Sprite { color, ..default() },
-                    transform: Transform::from_translation(Vec3::new(x, y, 0.)),
+                    transform: Transform::from_translation(Vec3::new(x as f32, y as f32, 0.)),
                     ..default()
                 });
             }
@@ -142,12 +155,14 @@ impl LEWorld {
 
 pub struct WorldSettings {
     food_spawn_radius: u64,
+    producer_threshold: u8,
 }
 
 impl Default for WorldSettings {
     fn default() -> Self {
         WorldSettings {
             food_spawn_radius: 1,
+            producer_threshold: 10,
         }
     }
 }

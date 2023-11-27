@@ -12,6 +12,7 @@ use super::WorldUpdateResponse;
 
 #[derive(Clone, Debug, Default)]
 pub struct Organ {
+    id: Uuid,
     cell: OrganismCell,
     relative_location: I64Vec3,
 }
@@ -19,6 +20,7 @@ pub struct Organ {
 impl Organ {
     pub fn new(cell: OrganismCell, relative_location: I64Vec3) -> Organ {
         Organ {
+            id: Uuid::new_v4(),
             cell,
             relative_location,
         }
@@ -76,14 +78,14 @@ impl Organism {
         }*/
 
         for organ in self.organs() {
-            if let OrganismCell::Producer(ref count) = organ.cell() {
-                if *count > 10 {
-                    request.add_gen_food(*organ.position());
+            if let OrganismCell::Producer(ref producer) = organ.cell() {
+                if producer.counter > producer.threshold {
+                    request.add_gen_food(organ);
                 }
             }
         }
 
-        todo!();
+        request
     }
 
     pub fn tick(
@@ -91,8 +93,8 @@ impl Organism {
         _context_response: &WorldUpdateResponse,
     ) -> Option<OrganismUpdateRequest> {
         for organ in self.organs.iter_mut() {
-            if let OrganismCell::Producer(ref mut count) = organ.cell() {
-                *count += 1;
+            if let OrganismCell::Producer(ref mut producer) = organ.cell() {
+                producer.counter += 1;
             }
         }
 
