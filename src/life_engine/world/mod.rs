@@ -1,6 +1,6 @@
 use bevy::{prelude::*, utils::Uuid};
 
-use crate::life_engine::organism::{Organ, Organism};
+use crate::life_engine::{Organ, Organism};
 
 #[derive(Resource)]
 pub struct LEWorld {
@@ -12,9 +12,15 @@ pub struct LEWorld {
 
 impl Default for LEWorld {
     fn default() -> Self {
-        let default_width = 20;
-        let default_height = 20;
-        let default_map = vec![vec![Cell::default(); default_width]; default_height];
+        let default_width = 40;
+        let default_height = 40;
+        LEWorld::new(default_width, default_height)
+    }
+}
+
+impl LEWorld {
+    pub fn new(width: usize, height: usize) -> LEWorld {
+        let map = vec![vec![Cell::default(); width]; height];
 
         pub use OrganismCell::*;
 
@@ -24,24 +30,13 @@ impl Default for LEWorld {
             Organ::new(Producer, (1, -1, 1).into()),
         ];
 
-        let first_organism = Organism::new(organs, (0, 0, 1).into());
-        LEWorld {
-            map: default_map,
-            width: default_width,
-            height: default_height,
-            organisms: vec![first_organism],
-        }
-    }
-}
-
-impl LEWorld {
-    pub fn new(width: usize, height: usize) -> LEWorld {
-        let map = vec![vec![Cell::default(); width]; height];
+        let first_organism =
+            Organism::new(organs, ((width / 2) as u64, (height / 2) as u64, 1).into());
         LEWorld {
             map,
             width,
             height,
-            organisms: Vec::new(),
+            organisms: vec![first_organism],
         }
     }
 
@@ -58,6 +53,37 @@ impl LEWorld {
 
     pub fn organisms(&self) -> &[Organism] {
         &self.organisms
+    }
+
+    pub fn update_map(&mut self) {
+        for organism in self.organisms.iter() {
+            let position = organism.origin();
+            for organ in organism.organs() {
+                println!("organ_position = {:?}", organ.position());
+                println!("position = {:?}", position);
+                let position = (*organ.position() + (*position).as_i64vec3()).as_u64vec3();
+                println!("position = {:?}", position);
+                self.map[position.x as usize][position.y as usize] = Cell::Organism(organ.cell());
+            }
+        }
+    }
+
+    pub fn draw(&self, commands: &mut Commands) {
+        let map = &self.map;
+
+        for (x, col) in map.iter().enumerate() {
+            for (y, cell) in col.iter().enumerate() {
+                let x = x as f32;
+                let y = y as f32;
+                let color = cell.color();
+
+                commands.spawn(SpriteBundle {
+                    sprite: Sprite { color, ..default() },
+                    transform: Transform::from_translation(Vec3::new(x, y, 0.)),
+                    ..default()
+                });
+            }
+        }
     }
 }
 

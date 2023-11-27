@@ -1,5 +1,6 @@
 use crate::life_engine::world::{Drawable, OrganismCell};
 use bevy::math::I64Vec3;
+use bevy::math::U64Vec3;
 use bevy::prelude::*;
 use bevy::utils::Uuid;
 use std::fmt::Debug;
@@ -17,11 +18,14 @@ impl Organ {
             relative_location,
         }
     }
-    pub fn loc(&self) -> &I64Vec3 {
+    pub fn position(&self) -> &I64Vec3 {
         &self.relative_location
     }
     pub fn color(&self) -> Color {
         self.cell.color()
+    }
+    pub fn cell(&self) -> OrganismCell {
+        self.cell.clone()
     }
 }
 
@@ -29,11 +33,11 @@ impl Organ {
 pub struct Organism {
     id: Uuid,
     organs: Vec<Organ>,
-    location: I64Vec3,
+    location: U64Vec3,
 }
 
 impl Organism {
-    pub fn new(organs: Vec<Organ>, location: I64Vec3) -> Organism {
+    pub fn new(organs: Vec<Organ>, location: U64Vec3) -> Organism {
         Organism {
             id: Uuid::new_v4(),
             organs,
@@ -45,28 +49,11 @@ impl Organism {
         self.id
     }
 
-    pub fn origin(&self) -> &I64Vec3 {
+    pub fn origin(&self) -> &U64Vec3 {
         &self.location
     }
 
     pub fn organs(&self) -> &[Organ] {
         &self.organs
-    }
-
-    pub fn draw(&self) -> Vec<SpriteBundle> {
-        let mut organ_bundles = Vec::new();
-
-        for organ in self.organs.iter() {
-            let organ_loc = (*self.origin() + *organ.loc()).as_vec3();
-            let color = organ.color();
-
-            organ_bundles.push(SpriteBundle {
-                sprite: Sprite { color, ..default() },
-                transform: Transform::from_translation(organ_loc),
-                ..default()
-            });
-        }
-
-        organ_bundles
     }
 }

@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 mod life_engine;
 
-use life_engine::world::LEWorld;
+use life_engine::LEWorld;
 use startup::StartupPlugin;
 mod startup;
 
