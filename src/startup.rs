@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::world::{ItemType, LEWorld};
+use crate::life_engine::world::{ItemType, LEWorld};
 
 pub struct StartupPlugin;
 

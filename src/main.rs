@@ -1,8 +1,8 @@
 #![allow(dead_code)]
-mod organism;
-mod world;
+mod life_engine;
+
+use life_engine::world::LEWorld;
 use startup::StartupPlugin;
-use world::LEWorld;
 mod startup;
 
 use bevy::prelude::*;

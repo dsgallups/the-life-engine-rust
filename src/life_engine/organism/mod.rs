@@ -1,18 +1,8 @@
-use crate::world::OrganismCell;
+use crate::life_engine::world::{Drawable, OrganismCell};
 use bevy::math::I64Vec3;
 use bevy::prelude::*;
 use bevy::utils::Uuid;
 use std::fmt::Debug;
-
-impl OrganismCell {
-    pub fn color(&self) -> Color {
-        use OrganismCell::*;
-        match self {
-            Mouth => Color::rgb(0.5, 0.4, 0.8),
-            Producer => Color::rgb(0.2, 0.7, 0.1),
-        }
-    }
-}
 
 #[derive(Clone, Debug, Default)]
 pub struct Organ {
