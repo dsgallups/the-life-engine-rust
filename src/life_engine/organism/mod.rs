@@ -65,16 +65,32 @@ impl Organism {
     }
 
     pub fn context_request(&self) -> OrganismContextRequest {
-        OrganismContextRequest {
-            nearest_food: self.has_eye,
-        }
+        OrganismContextRequest {}
     }
 
     pub fn update_request(&self, context_response: WorldContextResponse) -> OrganismUpdateRequest {
+        let mut request = OrganismUpdateRequest::default();
+
+        /*if !self.has_eye {
+            request.add_organ(Organ::new(OrganismCell::Producer(0), (0, 0, 1).into()));
+        }*/
+
+        for organ in self.organs() {
+            if let OrganismCell::Producer(ref count) = organ.cell() {
+                if *count > 10 {
+                    request.add_gen_food(*organ.position());
+                }
+            }
+        }
+
         todo!();
     }
 
     pub fn tick(&mut self, context_response: WorldUpdateResponse) {
-        todo!();
+        for organ in self.organs.iter_mut() {
+            if let OrganismCell::Producer(ref mut count) = organ.cell() {
+                *count += 1;
+            }
+        }
     }
 }

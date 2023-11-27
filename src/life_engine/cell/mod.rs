@@ -40,17 +40,22 @@ impl Drawable for InertCell {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub enum OrganismCell {
     Mouth,
-    #[default]
-    Producer,
+    Producer(u8),
+}
+
+impl Default for OrganismCell {
+    fn default() -> Self {
+        OrganismCell::Producer(0)
+    }
 }
 
 impl Drawable for OrganismCell {
     fn color(&self) -> Color {
         match self {
-            OrganismCell::Producer => Color::GREEN,
+            OrganismCell::Producer(_) => Color::GREEN,
             OrganismCell::Mouth => Color::RED,
         }
     }
