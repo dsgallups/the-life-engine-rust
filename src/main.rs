@@ -41,10 +41,10 @@ fn draw_cursor(
 
 fn frame_update(mut last_time: Local<f32>, time: Res<Time>) {
     // Default `Time` is `Time<Virtual>` here
-    info!(
+    /*info!(
         "time since last frame_update: {}",
         time.elapsed_seconds() - *last_time
-    );
+    );*/
     *last_time = time.elapsed_seconds();
 }
 
@@ -58,7 +58,7 @@ fn fixed_update(
     world.tick();
     world.draw(&mut commands);
     // Default `Time`is `Time<Fixed>` here
-    info!(
+    /*info!(
         "time since last fixed_update: {}\n",
         time.elapsed_seconds() - *last_time
     );
@@ -68,6 +68,6 @@ fn fixed_update(
     info!(
         "time accrued toward next fixed_update: {}\n",
         fixed_time.overstep().as_secs_f32()
-    );
+    );*/
     *last_time = time.elapsed_seconds();
 }

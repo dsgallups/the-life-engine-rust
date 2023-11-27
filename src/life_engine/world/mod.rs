@@ -2,7 +2,9 @@ use bevy::prelude::*;
 
 use crate::life_engine::{Organ, Organism, OrganismCell, Producer};
 
-use super::{Cell, Drawable, InertCell, WorldContextResponse, WorldUpdateResponse};
+use super::{
+    Cell, Drawable, InertCell, OrganismUpdateRequest, WorldContextResponse, WorldUpdateResponse,
+};
 
 #[derive(Resource)]
 pub struct LEWorld {
@@ -58,13 +60,14 @@ impl LEWorld {
 
     pub fn refresh_map(&mut self) {
         for organism in self.organisms.iter() {
-            let position = organism.origin();
-            for organ in organism.organs() {
-                println!("organ_position = {:?}", organ.position());
+            let position = &organism.location;
+            for organ in organism.organs.iter() {
+                println!("organ_position = {:?}", organ.relative_location);
                 println!("position = {:?}", position);
-                let position = (*organ.position() + (*position).as_i64vec3()).as_u64vec3();
+                let position = (organ.relative_location + (*position).as_i64vec3()).as_u64vec3();
                 println!("position = {:?}", position);
-                self.map[position.x as usize][position.y as usize] = Cell::Organism(organ.cell());
+                self.map[position.x as usize][position.y as usize] =
+                    Cell::Organism(organ.cell.clone());
             }
         }
     }
@@ -114,25 +117,28 @@ impl LEWorld {
     pub fn tick(&mut self) {
         for organism in self.organisms.iter_mut() {
             let _ctx_req = organism.context_request();
-            let response = WorldContextResponse {};
-            let update_req = organism.update_request(response);
+            let ctx_res = WorldContextResponse {};
 
-            let mut response = WorldUpdateResponse::default();
-            if !update_req.gen_food.is_empty() {
-                for organ in update_req.gen_food {
-                    let position =
-                        (*organ.position() + (*organism.origin()).as_i64vec3()).as_u64vec3();
-                    self.map[position.x as usize][position.y as usize] =
-                        Cell::Inert(InertCell::Food);
+            let organism_update_request = organism.update_request(ctx_res);
 
-                    response.gen_food.push(organ);
-                }
-            }
+            let world_update_res = organism_update_request
+                .into_iter()
+                .map(|request| match request {
+                    OrganismUpdateRequest::GenFood(organ_id, position) => {
+                        println!("in here {:?}", request);
+                        let position = (position + (organism.location).as_i64vec3()).as_u64vec3();
 
-            while let Some(_update_req) = organism.tick(&response) {
-                //Maybe it just ate its own food or something? idk
-                //self.update(update_req);
-            }
+                        self.map[position.x as usize][position.y as usize] =
+                            Cell::Inert(InertCell::Food);
+
+                        WorldUpdateResponse::ClearCounter(organ_id)
+                    }
+                })
+                .collect::<Vec<_>>();
+
+            println!("world_update_res = {:?}", world_update_res);
+
+            organism.tick(world_update_res);
         }
     }
 

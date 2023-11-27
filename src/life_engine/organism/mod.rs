@@ -12,9 +12,9 @@ use super::WorldUpdateResponse;
 
 #[derive(Clone, Debug, Default)]
 pub struct Organ {
-    id: Uuid,
-    cell: OrganismCell,
-    relative_location: I64Vec3,
+    pub id: Uuid,
+    pub cell: OrganismCell,
+    pub relative_location: I64Vec3,
 }
 
 impl Organ {
@@ -25,20 +25,13 @@ impl Organ {
             relative_location,
         }
     }
-    pub fn position(&self) -> &I64Vec3 {
-        &self.relative_location
-    }
-
-    pub fn cell(&self) -> OrganismCell {
-        self.cell.clone()
-    }
 }
 
 #[derive(Default, Component)]
 pub struct Organism {
-    id: Uuid,
-    organs: Vec<Organ>,
-    location: U64Vec3,
+    pub id: Uuid,
+    pub organs: Vec<Organ>,
+    pub location: U64Vec3,
     has_eye: bool,
     food_collected: u64,
 }
@@ -54,33 +47,32 @@ impl Organism {
         }
     }
 
-    pub fn id(&self) -> Uuid {
-        self.id
-    }
-
-    pub fn origin(&self) -> &U64Vec3 {
-        &self.location
-    }
-
-    pub fn organs(&self) -> &[Organ] {
-        &self.organs
-    }
-
     pub fn context_request(&self) -> OrganismContextRequest {
         OrganismContextRequest {}
     }
 
-    pub fn update_request(&self, _context_response: WorldContextResponse) -> OrganismUpdateRequest {
-        let mut request = OrganismUpdateRequest::default();
+    pub fn update_request(
+        &mut self,
+        _context_response: WorldContextResponse,
+    ) -> Vec<OrganismUpdateRequest> {
+        let mut request = Vec::new();
 
         /*if !self.has_eye {
             request.add_organ(Organ::new(OrganismCell::Producer(0), (0, 0, 1).into()));
         }*/
 
-        for organ in self.organs() {
-            if let OrganismCell::Producer(ref producer) = organ.cell() {
-                if producer.counter > producer.threshold {
-                    request.add_gen_food(organ);
+        for organ in self.organs.iter_mut() {
+            println!("organ = {:?}", organ);
+            if let OrganismCell::Producer(ref mut producer) = organ.cell {
+                producer.counter += 1;
+                println!("producer = {:?}", producer);
+
+                if producer.counter >= producer.threshold {
+                    request.push(OrganismUpdateRequest::GenFood(
+                        organ.id,
+                        organ.relative_location,
+                    ));
+                    println!("threshold exceeded!");
                 }
             }
         }
@@ -88,16 +80,18 @@ impl Organism {
         request
     }
 
-    pub fn tick(
-        &mut self,
-        _context_response: &WorldUpdateResponse,
-    ) -> Option<OrganismUpdateRequest> {
-        for organ in self.organs.iter_mut() {
-            if let OrganismCell::Producer(ref mut producer) = organ.cell() {
-                producer.counter += 1;
+    pub fn tick(&mut self, update_response: Vec<WorldUpdateResponse>) {
+        for response in update_response {
+            match response {
+                WorldUpdateResponse::ClearCounter(organ_id) => {
+                    if let Some(organ) = self.organs.iter_mut().find(|organ| organ.id == organ_id) {
+                        if let OrganismCell::Producer(ref mut producer) = organ.cell {
+                            println!("clearing counter");
+                            producer.counter = 0;
+                        }
+                    }
+                }
             }
         }
-
-        None
     }
 }
