@@ -7,7 +7,7 @@ pub struct OrganismContextRequest {
 
 /// The world will provide the organism with a response to its context request
 pub struct WorldContextResponse {
-    pub nearest_food: Vec<I64Vec3>,
+    pub nearest_food: Option<I64Vec3>,
 }
 
 /// From the context provided by the world, the organism will provide the world with a request to update the world

@@ -5,6 +5,11 @@ use bevy::prelude::*;
 use bevy::utils::Uuid;
 use std::fmt::Debug;
 
+use super::OrganismContextRequest;
+use super::OrganismUpdateRequest;
+use super::WorldContextResponse;
+use super::WorldUpdateResponse;
+
 #[derive(Clone, Debug, Default)]
 pub struct Organ {
     cell: OrganismCell,
@@ -32,6 +37,7 @@ pub struct Organism {
     id: Uuid,
     organs: Vec<Organ>,
     location: U64Vec3,
+    has_eye: bool,
     food_collected: u64,
 }
 
@@ -40,6 +46,7 @@ impl Organism {
         Organism {
             id: Uuid::new_v4(),
             organs,
+            has_eye: false,
             location,
             food_collected: 0,
         }
@@ -55,5 +62,19 @@ impl Organism {
 
     pub fn organs(&self) -> &[Organ] {
         &self.organs
+    }
+
+    pub fn context_request(&self) -> OrganismContextRequest {
+        OrganismContextRequest {
+            nearest_food: self.has_eye,
+        }
+    }
+
+    pub fn update_request(&self, context_response: WorldContextResponse) -> OrganismUpdateRequest {
+        todo!();
+    }
+
+    pub fn tick(&mut self, context_response: WorldUpdateResponse) {
+        todo!();
     }
 }
