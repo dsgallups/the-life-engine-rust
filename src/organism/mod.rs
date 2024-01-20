@@ -1,7 +1,9 @@
-use crate::life_engine::OrganismCell;
+use crate::OrganismCell;
 use bevy::math::I64Vec3;
 use std::fmt::Debug;
 use uuid::Uuid;
+
+use super::Producer;
 
 #[derive(Clone, Debug, Default)]
 pub struct Organ {
@@ -38,6 +40,16 @@ impl Organism {
             location,
             food_collected: 0,
         }
+    }
+
+    pub fn new_simple(location: I64Vec3) -> Organism {
+        let organs = vec![
+            Organ::new(OrganismCell::Producer(Producer::new()), (-1, 1, 1).into()),
+            Organ::new(OrganismCell::Mouth, (0, 0, 1).into()),
+            Organ::new(OrganismCell::Producer(Producer::new()), (1, -1, 1).into()),
+        ];
+
+        Organism::new(organs, location)
     }
 
     pub fn occupied_locations(&self) -> impl Iterator<Item = I64Vec3> + '_ {

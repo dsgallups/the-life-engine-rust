@@ -1,12 +1,14 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    sync::{Arc, Mutex},
+    thread,
+};
 
-use crate::life_engine::{Organ, Organism, OrganismCell, Producer};
+use crate::Organism;
 use bevy::math::I64Vec3;
 use rustc_hash::FxHashMap;
-mod square;
-pub use square::*;
 
-use super::Cell;
+use super::Organ;
+mod square;
 
 ///holds the map and organisms
 pub struct LEWorld {
@@ -23,6 +25,8 @@ impl Default for LEWorld {
 
 impl LEWorld {
     pub fn new() -> LEWorld {
+        let thread = thread::spawn(move || {});
+
         LEWorld {
             settings: WorldSettings::default(),
             map: FxHashMap::default(),
@@ -30,22 +34,8 @@ impl LEWorld {
         }
     }
 
-    pub fn new_organism(&mut self) {
-        let organs = vec![
-            Organ::new(
-                OrganismCell::Producer(Producer::new(self.settings.producer_threshold)),
-                (-1, 1, 1).into(),
-            ),
-            Organ::new(OrganismCell::Mouth, (0, 0, 1).into()),
-            Organ::new(
-                OrganismCell::Producer(Producer::new(self.settings.producer_threshold)),
-                (1, -1, 1).into(),
-            ),
-        ];
-
-        let first_organism = Organism::new(organs, (0, 0, 1).into());
-
-        self.add_organism(first_organism);
+    pub fn add_simple_organism(&mut self, location: I64Vec3) {
+        self.add_organism(Organism::new_simple(location));
     }
     pub fn add_organism(&mut self, organism: Organism) {
         let organism = Arc::new(Mutex::new(organism));
@@ -56,16 +46,19 @@ impl LEWorld {
     }
 
     pub fn insert_organism_into_map(&mut self, organism: &Arc<Mutex<Organism>>) {
-        let organism_lock = organism.lock().unwrap();
-
-        let square_positions = organism_lock.occupied_locations();
-        for location in organism_lock.occupied_locations() {
-            if self.map.get(&location).is_none() {
-                self.map.insert(location, Some(organism.clone()));
-            } else {
-                panic!("attempted to insert organism into a location that is already occupied!");
-            }
-        }
+        organism
+            .lock()
+            .unwrap()
+            .occupied_locations()
+            .for_each(|location| {
+                if self.map.get(&location).is_none() {
+                    self.map.insert(location, Some(organism.clone()));
+                } else {
+                    panic!(
+                        "attempted to insert organism into a location that is already occupied!"
+                    );
+                }
+            });
     }
 
     pub fn refresh_map(&mut self) {
@@ -139,4 +132,18 @@ impl Default for WorldSettings {
             producer_threshold: 10,
         }
     }
+}
+
+#[test]
+fn create_world() {
+    let mut world = LEWorld::new();
+
+    world.add_simple_organism((0, 0, 1).into());
+}
+
+#[test]
+fn create_world_panic() {
+    let mut world = LEWorld::new();
+    world.add_simple_organism((0, 0, 1).into());
+    world.add_simple_organism((0, 0, 1).into());
 }

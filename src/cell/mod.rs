@@ -65,15 +65,13 @@ impl Drawable for OrganismCell {
 pub struct Producer {
     pub food_produced: u8,
     pub counter: u8,
-    pub threshold: u8,
 }
 
 impl Producer {
-    pub fn new(threshold: u8) -> Producer {
+    pub fn new() -> Producer {
         Producer {
             food_produced: 0,
             counter: 0,
-            threshold,
         }
     }
 }
