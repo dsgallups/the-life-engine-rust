@@ -1,12 +1,8 @@
-use bevy::prelude::*;
-
 use crate::life_engine::{Organ, Organism, OrganismCell, Producer};
 
-use super::{
-    Cell, Drawable, InertCell, OrganismUpdateRequest, WorldContextResponse, WorldUpdateResponse,
-};
+use super::{Cell, InertCell};
 
-#[derive(Resource)]
+///holds the map and organisms
 pub struct LEWorld {
     settings: WorldSettings,
     map: Vec<Vec<Cell>>,
@@ -114,49 +110,7 @@ impl LEWorld {
      *
      * organism.tick(response);
      */
-    pub fn tick(&mut self) {
-        for organism in self.organisms.iter_mut() {
-            let _ctx_req = organism.context_request();
-            let ctx_res = WorldContextResponse {};
-
-            let organism_update_request = organism.update_request(ctx_res);
-
-            let world_update_res = organism_update_request
-                .into_iter()
-                .map(|request| match request {
-                    OrganismUpdateRequest::GenFood(organ_id, position) => {
-                        println!("in here {:?}", request);
-                        let position = (position + (organism.location).as_i64vec3()).as_u64vec3();
-
-                        self.map[position.x as usize][position.y as usize] =
-                            Cell::Inert(InertCell::Food);
-
-                        WorldUpdateResponse::ClearCounter(organ_id)
-                    }
-                })
-                .collect::<Vec<_>>();
-
-            println!("world_update_res = {:?}", world_update_res);
-
-            organism.tick(world_update_res);
-        }
-    }
-
-    pub fn draw(&self, commands: &mut Commands) {
-        let map = &self.map;
-
-        for (x, col) in map.iter().enumerate() {
-            for (y, cell) in col.iter().enumerate() {
-                let color = cell.color();
-
-                commands.spawn(SpriteBundle {
-                    sprite: Sprite { color, ..default() },
-                    transform: Transform::from_translation(Vec3::new(x as f32, y as f32, 0.)),
-                    ..default()
-                });
-            }
-        }
-    }
+    pub fn tick(&mut self) {}
 }
 
 pub struct WorldSettings {

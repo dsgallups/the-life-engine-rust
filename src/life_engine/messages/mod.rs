@@ -1,5 +1,3 @@
-use bevy::{math::I64Vec3, utils::Uuid};
-
 /// The organism will provide the world for the context it needs in order for it to make a request
 pub struct OrganismContextRequest {}
 
