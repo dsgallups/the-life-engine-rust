@@ -7,8 +7,9 @@ use crate::Organism;
 use bevy::math::I64Vec3;
 use rustc_hash::FxHashMap;
 
-use super::Organ;
 mod square;
+//mod threading;
+//use threading::*;
 
 ///holds the map and organisms
 pub struct LEWorld {
@@ -117,7 +118,11 @@ impl LEWorld {
      *
      * organism.tick(response);
      */
-    pub fn tick(&mut self) {}
+    pub fn tick(&mut self) {
+        for organism in self.organisms.iter_mut() {
+            let organism = organism.lock().unwrap();
+        }
+    }
 }
 
 pub struct WorldSettings {
