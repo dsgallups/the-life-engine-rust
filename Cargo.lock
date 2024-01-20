@@ -3189,6 +3189,7 @@ dependencies = [
  "bevy",
  "primitive-types",
  "rand",
+ "rustc-hash",
  "uuid",
 ]
 

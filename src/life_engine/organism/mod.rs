@@ -1,5 +1,5 @@
 use crate::life_engine::OrganismCell;
-use bevy::math::{I64Vec3, U64Vec3};
+use bevy::math::I64Vec3;
 use std::fmt::Debug;
 use uuid::Uuid;
 
@@ -24,13 +24,13 @@ impl Organ {
 pub struct Organism {
     pub id: Uuid,
     pub organs: Vec<Organ>,
-    pub location: U64Vec3,
+    pub location: I64Vec3,
     has_eye: bool,
     food_collected: u64,
 }
 
 impl Organism {
-    pub fn new(organs: Vec<Organ>, location: U64Vec3) -> Organism {
+    pub fn new(organs: Vec<Organ>, location: I64Vec3) -> Organism {
         Organism {
             id: Uuid::new_v4(),
             organs,
@@ -38,5 +38,12 @@ impl Organism {
             location,
             food_collected: 0,
         }
+    }
+
+    pub fn occupied_locations(&self) -> impl Iterator<Item = I64Vec3> + '_ {
+        return self
+            .organs
+            .iter()
+            .map(|organ| self.location + organ.relative_location);
     }
 }

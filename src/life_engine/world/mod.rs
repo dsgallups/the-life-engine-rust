@@ -1,61 +1,75 @@
-use crate::life_engine::{Organ, Organism, OrganismCell, Producer};
+use std::sync::{Arc, Mutex};
 
-use super::{Cell, InertCell};
+use crate::life_engine::{Organ, Organism, OrganismCell, Producer};
+use bevy::math::I64Vec3;
+use rustc_hash::FxHashMap;
+mod square;
+pub use square::*;
+
+use super::Cell;
 
 ///holds the map and organisms
 pub struct LEWorld {
     settings: WorldSettings,
-    map: Vec<Vec<Cell>>,
-    width: usize,
-    height: usize,
-    organisms: Vec<Organism>,
+    map: FxHashMap<I64Vec3, Option<Arc<Mutex<Organism>>>>,
+    organisms: Vec<Arc<Mutex<Organism>>>,
 }
 
 impl Default for LEWorld {
     fn default() -> Self {
-        let default_width = 40;
-        let default_height = 40;
-        LEWorld::new(default_width, default_height)
+        Self::new()
     }
 }
 
 impl LEWorld {
-    pub fn new(width: usize, height: usize) -> LEWorld {
-        let settings = WorldSettings::default();
-        let map = vec![vec![Cell::default(); width]; height];
+    pub fn new() -> LEWorld {
+        LEWorld {
+            settings: WorldSettings::default(),
+            map: FxHashMap::default(),
+            organisms: Vec::new(),
+        }
+    }
 
+    pub fn new_organism(&mut self) {
         let organs = vec![
             Organ::new(
-                OrganismCell::Producer(Producer::new(settings.producer_threshold)),
+                OrganismCell::Producer(Producer::new(self.settings.producer_threshold)),
                 (-1, 1, 1).into(),
             ),
             Organ::new(OrganismCell::Mouth, (0, 0, 1).into()),
             Organ::new(
-                OrganismCell::Producer(Producer::new(settings.producer_threshold)),
+                OrganismCell::Producer(Producer::new(self.settings.producer_threshold)),
                 (1, -1, 1).into(),
             ),
         ];
 
-        let first_organism =
-            Organism::new(organs, ((width / 2) as u64, (height / 2) as u64, 1).into());
-        LEWorld {
-            settings: WorldSettings::default(),
-            map,
-            width,
-            height,
-            organisms: vec![first_organism],
+        let first_organism = Organism::new(organs, (0, 0, 1).into());
+
+        self.add_organism(first_organism);
+    }
+    pub fn add_organism(&mut self, organism: Organism) {
+        let organism = Arc::new(Mutex::new(organism));
+
+        self.insert_organism_into_map(&organism);
+
+        self.organisms.push(organism);
+    }
+
+    pub fn insert_organism_into_map(&mut self, organism: &Arc<Mutex<Organism>>) {
+        let organism_lock = organism.lock().unwrap();
+
+        let square_positions = organism_lock.occupied_locations();
+        for location in organism_lock.occupied_locations() {
+            if self.map.get(&location).is_none() {
+                self.map.insert(location, Some(organism.clone()));
+            } else {
+                panic!("attempted to insert organism into a location that is already occupied!");
+            }
         }
     }
 
-    pub fn width(&self) -> usize {
-        self.width
-    }
-    pub fn height(&self) -> usize {
-        self.height
-    }
-
     pub fn refresh_map(&mut self) {
-        for organism in self.organisms.iter() {
+        /*for organism in self.organisms.iter() {
             let position = &organism.location;
             for organ in organism.organs.iter() {
                 println!("organ_position = {:?}", organ.relative_location);
@@ -65,7 +79,7 @@ impl LEWorld {
                 self.map[position.x as usize][position.y as usize] =
                     Cell::Organism(organ.cell.clone());
             }
-        }
+        }*/
     }
 
     /// world will provide the organism with a request for its context requirements
