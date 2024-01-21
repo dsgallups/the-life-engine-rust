@@ -3,8 +3,14 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::Organism;
-use bevy::math::I64Vec3;
+use crate::{Drawable, Organism};
+use bevy::{
+    ecs::system::{Commands, Resource},
+    math::{I64Vec3, Vec3},
+    prelude::default,
+    sprite::{Sprite, SpriteBundle},
+    transform::components::Transform,
+};
 use rand::Rng;
 use rustc_hash::FxHashMap;
 mod request;
@@ -17,6 +23,7 @@ pub use square::*;
 //use threading::*;
 
 ///holds the map and organisms
+#[derive(Resource)]
 pub struct LEWorld {
     settings: WorldSettings,
     map: Mutex<WorldMap>,
@@ -156,6 +163,7 @@ impl LEWorld {
                         }
                     }
                     WorldRequest::EatFood(location) => {
+                        println!("\n\n\neat food request!!\n\n\n");
                         if let Err(_e) = Self::try_eat(&mut map, &mut organism, location) {
                             //do something
                             continue;
@@ -316,6 +324,23 @@ impl LEWorld {
                     "Could not spawn food after three randomized attempts!"
                 ));
             }
+        }
+    }
+
+    pub fn draw(&self, commands: &mut Commands) {
+        let map = self.map.lock().unwrap();
+
+        for (location, square) in map.iter() {
+            let color = square.color(location);
+            commands.spawn(SpriteBundle {
+                sprite: Sprite { color, ..default() },
+                transform: Transform::from_translation(Vec3::new(
+                    location.x as f32,
+                    location.y as f32,
+                    0.,
+                )),
+                ..default()
+            });
         }
     }
 }

@@ -7,7 +7,14 @@ pub mod cell;
 pub mod organism;
 pub mod world;
 
-use bevy::render::color::Color;
+mod render;
+use render::begin_ticking;
+
+use bevy::{
+    app::{App, FixedUpdate, Update},
+    render::color::Color,
+    time::{Fixed, Time},
+};
 pub use cell::*;
 //pub use messages::*;
 pub use organism::*;
@@ -22,14 +29,5 @@ fn main() {
     let mut world = LEWorld::new();
     world.add_simple_organism((0, 0, 0).into());
 
-    let mut count = 0;
-    loop {
-        thread::sleep(time::Duration::from_millis(1000));
-        let _ = world.tick();
-        println!("TICK {}", count);
-        count += 1;
-        if count == 100 {
-            break;
-        }
-    }
+    begin_ticking(world);
 }

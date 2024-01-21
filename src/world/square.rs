@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use bevy::math::I64Vec3;
+use bevy::{math::I64Vec3, render::color::Color};
 use rustc_hash::FxHashMap;
 
 use crate::Organism;
@@ -12,6 +12,20 @@ use crate::Organism;
 pub enum Square {
     Food,
     Organism(Arc<Mutex<Organism>>),
+}
+impl Square {
+    pub fn color(&self, location: &I64Vec3) -> Color {
+        match self {
+            Square::Food => Color::ORANGE_RED,
+            Square::Organism(organism) => {
+                let organism = organism.lock().unwrap();
+                match organism.get_color_for_cell(location) {
+                    Ok(color) => color,
+                    Err(e) => panic!("error getting square color: {}", e),
+                }
+            }
+        }
+    }
 }
 
 pub struct WorldMap {

@@ -1,6 +1,6 @@
-use crate::{OrganType, WorldMap, WorldRequest, WorldSettings};
+use crate::{Drawable, OrganType, WorldMap, WorldRequest, WorldSettings};
 use anyhow::anyhow;
-use bevy::math::I64Vec3;
+use bevy::{math::I64Vec3, render::color::Color};
 use std::fmt::Debug;
 use uuid::Uuid;
 
@@ -28,6 +28,9 @@ impl Organ {
     }
     pub fn organ_type(&self) -> &OrganType {
         &self.r#type
+    }
+    pub fn color(&self) -> Color {
+        self.r#type.color()
     }
 
     pub fn tick(
@@ -161,6 +164,16 @@ impl Organism {
             }
         }
         requests
+    }
+
+    pub fn get_color_for_cell(&self, location: &I64Vec3) -> Result<Color, anyhow::Error> {
+        let relative_location = *location - self.location;
+        for organ in self.organs.iter() {
+            if organ.relative_location == relative_location {
+                return Ok(organ.color());
+            }
+        }
+        Err(anyhow!("Organ not found!"))
     }
 
     pub fn move_by(&mut self, move_by: I64Vec3) {
