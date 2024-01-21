@@ -11,9 +11,8 @@ mod request;
 use anyhow::anyhow;
 pub use request::*;
 
-use self::square::Square;
-
 mod square;
+pub use square::*;
 //mod threading;
 //use threading::*;
 
@@ -22,6 +21,7 @@ pub struct LEWorld {
     settings: WorldSettings,
     map: Mutex<FxHashMap<I64Vec3, Square>>,
     organisms: Vec<Arc<Mutex<Organism>>>,
+    graveyard: Vec<Arc<Mutex<Organism>>>,
 }
 
 impl Default for LEWorld {
@@ -36,6 +36,7 @@ impl LEWorld {
             settings: WorldSettings::default(),
             map: Mutex::new(FxHashMap::default()),
             organisms: Vec::new(),
+            graveyard: Vec::new(),
         }
     }
 
@@ -124,10 +125,18 @@ impl LEWorld {
      * organism.tick(response);
      */
     pub fn tick(&mut self) -> Result<(), anyhow::Error> {
-        for arc_organism in self.organisms.iter_mut() {
+        let mut dead_list: Vec<usize> = Vec::new();
+        for (index, arc_organism) in self.organisms.iter_mut().enumerate() {
             let mut organism = arc_organism.lock().unwrap();
-            let requests = organism.tick(&self.settings);
             let mut map = self.map.lock().unwrap();
+
+            if map.get(&organism.location).is_none() {
+                //this organism was killed
+                dead_list.push(index);
+                continue;
+            }
+            let requests = organism.tick(&map, &self.settings);
+
             for request in requests {
                 match request {
                     WorldRequest::Food(location) => {
@@ -139,21 +148,44 @@ impl LEWorld {
                         }
                     }
                     WorldRequest::MoveBy(location) => {
-                        if let Err(_e) = Self::try_move_organism(
-                            &mut map,
-                            &arc_organism,
-                            &mut organism,
-                            location,
-                        ) {
+                        if let Err(_e) =
+                            Self::try_move_organism(&mut map, arc_organism, &mut organism, location)
+                        {
                             //do something
                             continue;
                         }
                     }
+                    WorldRequest::EatFood(location) => {
+                        if let Err(_e) = Self::try_eat(&mut map, &mut organism, location) {
+                            //do something
+                            continue;
+                        }
+                    }
+                    WorldRequest::Kill(location) => {
+                        match Self::try_kill(&mut map, &mut organism, location) {
+                            Ok(_dead_organism) => {
+                                //we don't do anything here, because the dead organism is
+                                //no longer in our map, so it's all fine.
+                            }
+                            Err(_e) => {
+                                //do something
+                            }
+                        }
+                    }
+                    WorldRequest::Starve => {
+                        if let Err(_e) = Self::try_starve(&mut map, &organism) {
+                            //do something
+                            continue;
+                        };
+                        dead_list.push(index);
+                    }
                 }
             }
+        }
 
-            //after the request, we should try to feed the organism
-            let result = organism.feed(&map)
+        for index in dead_list {
+            let dead_organism = self.organisms.swap_remove(index);
+            self.graveyard.push(dead_organism);
         }
 
         let map = self.map.lock().unwrap();
@@ -161,6 +193,62 @@ impl LEWorld {
         for square in map.iter() {
             println!("{:?}: {:?}", square.0, square.1);
         }
+
+        Ok(())
+    }
+
+    fn try_starve(
+        map: &mut FxHashMap<I64Vec3, Square>,
+        organism: &Organism,
+    ) -> Result<(), anyhow::Error> {
+        organism.occupied_locations().for_each(|location| {
+            map.remove(&location);
+        });
+        Ok(())
+    }
+
+    fn try_kill(
+        map: &mut FxHashMap<I64Vec3, Square>,
+        organism: &mut Organism,
+        kill: I64Vec3,
+    ) -> Result<Arc<Mutex<Organism>>, anyhow::Error> {
+        let Some(Square::Organism(organism_to_kill)) = map.get(&kill) else {
+            return Err(anyhow!("Cannot kill!"));
+        };
+        let organism_to_kill_arc = Arc::clone(organism_to_kill);
+        let organism_to_kill = organism_to_kill_arc.lock().unwrap();
+
+        //clear all the squares of the organism
+        let mut feed_count = 0;
+        for location in organism_to_kill.occupied_locations() {
+            feed_count += 1;
+            map.remove(&location);
+        }
+
+        organism.feed(feed_count);
+        drop(organism_to_kill);
+
+        Ok(organism_to_kill_arc)
+    }
+
+    fn try_eat(
+        map: &mut FxHashMap<I64Vec3, Square>,
+        organism: &mut Organism,
+        eat: I64Vec3,
+    ) -> Result<(), anyhow::Error> {
+        let mut can_eat = true;
+        match map.get(&eat) {
+            Some(Square::Food) => {}
+            Some(_) => can_eat = false,
+            None => can_eat = false,
+        }
+        if !can_eat {
+            return Err(anyhow!("Cannot eat!"));
+        }
+
+        organism.feed(1);
+
+        map.remove(&eat);
 
         Ok(())
     }
@@ -238,13 +326,18 @@ impl LEWorld {
 pub struct WorldSettings {
     pub food_spawn_radius: i64,
     pub producer_threshold: u8,
+    //every nth tick of an organism being alive, decrease its food consumed by 1
+    pub hunger_tick: u64,
+    pub reproduce_at: u64,
 }
 
 impl Default for WorldSettings {
     fn default() -> Self {
         WorldSettings {
             food_spawn_radius: 1,
+            hunger_tick: 6,
             producer_threshold: 2,
+            reproduce_at: 3,
         }
     }
 }

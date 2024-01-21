@@ -42,7 +42,7 @@ impl Drawable for InertCell {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum OrganType {
     Mouth,
     Producer(Producer),
@@ -71,7 +71,7 @@ impl Drawable for OrganType {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Producer {
     pub food_produced: u8,
     pub counter: u8,

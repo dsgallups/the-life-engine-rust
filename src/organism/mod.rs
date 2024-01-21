@@ -1,12 +1,13 @@
-use crate::{OrganType, WorldRequest, WorldSettings};
+use crate::{OrganType, Square, WorldRequest, WorldSettings};
 use anyhow::anyhow;
 use bevy::math::I64Vec3;
+use rustc_hash::FxHashMap;
 use std::fmt::Debug;
 use uuid::Uuid;
 
 use super::Producer;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Organ {
     pub id: Uuid,
     pub r#type: OrganType,
@@ -46,7 +47,7 @@ impl Organ {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, PartialEq)]
 pub enum OrganismType {
     Mover,
     #[default]
@@ -54,13 +55,15 @@ pub enum OrganismType {
     None,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, PartialEq)]
 pub struct Organism {
     id: Uuid,
     r#type: OrganismType,
     organs: Vec<Organ>,
-    location: I64Vec3,
+    pub location: I64Vec3,
     has_eye: bool,
+    time_alive: u64,
+    belly: u64,
     food_collected: u64,
 }
 
@@ -99,6 +102,8 @@ impl Organism {
             r#type: organism_type,
             has_eye,
             location,
+            time_alive: 0,
+            belly: 4,
             food_collected: 0,
         })
     }
@@ -120,7 +125,21 @@ impl Organism {
             .map(|organ| self.location + organ.relative_location);
     }
 
-    pub fn tick(&mut self, world_settings: &WorldSettings) -> Vec<WorldRequest> {
+    pub fn tick(
+        &mut self,
+        map: &FxHashMap<I64Vec3, Square>,
+        world_settings: &WorldSettings,
+    ) -> Vec<WorldRequest> {
+        self.time_alive += 1;
+
+        if self.time_alive % world_settings.hunger_tick == 0 {
+            self.belly -= 1;
+        }
+
+        if self.belly == 0 {
+            return vec![WorldRequest::Starve];
+        }
+
         let mut requests = Vec::new();
         for organ in self.organs.iter_mut() {
             let Some(event) = organ.tick(world_settings) else {
@@ -137,5 +156,9 @@ impl Organism {
 
     pub fn move_by(&mut self, move_by: I64Vec3) {
         self.location += move_by;
+    }
+
+    pub fn feed(&mut self, amount: u64) {
+        self.belly += amount;
     }
 }

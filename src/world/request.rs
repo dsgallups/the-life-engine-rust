@@ -5,6 +5,7 @@ pub enum WorldRequest {
     /// Asks to move up by this amount
     MoveBy(I64Vec3),
     Food(I64Vec3),
-    Kill(Uuid),
+    Kill(I64Vec3),
     EatFood(I64Vec3),
+    Starve,
 }

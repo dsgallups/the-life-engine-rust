@@ -25,10 +25,10 @@ fn main() {
     let mut count = 0;
     loop {
         thread::sleep(time::Duration::from_millis(1000));
-        world.tick();
+        let _ = world.tick();
         println!("TICK {}", count);
         count += 1;
-        if count == 10 {
+        if count == 100 {
             break;
         }
     }
