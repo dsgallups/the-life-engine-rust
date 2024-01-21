@@ -1,11 +1,13 @@
 use bevy::render::color::Color;
 
+use crate::organism;
+
 use super::Drawable;
 
 #[derive(Clone, Debug)]
 pub enum Cell {
     Inert(InertCell),
-    Organism(OrganismCell),
+    Organism(OrganType),
 }
 impl Default for Cell {
     fn default() -> Self {
@@ -40,40 +42,46 @@ impl Drawable for InertCell {
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum OrganismCell {
+#[derive(Clone, Debug, PartialEq)]
+pub enum OrganType {
     Mouth,
     Producer(Producer),
+    Mover,
+    Killer,
+    Armor,
+    Eye,
 }
 
-impl Default for OrganismCell {
+impl Default for OrganType {
     fn default() -> Self {
-        OrganismCell::Producer(Producer::default())
+        OrganType::Producer(Producer::default())
     }
 }
 
-impl Drawable for OrganismCell {
+impl Drawable for OrganType {
     fn color(&self) -> Color {
         match self {
-            OrganismCell::Producer(_) => Color::GREEN,
-            OrganismCell::Mouth => Color::RED,
+            OrganType::Producer(_) => Color::GREEN,
+            OrganType::Mouth => Color::ORANGE,
+            OrganType::Mover => Color::BLUE,
+            OrganType::Killer => Color::RED,
+            OrganType::Armor => Color::PURPLE,
+            OrganType::Eye => Color::SALMON,
         }
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Producer {
     pub food_produced: u8,
     pub counter: u8,
-    pub threshold: u8,
 }
 
 impl Producer {
-    pub fn new(threshold: u8) -> Producer {
+    pub fn new() -> Producer {
         Producer {
             food_produced: 0,
             counter: 0,
-            threshold,
         }
     }
 }
