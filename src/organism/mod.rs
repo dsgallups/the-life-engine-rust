@@ -1,7 +1,10 @@
 use crate::{Drawable, OrganType, WorldMap, WorldRequest, WorldSettings};
 use anyhow::anyhow;
 use bevy::{math::I64Vec3, render::color::Color};
-use std::fmt::Debug;
+use std::{
+    fmt::Debug,
+    sync::{Arc, Mutex, MutexGuard},
+};
 use uuid::Uuid;
 
 use super::Producer;
@@ -66,11 +69,11 @@ pub enum OrganismType {
     None,
 }
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Default, Debug)]
 pub struct Organism {
     id: Uuid,
     r#type: OrganismType,
-    organs: Vec<Organ>,
+    organs: Vec<Arc<Mutex<Organ>>>,
     pub location: I64Vec3,
     has_eye: bool,
     time_alive: u64,
@@ -109,7 +112,10 @@ impl Organism {
 
         Ok(Organism {
             id: Uuid::new_v4(),
-            organs,
+            organs: organs
+                .into_iter()
+                .map(|o| Arc::new(Mutex::new(o)))
+                .collect(),
             r#type: organism_type,
             has_eye,
             location,
@@ -129,11 +135,17 @@ impl Organism {
         Organism::try_new(organs, location).unwrap()
     }
 
+    pub fn organs(&self) -> impl Iterator<Item = (I64Vec3, &'_ Arc<Mutex<Organ>>)> + '_ {
+        return self.organs.iter().map(|organ| {
+            let organ_inner = organ.lock().unwrap();
+            (self.location + organ_inner.relative_location, organ)
+        });
+    }
     pub fn occupied_locations(&self) -> impl Iterator<Item = I64Vec3> + '_ {
         return self
             .organs
             .iter()
-            .map(|organ| self.location + organ.relative_location);
+            .map(|organ| self.location + organ.lock().unwrap().relative_location);
     }
 
     pub fn tick(&mut self, map: &WorldMap, world_settings: &WorldSettings) -> Vec<WorldRequest> {
@@ -149,6 +161,7 @@ impl Organism {
 
         let mut requests = Vec::new();
         for organ in self.organs.iter_mut() {
+            let mut organ = organ.lock().unwrap();
             let Some(event) = organ.tick(map, self.location, world_settings) else {
                 continue;
             };
@@ -169,6 +182,8 @@ impl Organism {
     pub fn get_color_for_cell(&self, location: &I64Vec3) -> Result<Color, anyhow::Error> {
         let relative_location = *location - self.location;
         for organ in self.organs.iter() {
+            let s = organ.as_ref();
+            let organ = organ.lock().unwrap();
             if organ.relative_location == relative_location {
                 return Ok(organ.color());
             }

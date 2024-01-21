@@ -3,33 +3,13 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use bevy::{math::I64Vec3, render::color::Color};
+use bevy::math::I64Vec3;
 use rustc_hash::FxHashMap;
 
-use crate::Organism;
-
-#[derive(Debug)]
-pub enum Square {
-    Food,
-    Organism(Arc<Mutex<Organism>>),
-}
-impl Square {
-    pub fn color(&self, location: &I64Vec3) -> Color {
-        match self {
-            Square::Food => Color::ORANGE_RED,
-            Square::Organism(organism) => {
-                let organism = organism.lock().unwrap();
-                match organism.get_color_for_cell(location) {
-                    Ok(color) => color,
-                    Err(e) => panic!("error getting square color: {}", e),
-                }
-            }
-        }
-    }
-}
+use crate::{Cell, Organism};
 
 pub struct WorldMap {
-    squares: FxHashMap<I64Vec3, Square>,
+    squares: FxHashMap<I64Vec3, Cell>,
 }
 
 impl Default for WorldMap {
@@ -45,19 +25,19 @@ impl WorldMap {
         }
     }
 
-    pub fn get(&self, location: &I64Vec3) -> Option<&Square> {
+    pub fn get(&self, location: &I64Vec3) -> Option<&Cell> {
         self.squares.get(location)
     }
-    pub fn insert(&mut self, location: I64Vec3, square: Square) -> Option<Square> {
+    pub fn insert(&mut self, location: I64Vec3, square: Cell) -> Option<Cell> {
         self.squares.insert(location, square)
     }
-    pub fn remove(&mut self, location: &I64Vec3) -> Option<Square> {
+    pub fn remove(&mut self, location: &I64Vec3) -> Option<Cell> {
         self.squares.remove(location)
     }
-    pub fn iter(&self) -> Iter<'_, I64Vec3, Square> {
+    pub fn iter(&self) -> Iter<'_, I64Vec3, Cell> {
         self.squares.iter()
     }
-    pub fn entry(&mut self, location: I64Vec3) -> Entry<'_, I64Vec3, Square> {
+    pub fn entry(&mut self, location: I64Vec3) -> Entry<'_, I64Vec3, Cell> {
         self.squares.entry(location)
     }
 
@@ -72,7 +52,7 @@ impl WorldMap {
                 let looking_at = location + I64Vec3::new(i, j, 0);
 
                 match self.squares.get(&looking_at) {
-                    Some(Square::Food) => food_locations.push(looking_at),
+                    Some(Cell::Food) => food_locations.push(looking_at),
                     Some(_) => {}
                     None => {}
                 };
@@ -87,10 +67,10 @@ impl WorldMap {
 }
 
 impl<'a> IntoIterator for &'a WorldMap {
-    type Item = (&'a I64Vec3, &'a Square);
+    type Item = (&'a I64Vec3, &'a Cell);
     type IntoIter = <&'a std::collections::HashMap<
         bevy::math::I64Vec3,
-        Square,
+        Cell,
         std::hash::BuildHasherDefault<rustc_hash::FxHasher>,
     > as std::iter::IntoIterator>::IntoIter;
 
@@ -99,10 +79,10 @@ impl<'a> IntoIterator for &'a WorldMap {
     }
 }
 impl<'a> IntoIterator for &'a mut WorldMap {
-    type Item = (&'a I64Vec3, &'a mut Square);
+    type Item = (&'a I64Vec3, &'a mut Cell);
     type IntoIter = <&'a mut std::collections::HashMap<
         bevy::math::I64Vec3,
-        Square,
+        Cell,
         std::hash::BuildHasherDefault<rustc_hash::FxHasher>,
     > as std::iter::IntoIterator>::IntoIter;
 
@@ -112,10 +92,10 @@ impl<'a> IntoIterator for &'a mut WorldMap {
 }
 
 impl IntoIterator for WorldMap {
-    type Item = (I64Vec3, Square);
+    type Item = (I64Vec3, Cell);
     type IntoIter = <std::collections::HashMap<
         bevy::math::I64Vec3,
-        Square,
+        Cell,
         std::hash::BuildHasherDefault<rustc_hash::FxHasher>,
     > as std::iter::IntoIterator>::IntoIter;
 

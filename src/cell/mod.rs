@@ -1,43 +1,34 @@
+use std::sync::{Arc, Mutex};
+
 use bevy::render::color::Color;
 
-use crate::organism;
+use crate::{Organ, Organism};
 
-use super::Drawable;
-
-#[derive(Clone, Debug)]
-pub enum Cell {
-    Inert(InertCell),
-    Organism(OrganType),
+pub trait Drawable {
+    fn color(&self) -> Color;
 }
-impl Default for Cell {
-    fn default() -> Self {
-        Cell::Inert(InertCell::Empty)
+
+#[derive(Clone, Debug, Default)]
+pub enum Cell {
+    Food,
+    Wall,
+    #[default]
+    Empty,
+    Organism(Arc<Mutex<Organism>>, Arc<Mutex<Organ>>),
+}
+impl Cell {
+    pub fn organism(organism: &Arc<Mutex<Organism>>, organ: &Arc<Mutex<Organ>>) -> Self {
+        Self::Organism(Arc::clone(organism), Arc::clone(organ))
     }
 }
 
 impl Drawable for Cell {
     fn color(&self) -> Color {
         match self {
-            Cell::Inert(inert_cell) => inert_cell.color(),
-            Cell::Organism(organism_cell) => organism_cell.color(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Default)]
-pub enum InertCell {
-    Food,
-    Wall,
-    #[default]
-    Empty,
-}
-
-impl Drawable for InertCell {
-    fn color(&self) -> Color {
-        match self {
-            InertCell::Food => Color::GREEN,
-            InertCell::Wall => Color::BLUE,
-            InertCell::Empty => Color::BLACK,
+            Cell::Food => Color::ORANGE_RED,
+            Cell::Wall => Color::DARK_GRAY,
+            Cell::Empty => Color::BLACK,
+            Cell::Organism(_, organism_cell) => organism_cell.lock().unwrap().color(),
         }
     }
 }

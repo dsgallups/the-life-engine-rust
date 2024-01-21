@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{Drawable, Organism};
+use crate::{Cell, Drawable, Organism};
 use bevy::{
     ecs::system::{Commands, Resource},
     math::{I64Vec3, Vec3},
@@ -12,13 +12,12 @@ use bevy::{
     transform::components::Transform,
 };
 use rand::Rng;
-use rustc_hash::FxHashMap;
 mod request;
 use anyhow::anyhow;
 pub use request::*;
 
-mod square;
-pub use square::*;
+mod map;
+pub use map::*;
 //mod threading;
 //use threading::*;
 
@@ -63,10 +62,10 @@ impl LEWorld {
         organism
             .lock()
             .unwrap()
-            .occupied_locations()
-            .for_each(|location| {
+            .organs()
+            .for_each(|(location, organ)| {
                 if map.get(&location).is_none() {
-                    map.insert(location, Square::Organism(organism.clone()));
+                    map.insert(location, Cell::organism(organism, organ));
                 } else {
                     panic!(
                         "attempted to insert organism into a location that is already occupied!"
@@ -217,7 +216,7 @@ impl LEWorld {
         organism: &mut Organism,
         kill: I64Vec3,
     ) -> Result<Arc<Mutex<Organism>>, anyhow::Error> {
-        let Some(Square::Organism(organism_to_kill)) = map.get(&kill) else {
+        let Some(Cell::Organism(organism_to_kill, _)) = map.get(&kill) else {
             return Err(anyhow!("Cannot kill!"));
         };
         let organism_to_kill_arc = Arc::clone(organism_to_kill);
@@ -243,7 +242,7 @@ impl LEWorld {
     ) -> Result<(), anyhow::Error> {
         let mut can_eat = true;
         match map.get(&eat) {
-            Some(Square::Food) => {}
+            Some(Cell::Food) => {}
             Some(_) => can_eat = false,
             None => can_eat = false,
         }
@@ -279,13 +278,11 @@ impl LEWorld {
             return Err(anyhow!("Can't move organism to new location!"));
         }
 
-        for location in organism_info.occupied_locations() {
-            map.insert(
-                location + move_by,
-                Square::Organism(Arc::clone(arc_organism)),
-            );
+        for (location, organ) in organism_info.organs() {
+            map.insert(location + move_by, Cell::organism(arc_organism, organ));
             map.remove(&location);
         }
+
         organism_info.move_by(move_by);
 
         Ok(())
@@ -315,7 +312,7 @@ impl LEWorld {
                     attempts += 1;
                 }
                 Entry::Vacant(_) => {
-                    map.insert(random_spot, Square::Food);
+                    map.insert(random_spot, Cell::Food);
                     return Ok(());
                 }
             };
@@ -332,7 +329,7 @@ impl LEWorld {
         let map = self.map.lock().unwrap();
 
         for (location, square) in map.iter() {
-            let color = square.color(location);
+            let color = square.color();
             commands.spawn(SpriteBundle {
                 sprite: Sprite { color, ..default() },
                 transform: Transform::from_translation(Vec3::new(
