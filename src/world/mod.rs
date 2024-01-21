@@ -149,9 +149,7 @@ impl LEWorld {
                         dead_list.push(index);
                     }
                     WorldRequest::Reproduce => {
-                        if organism_count < 100 {
-                            new_spawn.push(Arc::clone(arc_organism));
-                        }
+                        new_spawn.push(Arc::clone(arc_organism));
                     }
                 }
             }
