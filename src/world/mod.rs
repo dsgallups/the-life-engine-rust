@@ -12,6 +12,7 @@ use bevy::{
     transform::components::Transform,
 };
 use rand::Rng;
+use rayon::prelude::*;
 mod request;
 use anyhow::anyhow;
 pub use request::*;
@@ -93,79 +94,94 @@ impl LEWorld {
         if self.organisms.is_empty() {
             return Err(anyhow!("everyone died!!!"));
         }
-        let mut dead_list: Vec<usize> = Vec::new();
-        let mut new_spawn: Vec<Arc<Mutex<Organism>>> = Vec::new();
+        let dead_list: Arc<Mutex<Vec<usize>>> = Arc::new(Mutex::new(Vec::new()));
 
-        for (index, arc_organism) in self.organisms.iter_mut().enumerate() {
-            let mut organism = arc_organism.lock().unwrap();
-            let mut map = self.map.lock().unwrap();
+        let new_spawn: Arc<Mutex<Vec<Arc<Mutex<Organism>>>>> = Arc::new(Mutex::new(Vec::new()));
 
-            if dead_list.contains(&index) {
-                continue;
-            }
-            if map.get(&organism.location).is_none() {
-                dead_list.push(index);
-                continue;
-            }
+        (&mut self.organisms)
+            .into_par_iter()
+            .enumerate()
+            .for_each(|(index, arc_organism)| {
+                let dead_list = Arc::clone(&dead_list);
+                let mut dead_list = dead_list.lock().unwrap();
+                let new_spawn = Arc::clone(&new_spawn);
+                let mut organism = arc_organism.lock().unwrap();
+                let mut map = self.map.lock().unwrap();
 
-            let requests = organism.tick(&map, &self.settings);
+                if dead_list.contains(&index) {
+                    return;
+                }
+                if map.get(&organism.location).is_none() {
+                    dead_list.push(index);
+                    return;
+                }
 
-            let mut reverse_direction = false;
+                let requests = organism.tick(&map, &self.settings);
 
-            for request in requests {
-                match request {
-                    WorldRequest::Food(location) => {
-                        if let Err(_e) =
-                            Self::try_gen_food(&mut map, self.settings.food_spawn_radius, location)
-                        {
-                            //do nothing
-                            continue;
-                        }
-                    }
-                    WorldRequest::MoveBy(location) => {
-                        if let Err(e) =
-                            Self::try_move_organism(&mut map, arc_organism, &mut organism, location)
-                        {
-                            println!("error: {}", e);
-                            reverse_direction = true;
-                            //do something
-                            continue;
-                        }
-                    }
-                    WorldRequest::EatFood(location) => {
-                        if let Err(_e) = Self::try_eat(&mut map, &mut organism, location) {
-                            //do something
-                            continue;
-                        }
-                    }
-                    WorldRequest::Kill(location) => {
-                        match map.kill(location) {
-                            Ok(_dead_organism) => {
-                                println!("killed")
-                                //we don't do anything here, because the dead organism is
-                                //no longer in our map, so it's all fine.
+                let mut reverse_direction = false;
+
+                for request in requests {
+                    match request {
+                        WorldRequest::Food(location) => {
+                            if let Err(_e) = Self::try_gen_food(
+                                &mut map,
+                                self.settings.food_spawn_radius,
+                                location,
+                            ) {
+                                //do nothing
+                                continue;
                             }
-                            Err(_e) => {
+                        }
+                        WorldRequest::MoveBy(location) => {
+                            if let Err(e) = Self::try_move_organism(
+                                &mut map,
+                                arc_organism,
+                                &mut organism,
+                                location,
+                            ) {
+                                println!("error: {}", e);
+                                reverse_direction = true;
                                 //do something
+                                continue;
                             }
                         }
-                    }
-                    WorldRequest::Starve => {
-                        if let Err(_e) = Self::try_starve(&mut map, &organism) {
-                            //do something
-                            continue;
-                        };
-                        dead_list.push(index);
-                    }
-                    WorldRequest::Reproduce => {
-                        new_spawn.push(Arc::clone(arc_organism));
+                        WorldRequest::EatFood(location) => {
+                            if let Err(_e) = Self::try_eat(&mut map, &mut organism, location) {
+                                //do something
+                                continue;
+                            }
+                        }
+                        WorldRequest::Kill(location) => {
+                            match map.kill(location) {
+                                Ok(_dead_organism) => {
+                                    println!("killed")
+                                    //we don't do anything here, because the dead organism is
+                                    //no longer in our map, so it's all fine.
+                                }
+                                Err(_e) => {
+                                    //do something
+                                }
+                            }
+                        }
+                        WorldRequest::Starve => {
+                            if let Err(_e) = Self::try_starve(&mut map, &organism) {
+                                //do something
+                                continue;
+                            };
+                            dead_list.push(index);
+                        }
+                        WorldRequest::Reproduce => {
+                            let mut new_spawn = new_spawn.lock().unwrap();
+                            new_spawn.push(Arc::clone(arc_organism));
+                        }
                     }
                 }
-            }
-            if reverse_direction {
-                organism.reverse_direction();
-            }
-        }
+                if reverse_direction {
+                    organism.reverse_direction();
+                }
+            });
+
+        let dead_list = dead_list.lock().unwrap();
         if !dead_list.is_empty() {
             let (mut dead_organisms, alive_organisms) =
                 self.organisms.clone().into_iter().enumerate().fold(
@@ -184,7 +200,9 @@ impl LEWorld {
             self.graveyard.append(&mut dead_organisms);
         }
 
-        for spawn in new_spawn {
+        let new_spawn = new_spawn.lock().unwrap();
+
+        for spawn in new_spawn.iter() {
             let mut organism_to_clone = spawn.lock().unwrap();
             let Some(new_spawn) = organism_to_clone.reproduce() else {
                 continue;
@@ -406,3 +424,83 @@ fn create_world_panic() {
     world.add_simple_organism((0, 0, 0).into());
     world.add_simple_organism((0, 0, 0).into());
 }
+/*
+fn manage_organisms(
+    dead_list: Arc<Vec<usize>>,
+    org_slice: &[Arc<Mutex<Organism>>],
+    map: Mutex<WorldMap>,
+) -> Vec<Arc<Mutex<Organism>>> {
+    for (index, arc_organism) in self.organisms.iter_mut().enumerate() {
+        let mut organism = arc_organism.lock().unwrap();
+        let mut map = self.map.lock().unwrap();
+
+        if dead_list.contains(&index) {
+            continue;
+        }
+        if map.get(&organism.location).is_none() {
+            dead_list.push(index);
+            continue;
+        }
+
+        let requests = organism.tick(&map, &self.settings);
+
+        let mut reverse_direction = false;
+
+        for request in requests {
+            match request {
+                WorldRequest::Food(location) => {
+                    if let Err(_e) =
+                        Self::try_gen_food(&mut map, self.settings.food_spawn_radius, location)
+                    {
+                        //do nothing
+                        continue;
+                    }
+                }
+                WorldRequest::MoveBy(location) => {
+                    if let Err(e) =
+                        Self::try_move_organism(&mut map, arc_organism, &mut organism, location)
+                    {
+                        println!("error: {}", e);
+                        reverse_direction = true;
+                        //do something
+                        continue;
+                    }
+                }
+                WorldRequest::EatFood(location) => {
+                    if let Err(_e) = Self::try_eat(&mut map, &mut organism, location) {
+                        //do something
+                        continue;
+                    }
+                }
+                WorldRequest::Kill(location) => {
+                    match map.kill(location) {
+                        Ok(_dead_organism) => {
+                            println!("killed")
+                            //we don't do anything here, because the dead organism is
+                            //no longer in our map, so it's all fine.
+                        }
+                        Err(_e) => {
+                            //do something
+                        }
+                    }
+                }
+                WorldRequest::Starve => {
+                    if let Err(_e) = Self::try_starve(&mut map, &organism) {
+                        //do something
+                        continue;
+                    };
+                    dead_list.push(index);
+                }
+                WorldRequest::Reproduce => {
+                    new_spawn.push(Arc::clone(arc_organism));
+                }
+            }
+        }
+        if reverse_direction {
+            organism.reverse_direction();
+        }
+    }
+
+    Vec::new()
+}
+*/
