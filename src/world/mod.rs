@@ -135,6 +135,14 @@ impl LEWorld {
         self.paused = false;
     }
 
+    pub fn log_square(&self, position: I64Vec3) {
+        let map = self.map.read().unwrap();
+
+        let square = map.get(&position);
+
+        println!("Square clicked: \n{:#?}", square);
+    }
+
     pub fn log(&self) {
         println!("World Information:");
         println!("Alive Organisms: {:?}", self.organisms);

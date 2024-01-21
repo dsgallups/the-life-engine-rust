@@ -3,6 +3,7 @@ use bevy::app::AppExit;
 use bevy::input::keyboard::KeyboardInput;
 use bevy::input::mouse::MouseButtonInput;
 use bevy::input::ButtonState;
+use bevy::math::{I64Vec2, I64Vec3};
 use bevy::prelude::*;
 use bevy::{
     app::{App, FixedUpdate, Update},
@@ -55,15 +56,15 @@ fn move_camera(
 
     let mouse_down = mouse_button.pressed(MouseButton::Left);
 
-    if mouse_down {
-        let mut pan = Vec2::ZERO;
-        for ev in cursor_moved.read() {
+    let mut pan = Vec2::ZERO;
+    for ev in cursor_moved.read() {
+        if mouse_down {
             pan += ev.delta;
         }
-        if pan.x.abs() <= 30. && pan.y.abs() <= 30. {
-            transform.translation.x += -pan.x * 0.05;
-            transform.translation.y += pan.y * 0.05;
-        }
+    }
+    if mouse_down && pan.x.abs() <= 30. && pan.y.abs() <= 30. {
+        transform.translation.x += -pan.x * 0.05;
+        transform.translation.y += pan.y * 0.05;
     }
 
     let mut scroll = 0.0;
@@ -89,11 +90,13 @@ fn frame_update(mut last_time: Local<f32>, time: Res<Time>) {
 
 fn fixed_update(
     mut commands: Commands,
+    mut camera_query: Query<(&Camera, &GlobalTransform)>,
     mut last_time: Local<f32>,
     mut mouse_button: EventReader<MouseButtonInput>,
     mut key_presses: EventReader<KeyboardInput>,
     mut sprites_query: Query<(Entity, &Sprite)>,
     mut _exit: EventWriter<AppExit>,
+    windows: Query<&Window>,
     time: Res<Time>,
     _fixed_time: Res<Time<Fixed>>,
     mut world: ResMut<LEWorld>,
@@ -107,6 +110,27 @@ fn fixed_update(
             }
         } else if event.button == MouseButton::Middle && event.state == ButtonState::Pressed {
             world.unpause();
+        } else if event.button == MouseButton::Left
+            && event.state == ButtonState::Pressed
+            && world.paused
+        {
+            let (camera, camera_transform) = camera_query.single();
+            //get the location of the cursor
+            let Some(cursor_position) = windows.single().cursor_position() else {
+                return;
+            };
+
+            let Some(cursor_position) =
+                camera.viewport_to_world_2d(camera_transform, cursor_position)
+            else {
+                return;
+            };
+            println!("Cursor position: {}", cursor_position);
+
+            let x = cursor_position.x as i64;
+            let y = cursor_position.y as i64;
+            let flat_position = I64Vec3::new(x, y, 0);
+            world.log_square(flat_position);
         }
     }
     if let Some(event) = key_presses.read().next() {
