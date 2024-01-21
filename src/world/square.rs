@@ -46,6 +46,30 @@ impl WorldMap {
     pub fn entry(&mut self, location: I64Vec3) -> Entry<'_, I64Vec3, Square> {
         self.squares.entry(location)
     }
+
+    pub fn get_food_around(&self, location: I64Vec3) -> Option<Vec<I64Vec3>> {
+        let mut food_locations = Vec::new();
+        for i in -1..=1 {
+            for j in -1..=1 {
+                if i == 0 && j == 0 {
+                    continue;
+                }
+
+                let looking_at = location + I64Vec3::new(i, j, 0);
+
+                match self.squares.get(&looking_at) {
+                    Some(Square::Food) => food_locations.push(looking_at),
+                    Some(_) => {}
+                    None => {}
+                };
+            }
+        }
+        if food_locations.is_empty() {
+            None
+        } else {
+            Some(food_locations)
+        }
+    }
 }
 
 impl<'a> IntoIterator for &'a WorldMap {

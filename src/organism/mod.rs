@@ -1,7 +1,6 @@
-use crate::{OrganType, Square, WorldMap, WorldRequest, WorldSettings};
+use crate::{OrganType, WorldMap, WorldRequest, WorldSettings};
 use anyhow::anyhow;
 use bevy::math::I64Vec3;
-use rustc_hash::FxHashMap;
 use std::fmt::Debug;
 use uuid::Uuid;
 
@@ -15,7 +14,8 @@ pub struct Organ {
 }
 
 pub enum OrganismEvent {
-    Food(I64Vec3),
+    MakeFood(I64Vec3),
+    EatFood(Vec<I64Vec3>),
 }
 
 impl Organ {
@@ -30,18 +30,26 @@ impl Organ {
         &self.r#type
     }
 
-    pub fn tick(&mut self, world_settings: &WorldSettings) -> Option<OrganismEvent> {
+    pub fn tick(
+        &mut self,
+        map: &WorldMap,
+        organism_location: I64Vec3,
+        world_settings: &WorldSettings,
+    ) -> Option<OrganismEvent> {
         match self.r#type {
             OrganType::Producer(ref mut producer) => {
                 producer.counter += 1;
 
                 if producer.counter >= world_settings.producer_threshold {
                     producer.counter = 0;
-                    return Some(OrganismEvent::Food(self.relative_location));
+                    return Some(OrganismEvent::MakeFood(self.relative_location));
                 }
 
                 None
             }
+            OrganType::Mouth => map
+                .get_food_around(self.relative_location + organism_location)
+                .map(OrganismEvent::EatFood),
             _ => None,
         }
     }
@@ -138,12 +146,17 @@ impl Organism {
 
         let mut requests = Vec::new();
         for organ in self.organs.iter_mut() {
-            let Some(event) = organ.tick(world_settings) else {
+            let Some(event) = organ.tick(map, self.location, world_settings) else {
                 continue;
             };
             match event {
-                OrganismEvent::Food(location) => {
+                OrganismEvent::MakeFood(location) => {
                     requests.push(WorldRequest::Food(location + self.location))
+                }
+                OrganismEvent::EatFood(locations) => {
+                    for location in locations {
+                        requests.push(WorldRequest::EatFood(location))
+                    }
                 }
             }
         }
