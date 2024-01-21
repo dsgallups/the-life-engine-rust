@@ -1,4 +1,4 @@
-use crate::{OrganType, Square, WorldRequest, WorldSettings};
+use crate::{OrganType, Square, WorldMap, WorldRequest, WorldSettings};
 use anyhow::anyhow;
 use bevy::math::I64Vec3;
 use rustc_hash::FxHashMap;
@@ -125,11 +125,7 @@ impl Organism {
             .map(|organ| self.location + organ.relative_location);
     }
 
-    pub fn tick(
-        &mut self,
-        map: &FxHashMap<I64Vec3, Square>,
-        world_settings: &WorldSettings,
-    ) -> Vec<WorldRequest> {
+    pub fn tick(&mut self, map: &WorldMap, world_settings: &WorldSettings) -> Vec<WorldRequest> {
         self.time_alive += 1;
 
         if self.time_alive % world_settings.hunger_tick == 0 {

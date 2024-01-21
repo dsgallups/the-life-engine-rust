@@ -19,7 +19,7 @@ pub use square::*;
 ///holds the map and organisms
 pub struct LEWorld {
     settings: WorldSettings,
-    map: Mutex<FxHashMap<I64Vec3, Square>>,
+    map: Mutex<WorldMap>,
     organisms: Vec<Arc<Mutex<Organism>>>,
     graveyard: Vec<Arc<Mutex<Organism>>>,
 }
@@ -34,7 +34,7 @@ impl LEWorld {
     pub fn new() -> LEWorld {
         LEWorld {
             settings: WorldSettings::default(),
-            map: Mutex::new(FxHashMap::default()),
+            map: Mutex::new(WorldMap::new()),
             organisms: Vec::new(),
             graveyard: Vec::new(),
         }
@@ -197,10 +197,7 @@ impl LEWorld {
         Ok(())
     }
 
-    fn try_starve(
-        map: &mut FxHashMap<I64Vec3, Square>,
-        organism: &Organism,
-    ) -> Result<(), anyhow::Error> {
+    fn try_starve(map: &mut WorldMap, organism: &Organism) -> Result<(), anyhow::Error> {
         organism.occupied_locations().for_each(|location| {
             map.remove(&location);
         });
@@ -208,7 +205,7 @@ impl LEWorld {
     }
 
     fn try_kill(
-        map: &mut FxHashMap<I64Vec3, Square>,
+        map: &mut WorldMap,
         organism: &mut Organism,
         kill: I64Vec3,
     ) -> Result<Arc<Mutex<Organism>>, anyhow::Error> {
@@ -232,7 +229,7 @@ impl LEWorld {
     }
 
     fn try_eat(
-        map: &mut FxHashMap<I64Vec3, Square>,
+        map: &mut WorldMap,
         organism: &mut Organism,
         eat: I64Vec3,
     ) -> Result<(), anyhow::Error> {
@@ -256,7 +253,7 @@ impl LEWorld {
     //arc_organism is for cloning
     //organism is used for the locations of the organism's organs.
     fn try_move_organism(
-        map: &mut FxHashMap<I64Vec3, Square>,
+        map: &mut WorldMap,
         arc_organism: &Arc<Mutex<Organism>>,
         organism_info: &mut Organism,
         move_by: I64Vec3,
@@ -287,7 +284,7 @@ impl LEWorld {
     }
 
     fn try_gen_food(
-        map: &mut FxHashMap<I64Vec3, Square>,
+        map: &mut WorldMap,
         radius: i64,
         location: I64Vec3,
     ) -> Result<(), anyhow::Error> {
