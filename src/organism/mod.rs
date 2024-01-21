@@ -1,4 +1,4 @@
-use crate::{Direction, Drawable, OrganType, WorldMap, WorldRequest, WorldSettings};
+use crate::{Direction, Drawable, OrganType, OrganismRequest, WorldSettings};
 use anyhow::anyhow;
 use bevy::{math::I64Vec3, render::color::Color};
 use rand::Rng;
@@ -17,10 +17,11 @@ pub struct Organ {
     pub relative_location: I64Vec3,
 }
 
-pub enum OrganismEvent {
-    MakeFood(I64Vec3),
-    EatFood(Vec<I64Vec3>),
-    Kill(Vec<I64Vec3>),
+/// The vectors in here are relatively positioned to the center of the organism
+pub enum OrganEvent {
+    MakeFoodAround(I64Vec3),
+    EatFoodAround(I64Vec3),
+    KillAround(I64Vec3),
 }
 
 impl Organ {
@@ -51,30 +52,21 @@ impl Organ {
         self.r#type.color()
     }
 
-    pub fn tick(
-        &mut self,
-        map: &WorldMap,
-        organism_location: I64Vec3,
-        world_settings: &WorldSettings,
-    ) -> Option<OrganismEvent> {
+    pub fn tick(&mut self, world_settings: &WorldSettings) -> Option<OrganEvent> {
         match self.r#type {
             OrganType::Producer(ref mut producer) => {
                 producer.counter += 1;
 
                 if producer.counter >= world_settings.producer_threshold {
                     producer.counter = 0;
-                    return Some(OrganismEvent::MakeFood(self.relative_location));
+                    return Some(OrganEvent::MakeFoodAround(self.relative_location));
                 }
 
                 None
             }
-            OrganType::Mouth => map
-                .get_food_around(self.relative_location + organism_location)
-                .map(OrganismEvent::EatFood),
+            OrganType::Mouth => Some(OrganEvent::EatFoodAround(self.relative_location)),
 
-            OrganType::Killer => map
-                .get_organisms_touching(self.relative_location + organism_location)
-                .map(OrganismEvent::Kill),
+            OrganType::Killer => Some(OrganEvent::EatFoodAround(self.relative_location)),
             _ => None,
         }
     }
@@ -228,12 +220,12 @@ impl Organism {
         //change direction
         self.facing.randomize();
     }
-    pub fn tick(&mut self, map: &WorldMap, world_settings: &WorldSettings) -> Vec<WorldRequest> {
+    pub fn tick(&mut self, world_settings: &WorldSettings) -> Vec<OrganismRequest> {
         self.time_alive += 1;
         self.time_since_consumption += 1;
 
         if self.belly == 0 || self.time_alive == 200 {
-            return vec![WorldRequest::Starve];
+            return vec![OrganismRequest::Starve];
         }
 
         if self.time_alive % world_settings.hunger_tick == 0 {
@@ -245,52 +237,40 @@ impl Organism {
 
         let mut requests = Vec::new();
         if self.belly >= self.reproduce_at * self.offspring {
-            requests.push(WorldRequest::Reproduce);
+            requests.push(OrganismRequest::Reproduce);
         }
 
         for organ in self.organs.iter_mut() {
             let mut organ = organ.lock().unwrap();
-            let Some(event) = organ.tick(map, self.location, world_settings) else {
+            let Some(event) = organ.tick(world_settings) else {
                 continue;
             };
             match event {
-                OrganismEvent::MakeFood(location) => {
+                OrganEvent::MakeFoodAround(relative_location) => {
                     if self.r#type == OrganismType::Mover {
                         continue;
                     }
 
-                    requests.push(WorldRequest::Food(location + self.location))
+                    requests.push(OrganismRequest::ProduceFoodAround(
+                        relative_location + self.location,
+                    ))
                 }
-                OrganismEvent::EatFood(locations) => {
-                    for location in locations {
-                        requests.push(WorldRequest::EatFood(location))
-                    }
-                    self.time_since_consumption = 0;
+                OrganEvent::EatFoodAround(relative_location) => {
+                    requests.push(OrganismRequest::EatFoodAround(
+                        self.location + relative_location,
+                    ));
                 }
-                OrganismEvent::Kill(locations) => {
-                    for location in locations {
-                        requests.push(WorldRequest::Kill(location))
-                    }
+                //this isn't right. Kill lgoic should not be done here.
+                OrganEvent::KillAround(relative_location) => {
+                    requests.push(OrganismRequest::KillAround(
+                        self.location + relative_location,
+                    ));
                 }
             }
         }
 
-        let mut requests = requests
-            .into_iter()
-            .filter_map(|request| match request {
-                WorldRequest::Kill(location) => {
-                    if !self.organs().any(|organ_loc| organ_loc.0 == location) {
-                        Some(request)
-                    } else {
-                        None
-                    }
-                }
-                _ => Some(request),
-            })
-            .collect::<Vec<_>>();
-
         if self.r#type == OrganismType::Mover {
-            requests.push(WorldRequest::MoveBy(self.facing.delta()));
+            requests.push(OrganismRequest::MoveBy(self.facing.delta()));
         }
         requests
     }

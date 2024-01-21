@@ -7,6 +7,7 @@ use anyhow::anyhow;
 use bevy::math::I64Vec3;
 use rand::Rng;
 use rustc_hash::FxHashMap;
+use uuid::Uuid;
 
 use crate::{Cell, Organ, OrganType, Organism};
 
@@ -48,35 +49,103 @@ impl WorldMap {
         Self { squares }
     }
 
-    pub fn get(&mut self, location: &I64Vec3) -> Option<&Cell> {
+    pub fn get(&self, location: &I64Vec3) -> Option<&Cell> {
         self.squares.get(location)
     }
 
-    pub fn kill(&mut self, location: I64Vec3) -> Result<(), anyhow::Error> {
-        let Some(Cell::Organism(organism_to_kill, organ_touched)) = self.squares.get(&location)
-        else {
-            return Err(anyhow!("Cannot kill!"));
+    pub fn eat_around(&mut self, location: I64Vec3) -> u64 {
+        let mut consumed = 0;
+        for i in -1..=1 {
+            for j in -1..=1 {
+                if i == 0 && j == 0 {
+                    continue;
+                }
+
+                let looking_at = location + I64Vec3::new(i, j, 0);
+
+                match self.squares.get(&looking_at) {
+                    Some(Cell::Food) => {
+                        self.squares.remove(&looking_at);
+                        consumed += 1;
+                    }
+                    Some(_) => {}
+                    None => {}
+                };
+            }
+        }
+        consumed
+    }
+    pub fn kill_around(&mut self, killer: &Organism, killer_organ_location: I64Vec3) -> Vec<Uuid> {
+        let mut kill_list = Vec::new();
+        for i in -1..=1 {
+            for j in -1..=1 {
+                if i == 0 && j == 0 {
+                    continue;
+                }
+
+                let looking_at = killer_organ_location + I64Vec3::new(i, j, 0);
+
+                match self.squares.get(&looking_at) {
+                    Some(Cell::Organism(organism, organ)) => {
+                        let organism_lock = organism.lock().unwrap();
+                        if killer.id == organism_lock.id {
+                            continue;
+                        }
+                        let organ_lock = organ.lock().unwrap();
+                        if organ_lock.r#type == OrganType::Armor {
+                            continue;
+                        }
+                        kill_list.push(looking_at);
+                    }
+                    Some(_) => {}
+                    None => {}
+                };
+            }
+        }
+
+        let mut dead_organisms: Vec<Uuid> = Vec::with_capacity(kill_list.len());
+
+        for location in kill_list {
+            match self.kill_organism(location) {
+                Ok(dead_id) => dead_organisms.push(dead_id),
+                Err(_e) => {
+                    //most likely the organism is already dead, do nothing
+                }
+            }
+        }
+        dead_organisms
+    }
+
+    pub fn kill_organism(
+        &mut self,
+        dead_organism_location: I64Vec3,
+    ) -> Result<Uuid, anyhow::Error> {
+        let (id, locations_to_remove): (Uuid, Vec<I64Vec3>) = {
+            let Some(Cell::Organism(organism, _organ)) = self.get(&dead_organism_location) else {
+                return Err(anyhow!(
+                    "An organism doesn't exist at this location anymore!"
+                ));
+            };
+
+            let org_lock = organism.lock().unwrap();
+            (org_lock.id, org_lock.occupied_locations().collect())
         };
 
-        {
-            let organ_touched_lock = organ_touched.lock().unwrap();
-            if organ_touched_lock.r#type == OrganType::Armor {
-                return Err(anyhow!(
-                    "Kill event can't occur because the killer touched armor!"
-                ));
-            }
+        for location in locations_to_remove {
+            if let None = self.insert(location, Cell::Food) {
+                panic!("somehow, the organism is not in locations to remove!");
+            };
         }
 
-        let organism_to_kill = Arc::clone(organism_to_kill);
+        Ok(id)
+    }
 
-        let organism_to_kill = organism_to_kill.lock().unwrap();
-
-        for location in organism_to_kill.occupied_locations() {
-            if let Some(cell) = self.squares.get_mut(&location) {
-                *cell = Cell::Food;
-            }
-        }
-        Ok(())
+    pub fn move_organism(
+        &mut self,
+        organism: &mut Organism,
+        move_by: I64Vec3,
+    ) -> Result<(), anyhow::Error> {
+        todo!()
     }
 
     pub fn check(&self, location: &I64Vec3) -> Option<&Cell> {
@@ -157,30 +226,6 @@ impl WorldMap {
             }
         }
         Ok(())
-    }
-
-    pub fn get_food_around(&self, location: I64Vec3) -> Option<Vec<I64Vec3>> {
-        let mut food_locations = Vec::new();
-        for i in -1..=1 {
-            for j in -1..=1 {
-                if i == 0 && j == 0 {
-                    continue;
-                }
-
-                let looking_at = location + I64Vec3::new(i, j, 0);
-
-                match self.squares.get(&looking_at) {
-                    Some(Cell::Food) => food_locations.push(looking_at),
-                    Some(_) => {}
-                    None => {}
-                };
-            }
-        }
-        if food_locations.is_empty() {
-            None
-        } else {
-            Some(food_locations)
-        }
     }
 
     //this doesn't account for the organism of the square that calls this
