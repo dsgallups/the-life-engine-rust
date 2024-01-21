@@ -3,7 +3,7 @@ use bevy::app::AppExit;
 use bevy::input::keyboard::KeyboardInput;
 use bevy::input::mouse::MouseButtonInput;
 use bevy::input::ButtonState;
-use bevy::math::{I64Vec2, I64Vec3};
+use bevy::math::I64Vec2;
 use bevy::prelude::*;
 use bevy::{
     app::{App, FixedUpdate, Update},
@@ -90,7 +90,7 @@ fn frame_update(mut last_time: Local<f32>, time: Res<Time>) {
 
 fn fixed_update(
     mut commands: Commands,
-    mut camera_query: Query<(&Camera, &GlobalTransform)>,
+    camera_query: Query<(&Camera, &GlobalTransform)>,
     mut last_time: Local<f32>,
     mut mouse_button: EventReader<MouseButtonInput>,
     mut key_presses: EventReader<KeyboardInput>,
@@ -129,7 +129,7 @@ fn fixed_update(
 
             let x = cursor_position.x as i64;
             let y = cursor_position.y as i64;
-            let flat_position = I64Vec3::new(x, y, 0);
+            let flat_position = I64Vec2::new(x, y);
             world.log_square(flat_position);
         }
     }

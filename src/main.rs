@@ -14,7 +14,7 @@ pub use world::*;
 
 fn main() {
     let mut world = LEWorld::new();
-    world.add_simple_producer((0, 0, 0).into());
+    world.add_simple_producer((0, 0).into());
 
     //world.add_simple_mover((5, 0, 0).into());
 

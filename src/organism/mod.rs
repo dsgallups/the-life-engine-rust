@@ -1,6 +1,6 @@
 use crate::{Direction, Drawable, OrganType, OrganismRequest, WorldSettings};
 use anyhow::anyhow;
-use bevy::{math::I64Vec3, render::color::Color};
+use bevy::{math::I64Vec2, render::color::Color};
 use rand::Rng;
 use std::{
     fmt::Debug,
@@ -14,18 +14,18 @@ use super::Producer;
 pub struct Organ {
     pub id: Uuid,
     pub r#type: OrganType,
-    pub relative_location: I64Vec3,
+    pub relative_location: I64Vec2,
 }
 
 /// The vectors in here are relatively positioned to the center of the organism
 pub enum OrganEvent {
-    MakeFoodAround(I64Vec3),
-    EatFoodAround(I64Vec3),
-    KillAround(I64Vec3),
+    MakeFoodAround(I64Vec2),
+    EatFoodAround(I64Vec2),
+    KillAround(I64Vec2),
 }
 
 impl Organ {
-    pub fn new(r#type: OrganType, relative_location: I64Vec3) -> Organ {
+    pub fn new(r#type: OrganType, relative_location: I64Vec2) -> Organ {
         Organ {
             id: Uuid::new_v4(),
             r#type,
@@ -33,7 +33,7 @@ impl Organ {
         }
     }
 
-    pub fn new_rand(relative_location: I64Vec3) -> Organ {
+    pub fn new_rand(relative_location: I64Vec2) -> Organ {
         Organ {
             id: Uuid::new_v4(),
             r#type: OrganType::new_rand(),
@@ -97,7 +97,7 @@ impl NewSpawn {
             facing,
         }
     }
-    pub fn into_organism(self, location: I64Vec3) -> Organism {
+    pub fn into_organism(self, location: I64Vec2) -> Organism {
         Organism::try_new(
             self.organs,
             location,
@@ -115,7 +115,7 @@ pub struct Organism {
     pub id: Uuid,
     r#type: OrganismType,
     organs: Vec<Arc<RwLock<Organ>>>,
-    pub location: I64Vec3,
+    pub location: I64Vec2,
     facing: Direction,
     has_eye: bool,
     reproduce_at: u64,
@@ -130,7 +130,7 @@ pub struct Organism {
 impl Organism {
     pub fn try_new(
         organs: Vec<Organ>,
-        location: I64Vec3,
+        location: I64Vec2,
         mutation_rate: f64,
         facing: Direction,
         belly: u64,
@@ -175,20 +175,20 @@ impl Organism {
         })
     }
 
-    pub fn simple_producer(location: I64Vec3) -> Organism {
+    pub fn simple_producer(location: I64Vec2) -> Organism {
         let organs = vec![
-            Organ::new(OrganType::Producer(Producer::new()), (-1, 1, 0).into()),
-            Organ::new(OrganType::Mouth, (0, 0, 0).into()),
-            Organ::new(OrganType::Producer(Producer::new()), (1, -1, 0).into()),
+            Organ::new(OrganType::Producer(Producer::new()), (-1, 1).into()),
+            Organ::new(OrganType::Mouth, (0, 0).into()),
+            Organ::new(OrganType::Producer(Producer::new()), (1, -1).into()),
         ];
 
         Organism::try_new(organs, location, 50., Direction::Right, 4).unwrap()
     }
 
-    pub fn simple_mover(location: I64Vec3) -> Organism {
+    pub fn simple_mover(location: I64Vec2) -> Organism {
         let organs = vec![
-            Organ::new(OrganType::Mouth, (0, 0, 0).into()),
-            Organ::new(OrganType::Mover, (1, -1, 0).into()),
+            Organ::new(OrganType::Mouth, (0, 0).into()),
+            Organ::new(OrganType::Mover, (1, -1).into()),
         ];
 
         Organism::try_new(organs, location, 50., Direction::Right, 4).unwrap()
@@ -203,20 +203,20 @@ impl Organism {
         }
     }
 
-    pub fn arc_organs(&self) -> impl Iterator<Item = (I64Vec3, &Arc<RwLock<Organ>>)> {
+    pub fn arc_organs(&self) -> impl Iterator<Item = (I64Vec2, &Arc<RwLock<Organ>>)> {
         self.organs.iter().map(|organ| {
             let organ_inner = organ.read().unwrap();
             (self.location + organ_inner.relative_location, organ)
         })
     }
 
-    pub fn organs(&self) -> impl Iterator<Item = (I64Vec3, RwLockReadGuard<'_, Organ>)> + '_ {
+    pub fn organs(&self) -> impl Iterator<Item = (I64Vec2, RwLockReadGuard<'_, Organ>)> + '_ {
         self.organs.iter().map(|organ| {
             let organ_inner = organ.read().unwrap();
             (self.location + organ_inner.relative_location, organ_inner)
         })
     }
-    pub fn occupied_locations(&self) -> impl Iterator<Item = I64Vec3> + '_ {
+    pub fn occupied_locations(&self) -> impl Iterator<Item = I64Vec2> + '_ {
         return self
             .organs
             .iter()
@@ -332,7 +332,7 @@ impl Organism {
                         .collect::<Vec<_>>();
 
                     let attach_to = if occupied_locations.is_empty() {
-                        I64Vec3::new(0, 0, 0)
+                        I64Vec2::new(0, 0)
                     } else {
                         //pick a random location in the list
                         *occupied_locations
@@ -358,7 +358,7 @@ impl Organism {
                                 "This spawn couldn't add an organ after 11 randomized attempts!"
                             ));
                         }
-                        if occupied_locations.contains(&(attach_to + I64Vec3::new(x, y, 0))) {
+                        if occupied_locations.contains(&(attach_to + I64Vec2::new(x, y))) {
                             if x == 1 {
                                 if y == -1 {
                                     y = 0
@@ -384,7 +384,7 @@ impl Organism {
                             }
                             count += 1;
                         } else {
-                            new_organs.push(Organ::new_rand(attach_to + I64Vec3::new(x, y, 0)));
+                            new_organs.push(Organ::new_rand(attach_to + I64Vec2::new(x, y)));
                             break;
                         }
                     }
@@ -407,7 +407,7 @@ impl Organism {
         ))
     }
 
-    pub fn get_color_for_cell(&self, location: &I64Vec3) -> Result<Color, anyhow::Error> {
+    pub fn get_color_for_cell(&self, location: &I64Vec2) -> Result<Color, anyhow::Error> {
         let relative_location = *location - self.location;
         for (_, organ) in self.organs() {
             if organ.relative_location == relative_location {
@@ -417,7 +417,7 @@ impl Organism {
         Err(anyhow!("Organ not found!"))
     }
 
-    pub fn move_by(&mut self, move_by: I64Vec3) {
+    pub fn move_by(&mut self, move_by: I64Vec2) {
         self.location += move_by;
     }
 

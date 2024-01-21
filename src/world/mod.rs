@@ -6,7 +6,7 @@ use std::{
 use crate::{Drawable, Organism};
 use bevy::{
     ecs::system::Resource,
-    math::{I64Vec3, Vec3},
+    math::{I64Vec2, Vec3},
     prelude::default,
     sprite::{Sprite, SpriteBundle},
     transform::components::Transform,
@@ -69,10 +69,10 @@ impl LEWorld {
         }
     }
 
-    pub fn add_simple_producer(&mut self, location: I64Vec3) {
+    pub fn add_simple_producer(&mut self, location: I64Vec2) {
         self.add_organism(Organism::simple_producer(location));
     }
-    pub fn add_simple_mover(&mut self, location: I64Vec3) {
+    pub fn add_simple_mover(&mut self, location: I64Vec2) {
         self.add_organism(Organism::simple_mover(location));
     }
     pub fn add_organism(&mut self, organism: Organism) {
@@ -93,7 +93,7 @@ impl LEWorld {
     pub fn reset(&mut self) {
         *self = LEWorld::new();
 
-        self.add_simple_producer((0, 0, 0).into());
+        self.add_simple_producer((0, 0).into());
     }
 
     pub fn decimate(&mut self) {
@@ -135,7 +135,7 @@ impl LEWorld {
         self.paused = false;
     }
 
-    pub fn log_square(&self, position: I64Vec3) {
+    pub fn log_square(&self, position: I64Vec2) {
         let map = self.map.read().unwrap();
 
         let square = map.get(&position);
@@ -345,12 +345,12 @@ pub enum Direction {
 }
 
 impl Direction {
-    pub fn delta(&self) -> I64Vec3 {
+    pub fn delta(&self) -> I64Vec2 {
         match self {
-            Direction::Up => I64Vec3::new(1, 0, 0),
-            Direction::Down => I64Vec3::new(-1, 0, 0),
-            Direction::Left => I64Vec3::new(0, -1, 0),
-            Direction::Right => I64Vec3::new(0, 1, 0),
+            Direction::Up => I64Vec2::new(1, 0),
+            Direction::Down => I64Vec2::new(-1, 0),
+            Direction::Left => I64Vec2::new(0, -1),
+            Direction::Right => I64Vec2::new(0, 1),
         }
     }
     pub fn reverse(&mut self) {
@@ -378,12 +378,12 @@ impl Direction {
 fn create_world() {
     let mut world = LEWorld::new();
 
-    world.add_simple_producer((0, 0, 0).into());
+    world.add_simple_producer((0, 0).into());
 }
 
 #[test]
 fn create_world_panic() {
     let mut world = LEWorld::new();
-    world.add_simple_producer((0, 0, 0).into());
-    world.add_simple_producer((0, 0, 0).into());
+    world.add_simple_producer((0, 0).into());
+    world.add_simple_producer((0, 0).into());
 }

@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::anyhow;
-use bevy::math::I64Vec3;
+use bevy::math::I64Vec2;
 use rand::Rng;
 use rustc_hash::FxHashMap;
 use uuid::Uuid;
@@ -13,7 +13,7 @@ use crate::{Cell, OrganType, Organism};
 
 #[derive(Debug)]
 pub struct WorldMap {
-    squares: FxHashMap<I64Vec3, Cell>,
+    squares: FxHashMap<I64Vec2, Cell>,
 }
 
 impl Default for WorldMap {
@@ -36,13 +36,13 @@ impl WorldMap {
 
         for i in -half..half {
             for j in -2..=2 {
-                let location = I64Vec3::new(i, -half + j, 0);
+                let location = I64Vec2::new(i, -half + j);
                 squares.insert(location, Cell::Wall);
-                let location = I64Vec3::new(i, half + j, 0);
+                let location = I64Vec2::new(i, half + j);
                 squares.insert(location, Cell::Wall);
-                let location = I64Vec3::new(-half + j, i, 0);
+                let location = I64Vec2::new(-half + j, i);
                 squares.insert(location, Cell::Wall);
-                let location = I64Vec3::new(half + j, i, 0);
+                let location = I64Vec2::new(half + j, i);
                 squares.insert(location, Cell::Wall);
             }
         }
@@ -50,14 +50,14 @@ impl WorldMap {
         Self { squares }
     }
 
-    pub fn get(&self, location: &I64Vec3) -> Option<&Cell> {
+    pub fn get(&self, location: &I64Vec2) -> Option<&Cell> {
         self.squares.get(location)
     }
 
     pub fn feed_organism(
         &mut self,
         organism: &Arc<RwLock<Organism>>,
-        location: I64Vec3,
+        location: I64Vec2,
     ) -> Result<(), anyhow::Error> {
         let mut consumed = 0;
         for i in -1..=1 {
@@ -66,7 +66,7 @@ impl WorldMap {
                     continue;
                 }
 
-                let looking_at = location + I64Vec3::new(i, j, 0);
+                let looking_at = location + I64Vec2::new(i, j);
 
                 match self.squares.get(&looking_at) {
                     Some(Cell::Food) => {
@@ -87,7 +87,7 @@ impl WorldMap {
     pub fn kill_around(
         &mut self,
         killer: &Arc<RwLock<Organism>>,
-        killer_organ_location: I64Vec3,
+        killer_organ_location: I64Vec2,
     ) -> Vec<Uuid> {
         let mut kill_list = Vec::new();
         for i in -1..=1 {
@@ -96,7 +96,7 @@ impl WorldMap {
                     continue;
                 }
 
-                let looking_at = killer_organ_location + I64Vec3::new(i, j, 0);
+                let looking_at = killer_organ_location + I64Vec2::new(i, j);
 
                 match self.squares.get(&looking_at) {
                     Some(Cell::Organism(organism, organ)) => {
@@ -146,7 +146,7 @@ impl WorldMap {
             ));
         };
 
-        let locations_to_remove: Vec<I64Vec3> =
+        let locations_to_remove: Vec<I64Vec2> =
             { organism.read().unwrap().occupied_locations().collect() };
 
         for location in locations_to_remove {
@@ -165,7 +165,7 @@ impl WorldMap {
     pub fn move_organism(
         &mut self,
         organism: &Arc<RwLock<Organism>>,
-        move_by: I64Vec3,
+        move_by: I64Vec2,
     ) -> Result<(), anyhow::Error> {
         let can_move = {
             let mut can_move = true;
@@ -202,7 +202,7 @@ impl WorldMap {
 
     pub fn produce_food_around(
         &mut self,
-        location: I64Vec3,
+        location: I64Vec2,
         radius: i64,
     ) -> Result<(), anyhow::Error> {
         let mut rng = rand::thread_rng();
@@ -217,7 +217,7 @@ impl WorldMap {
             }
         }
 
-        let random_spot = location + I64Vec3::new(x, y, 0);
+        let random_spot = location + I64Vec2::new(x, y);
 
         let mut attempts = 0;
         loop {
@@ -257,10 +257,10 @@ impl WorldMap {
         let basis = parent.location;
 
         let mut attempt_count = 0;
-        let baby_location: I64Vec3 = loop {
+        let baby_location: I64Vec2 = loop {
             let x = rng.gen_range(-(spawn_radius as i64)..=spawn_radius as i64);
             let y = rng.gen_range(-(spawn_radius as i64)..=spawn_radius as i64);
-            let new_basis = basis + I64Vec3::new(x, y, 0);
+            let new_basis = basis + I64Vec2::new(x, y);
 
             let mut valid_basis = true;
 
@@ -291,18 +291,18 @@ impl WorldMap {
         Ok(new_organism)
     }
 
-    pub fn check(&self, location: &I64Vec3) -> Option<&Cell> {
+    pub fn check(&self, location: &I64Vec2) -> Option<&Cell> {
         self.squares.get(location)
     }
 
-    pub fn remove(&mut self, location: I64Vec3) -> Option<Cell> {
+    pub fn remove(&mut self, location: I64Vec2) -> Option<Cell> {
         self.squares.remove(&location)
     }
-    pub fn insert(&mut self, location: I64Vec3, block: Cell) -> Option<Cell> {
+    pub fn insert(&mut self, location: I64Vec2, block: Cell) -> Option<Cell> {
         self.squares.insert(location, block)
     }
 
-    pub fn iter(&self) -> Iter<'_, I64Vec3, Cell> {
+    pub fn iter(&self) -> Iter<'_, I64Vec2, Cell> {
         self.squares.iter()
     }
 
@@ -338,7 +338,7 @@ impl WorldMap {
     }
 
     //this doesn't account for the organism of the square that calls this
-    pub fn get_organisms_touching(&self, location: I64Vec3) -> Option<Vec<I64Vec3>> {
+    pub fn get_organisms_touching(&self, location: I64Vec2) -> Option<Vec<I64Vec2>> {
         let mut touching_organisms = Vec::new();
         for i in -1..=1 {
             for j in -1..=1 {
@@ -346,7 +346,7 @@ impl WorldMap {
                     continue;
                 }
 
-                let check = location + I64Vec3::new(i, j, 0);
+                let check = location + I64Vec2::new(i, j);
 
                 match self.squares.get(&check) {
                     Some(Cell::Organism(_organism, _organ)) => {
@@ -367,9 +367,9 @@ impl WorldMap {
 }
 
 impl<'a> IntoIterator for &'a WorldMap {
-    type Item = (&'a I64Vec3, &'a Cell);
+    type Item = (&'a I64Vec2, &'a Cell);
     type IntoIter = <&'a std::collections::HashMap<
-        bevy::math::I64Vec3,
+        bevy::math::I64Vec2,
         Cell,
         std::hash::BuildHasherDefault<rustc_hash::FxHasher>,
     > as std::iter::IntoIterator>::IntoIter;
@@ -379,9 +379,9 @@ impl<'a> IntoIterator for &'a WorldMap {
     }
 }
 impl<'a> IntoIterator for &'a mut WorldMap {
-    type Item = (&'a I64Vec3, &'a mut Cell);
+    type Item = (&'a I64Vec2, &'a mut Cell);
     type IntoIter = <&'a mut std::collections::HashMap<
-        bevy::math::I64Vec3,
+        bevy::math::I64Vec2,
         Cell,
         std::hash::BuildHasherDefault<rustc_hash::FxHasher>,
     > as std::iter::IntoIterator>::IntoIter;
@@ -392,9 +392,9 @@ impl<'a> IntoIterator for &'a mut WorldMap {
 }
 
 impl IntoIterator for WorldMap {
-    type Item = (I64Vec3, Cell);
+    type Item = (I64Vec2, Cell);
     type IntoIter = <std::collections::HashMap<
-        bevy::math::I64Vec3,
+        bevy::math::I64Vec2,
         Cell,
         std::hash::BuildHasherDefault<rustc_hash::FxHasher>,
     > as std::iter::IntoIterator>::IntoIter;
