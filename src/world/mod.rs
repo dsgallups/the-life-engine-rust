@@ -45,6 +45,16 @@ impl LEWorld {
         }
     }
 
+    pub fn new_walled(length: u64) -> LEWorld {
+        LEWorld {
+            settings: WorldSettings::default(),
+            map: Mutex::new(WorldMap::new_walled(length)),
+            lifetime: 0,
+            organisms: Vec::new(),
+            graveyard: Vec::new(),
+        }
+    }
+
     pub fn add_simple_organism(&mut self, location: I64Vec3) {
         self.add_organism(Organism::new_simple(location));
     }
@@ -64,17 +74,18 @@ impl LEWorld {
     }
 
     pub fn tick(&mut self) -> Result<(), anyhow::Error> {
-        println!(
+        /*println!(
             "organism count: alive - {}, dead - {}",
             self.organisms.len(),
             self.graveyard.len()
-        );
+        );*/
         self.lifetime += 1;
         if self.organisms.is_empty() {
             return Err(anyhow!("everyone died!!!"));
         }
         let mut dead_list: Vec<usize> = Vec::new();
         let mut new_spawn: Vec<Arc<Mutex<Organism>>> = Vec::new();
+        let organism_count = self.organisms.len();
         for (index, arc_organism) in self.organisms.iter_mut().enumerate() {
             let mut organism = arc_organism.lock().unwrap();
             let mut map = self.map.lock().unwrap();
@@ -89,6 +100,8 @@ impl LEWorld {
 
             let requests = organism.tick(&map, &self.settings);
 
+            let mut reverse_direction = false;
+
             for request in requests {
                 match request {
                     WorldRequest::Food(location) => {
@@ -100,9 +113,11 @@ impl LEWorld {
                         }
                     }
                     WorldRequest::MoveBy(location) => {
-                        if let Err(_e) =
+                        if let Err(e) =
                             Self::try_move_organism(&mut map, arc_organism, &mut organism, location)
                         {
+                            println!("error: {}", e);
+                            reverse_direction = true;
                             //do something
                             continue;
                         }
@@ -132,9 +147,14 @@ impl LEWorld {
                         dead_list.push(index);
                     }
                     WorldRequest::Reproduce => {
-                        new_spawn.push(Arc::clone(arc_organism));
+                        if organism_count < 100 {
+                            new_spawn.push(Arc::clone(arc_organism));
+                        }
                     }
                 }
+            }
+            if reverse_direction {
+                organism.reverse_direction();
             }
         }
         if !dead_list.is_empty() {
@@ -223,14 +243,16 @@ impl LEWorld {
         move_by: I64Vec3,
     ) -> Result<(), anyhow::Error> {
         //validate that the locations it wants to move to are unoccupied
+        println!("trying to move organism");
         let mut can_move = true;
         for location in organism_info.occupied_locations() {
+            #[allow(clippy::single_match)]
             match map.get(location + move_by) {
-                Cell::Empty => {}
-                _ => {
+                Cell::Wall => {
                     can_move = false;
                     break;
                 }
+                _ => {}
             }
         }
 
@@ -312,7 +334,6 @@ pub struct WorldSettings {
     pub producer_threshold: u8,
     //every nth tick of an organism being alive, decrease its food consumed by 1
     pub hunger_tick: u64,
-    pub reproduce_at: u64,
     pub spawn_radius: u64,
 }
 
@@ -322,8 +343,46 @@ impl Default for WorldSettings {
             food_spawn_radius: 1,
             hunger_tick: 6,
             producer_threshold: 2,
-            reproduce_at: 5,
             spawn_radius: 15,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Default)]
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    #[default]
+    Right,
+}
+
+impl Direction {
+    pub fn delta(&self) -> I64Vec3 {
+        match self {
+            Direction::Up => I64Vec3::new(1, 0, 0),
+            Direction::Down => I64Vec3::new(-1, 0, 0),
+            Direction::Left => I64Vec3::new(0, -1, 0),
+            Direction::Right => I64Vec3::new(0, 1, 0),
+        }
+    }
+    pub fn reverse(&mut self) {
+        match self {
+            Direction::Up => *self = Direction::Down,
+            Direction::Down => *self = Direction::Up,
+            Direction::Left => *self = Direction::Left,
+            Direction::Right => *self = Direction::Right,
+        }
+    }
+    pub fn randomize(&mut self) {
+        let mut rng = rand::thread_rng();
+
+        match rng.gen_range(0..=3) {
+            0 => *self = Direction::Down,
+            1 => *self = Direction::Up,
+            2 => *self = Direction::Left,
+            3 => *self = Direction::Right,
+            _ => unreachable!(),
         }
     }
 }

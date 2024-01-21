@@ -1,4 +1,4 @@
-use crate::{Drawable, OrganType, WorldMap, WorldRequest, WorldSettings};
+use crate::{Direction, Drawable, OrganType, WorldMap, WorldRequest, WorldSettings};
 use anyhow::anyhow;
 use bevy::{math::I64Vec3, render::color::Color};
 use rand::Rng;
@@ -88,18 +88,27 @@ pub struct NewSpawn {
     pub organs: Vec<Organ>,
     mutation_rate: f64,
     belly: u64,
+    facing: Direction,
 }
 
 impl NewSpawn {
-    pub fn new(organs: Vec<Organ>, mutation_rate: f64, belly: u64) -> Self {
+    pub fn new(organs: Vec<Organ>, mutation_rate: f64, belly: u64, facing: Direction) -> Self {
         Self {
             organs,
             mutation_rate,
             belly,
+            facing,
         }
     }
     pub fn into_organism(self, location: I64Vec3) -> Organism {
-        Organism::try_new(self.organs, location, self.mutation_rate, self.belly).unwrap()
+        Organism::try_new(
+            self.organs,
+            location,
+            self.mutation_rate,
+            self.facing,
+            self.belly,
+        )
+        .unwrap()
     }
 }
 
@@ -110,7 +119,9 @@ pub struct Organism {
     r#type: OrganismType,
     organs: Vec<Arc<Mutex<Organ>>>,
     pub location: I64Vec3,
+    facing: Direction,
     has_eye: bool,
+    reproduce_at: u64,
     time_alive: u64,
     belly: u64,
     food_collected: u64,
@@ -122,6 +133,7 @@ impl Organism {
         organs: Vec<Organ>,
         location: I64Vec3,
         mutation_rate: f64,
+        facing: Direction,
         belly: u64,
     ) -> Result<Self, anyhow::Error> {
         let mut organism_type = OrganismType::None;
@@ -129,18 +141,20 @@ impl Organism {
         for organ in organs.iter() {
             match organ.organ_type() {
                 OrganType::Producer(_) => {
-                    organism_type = OrganismType::Producer;
-                    break;
+                    if organism_type == OrganismType::None {
+                        organism_type = OrganismType::Producer;
+                    }
                 }
                 OrganType::Mover => {
-                    if organism_type == OrganismType::None {
-                        organism_type = OrganismType::Mover
-                    }
+                    organism_type = OrganismType::Mover;
+                    break;
                 }
                 OrganType::Eye => has_eye = true,
                 _ => {}
             }
         }
+
+        let reproduce_at = organs.len() * 2;
 
         Ok(Organism {
             id: Uuid::new_v4(),
@@ -150,7 +164,9 @@ impl Organism {
                 .collect(),
             r#type: organism_type,
             has_eye,
+            reproduce_at: reproduce_at.try_into().unwrap(),
             location,
+            facing,
             time_alive: 0,
             belly,
             food_collected: 0,
@@ -165,7 +181,16 @@ impl Organism {
             Organ::new(OrganType::Producer(Producer::new()), (1, -1, 0).into()),
         ];
 
-        Organism::try_new(organs, location, 50., 4).unwrap()
+        Organism::try_new(organs, location, 50., Direction::Right, 4).unwrap()
+    }
+
+    pub fn reverse_direction(&mut self) {
+        let mut rng = rand::thread_rng();
+        if rng.gen_range(0..10) == 9 {
+            self.facing.randomize();
+        } else {
+            self.facing.reverse();
+        }
     }
 
     pub fn organs(&self) -> impl Iterator<Item = (I64Vec3, &'_ Arc<Mutex<Organ>>)> + '_ {
@@ -188,12 +213,12 @@ impl Organism {
             self.belly -= 1;
         }
 
-        if self.belly == 0 {
+        if self.belly == 0 || self.time_alive == 100 {
             return vec![WorldRequest::Starve];
         }
 
         let mut requests = Vec::new();
-        if self.belly >= world_settings.reproduce_at {
+        if self.belly >= self.reproduce_at {
             requests.push(WorldRequest::Reproduce);
         }
         for organ in self.organs.iter_mut() {
@@ -203,6 +228,10 @@ impl Organism {
             };
             match event {
                 OrganismEvent::MakeFood(location) => {
+                    if self.r#type == OrganismType::Mover {
+                        continue;
+                    }
+
                     requests.push(WorldRequest::Food(location + self.location))
                 }
                 OrganismEvent::EatFood(locations) => {
@@ -210,6 +239,9 @@ impl Organism {
                         requests.push(WorldRequest::EatFood(location))
                     }
                 }
+            }
+            if self.r#type == OrganismType::Mover {
+                requests.push(WorldRequest::MoveBy(self.facing.delta()));
             }
         }
         requests
@@ -242,6 +274,14 @@ impl Organism {
                 break;
             }
         }
+
+        let organism_direction = match rng.gen_range(0..=3) {
+            0 => Direction::Up,
+            1 => Direction::Right,
+            2 => Direction::Down,
+            3 => Direction::Left,
+            _ => panic!(),
+        };
 
         for mutation in mutation_list {
             match mutation {
@@ -328,6 +368,7 @@ impl Organism {
             new_organs,
             new_organism_mutability,
             self.belly,
+            organism_direction,
         ))
     }
 

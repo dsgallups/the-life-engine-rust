@@ -13,7 +13,7 @@ pub use world::*;
 
 fn main() {
     //println!("ozymandias");
-    let mut world = LEWorld::new();
+    let mut world = LEWorld::new_walled(100);
     world.add_simple_organism((0, 0, 0).into());
 
     begin_ticking(world);

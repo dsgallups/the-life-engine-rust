@@ -27,6 +27,27 @@ impl WorldMap {
         }
     }
 
+    pub fn new_walled(length: u64) -> Self {
+        let mut squares = FxHashMap::default();
+
+        let half = (length / 2) as i64;
+
+        for i in -half..half {
+            for j in -2..=2 {
+                let location = I64Vec3::new(i, -half + j, 0);
+                squares.insert(location, Cell::Wall);
+                let location = I64Vec3::new(i, half + j, 0);
+                squares.insert(location, Cell::Wall);
+                let location = I64Vec3::new(-half + j, i, 0);
+                squares.insert(location, Cell::Wall);
+                let location = I64Vec3::new(half + j, i, 0);
+                squares.insert(location, Cell::Wall);
+            }
+        }
+
+        Self { squares }
+    }
+
     pub fn get(&mut self, location: I64Vec3) -> &mut Cell {
         self.squares.entry(location).or_default()
     }
