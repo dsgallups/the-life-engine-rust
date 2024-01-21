@@ -79,6 +79,9 @@ impl LEWorld {
             let mut organism = arc_organism.lock().unwrap();
             let mut map = self.map.lock().unwrap();
 
+            if dead_list.contains(&index) {
+                continue;
+            }
             if let Cell::Empty = map.get(organism.location) {
                 dead_list.push(index);
                 continue;
@@ -111,7 +114,7 @@ impl LEWorld {
                         }
                     }
                     WorldRequest::Kill(location) => {
-                        match Self::try_kill(&mut map, &mut organism, location) {
+                        match Self::try_kill(&mut map, location) {
                             Ok(_dead_organism) => {
                                 //we don't do anything here, because the dead organism is
                                 //no longer in our map, so it's all fine.
@@ -182,32 +185,12 @@ impl LEWorld {
     fn try_starve(map: &mut WorldMap, organism: &Organism) -> Result<(), anyhow::Error> {
         organism
             .occupied_locations()
-            .for_each(|location| map.clear(location));
+            .for_each(|location| map.replace(location, Cell::Food));
         Ok(())
     }
 
-    fn try_kill(
-        map: &mut WorldMap,
-        organism: &mut Organism,
-        kill: I64Vec3,
-    ) -> Result<Arc<Mutex<Organism>>, anyhow::Error> {
-        let Cell::Organism(organism_to_kill, _) = map.get(kill) else {
-            return Err(anyhow!("Cannot kill!"));
-        };
-        let organism_to_kill_arc = Arc::clone(organism_to_kill);
-        let organism_to_kill = organism_to_kill_arc.lock().unwrap();
-
-        //clear all the squares of the organism
-        let mut feed_count = 0;
-        for location in organism_to_kill.occupied_locations() {
-            feed_count += 1;
-            map.clear(location);
-        }
-
-        organism.feed(feed_count);
-        drop(organism_to_kill);
-
-        Ok(organism_to_kill_arc)
+    fn try_kill(map: &mut WorldMap, kill: I64Vec3) -> Result<(), anyhow::Error> {
+        map.kill(kill)
     }
 
     fn try_eat(
@@ -340,7 +323,7 @@ impl Default for WorldSettings {
             hunger_tick: 6,
             producer_threshold: 2,
             reproduce_at: 5,
-            spawn_radius: 10,
+            spawn_radius: 15,
         }
     }
 }

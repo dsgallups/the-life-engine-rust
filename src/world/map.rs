@@ -31,6 +31,22 @@ impl WorldMap {
         self.squares.entry(location).or_default()
     }
 
+    pub fn kill(&mut self, location: I64Vec3) -> Result<(), anyhow::Error> {
+        let Some(Cell::Organism(organism_to_kill, _)) = self.squares.get(&location) else {
+            return Err(anyhow!("Cannot kill!"));
+        };
+
+        let organism_to_kill = Arc::clone(organism_to_kill);
+
+        let organism_to_kill = organism_to_kill.lock().unwrap();
+
+        for location in organism_to_kill.occupied_locations() {
+            let res = self.squares.entry(location).or_default();
+            *res = Cell::Food;
+        }
+        Ok(())
+    }
+
     pub fn check(&self, location: &I64Vec3) -> Option<&Cell> {
         self.squares.get(location)
     }
@@ -38,6 +54,10 @@ impl WorldMap {
     pub fn clear(&mut self, location: I64Vec3) {
         let res = self.squares.entry(location).or_default();
         *res = Cell::Empty;
+    }
+    pub fn replace(&mut self, location: I64Vec3, block: Cell) {
+        let res = self.squares.entry(location).or_default();
+        *res = block;
     }
     pub fn iter(&self) -> Iter<'_, I64Vec3, Cell> {
         self.squares.iter()
