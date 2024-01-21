@@ -1,10 +1,6 @@
 use crate::{Drawable, OrganType, WorldMap, WorldRequest, WorldSettings};
 use anyhow::anyhow;
-use bevy::{
-    ecs::world::{self, Mut},
-    math::I64Vec3,
-    render::color::Color,
-};
+use bevy::{math::I64Vec3, render::color::Color};
 use rand::Rng;
 use std::{
     fmt::Debug,

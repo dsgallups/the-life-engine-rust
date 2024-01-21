@@ -125,6 +125,7 @@ impl LEWorld {
             let mut map = self.map.lock().unwrap();
 
             if let Cell::Empty = map.get(organism.location) {
+                println!("cell died: {:?}", organism.location);
                 dead_list.push(index);
                 continue;
             }
@@ -181,10 +182,21 @@ impl LEWorld {
             }
         }
 
-        for index in dead_list {
-            let dead_organism = self.organisms.swap_remove(index);
-            self.graveyard.push(dead_organism);
-        }
+        let og_organisms = self.organisms.clone();
+        let (mut dead_organisms, alive_organisms) = og_organisms.into_iter().enumerate().fold(
+            (Vec::new(), Vec::new()),
+            |mut acc, (index, org)| {
+                if dead_list.contains(&index) {
+                    acc.0.push(org)
+                } else {
+                    acc.1.push(org)
+                }
+                acc
+            },
+        );
+        self.organisms = alive_organisms;
+
+        self.graveyard.append(&mut dead_organisms);
 
         for spawn in new_spawn {
             let mut organism_to_clone = spawn.lock().unwrap();

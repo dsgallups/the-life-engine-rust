@@ -8,7 +8,7 @@ use bevy::math::I64Vec3;
 use rand::Rng;
 use rustc_hash::FxHashMap;
 
-use crate::{Cell, NewSpawn, Organ, Organism};
+use crate::{Cell, Organ, Organism};
 
 pub struct WorldMap {
     squares: FxHashMap<I64Vec3, Cell>,
@@ -60,7 +60,7 @@ impl WorldMap {
             let mut valid_basis = true;
 
             for organ in organs {
-                match self.check(&(organ.relative_location + new_basis)) {
+                match self.squares.get(&(organ.relative_location + new_basis)) {
                     None => {}
                     Some(Cell::Empty) => {}
                     _ => {
@@ -81,7 +81,7 @@ impl WorldMap {
         let org_lock = organism.lock().unwrap();
 
         //check to see if any of the locations are occupied
-        for (location, organ) in org_lock.organs() {
+        for (location, _organ) in org_lock.organs() {
             match self.get(location) {
                 Cell::Empty => {}
                 _ => {
@@ -106,10 +106,6 @@ impl WorldMap {
             }
         }
         Ok(())
-    }
-
-    pub fn insert_new_spawn(&mut self, new_spawn: NewSpawn) -> I64Vec3 {
-        todo!();
     }
 
     pub fn get_food_around(&self, location: I64Vec3) -> Option<Vec<I64Vec3>> {
