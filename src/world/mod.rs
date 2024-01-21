@@ -140,10 +140,8 @@ impl LEWorld {
                         }
                     }
                     WorldRequest::Kill(location) => {
-                        println!("going to kill");
                         match map.kill(location) {
                             Ok(_dead_organism) => {
-                                println!("killed")
                                 //we don't do anything here, because the dead organism is
                                 //no longer in our map, so it's all fine.
                             }

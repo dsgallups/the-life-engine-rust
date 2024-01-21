@@ -53,9 +53,19 @@ impl WorldMap {
     }
 
     pub fn kill(&mut self, location: I64Vec3) -> Result<(), anyhow::Error> {
-        let Some(Cell::Organism(organism_to_kill, _)) = self.squares.get(&location) else {
+        let Some(Cell::Organism(organism_to_kill, organ_touched)) = self.squares.get(&location)
+        else {
             return Err(anyhow!("Cannot kill!"));
         };
+
+        {
+            let organ_touched_lock = organ_touched.lock().unwrap();
+            if organ_touched_lock.r#type == OrganType::Armor {
+                return Err(anyhow!(
+                    "Kill event can't occur because the killer touched armor!"
+                ));
+            }
+        }
 
         let organism_to_kill = Arc::clone(organism_to_kill);
 

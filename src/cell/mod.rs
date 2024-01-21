@@ -24,7 +24,7 @@ impl Cell {
 impl Drawable for Cell {
     fn color(&self) -> Color {
         match self {
-            Cell::Food => Color::ORANGE_RED,
+            Cell::Food => Color::BLUE,
             Cell::Wall => Color::DARK_GRAY,
             Cell::Organism(_, organism_cell) => organism_cell.lock().unwrap().color(),
         }
@@ -67,7 +67,7 @@ impl Drawable for OrganType {
         match self {
             OrganType::Producer(_) => Color::GREEN,
             OrganType::Mouth => Color::ORANGE,
-            OrganType::Mover => Color::BLUE,
+            OrganType::Mover => Color::AQUAMARINE,
             OrganType::Killer => Color::RED,
             OrganType::Armor => Color::PURPLE,
             OrganType::Eye => Color::SALMON,
