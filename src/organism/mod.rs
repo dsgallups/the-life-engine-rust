@@ -174,11 +174,20 @@ impl Organism {
         })
     }
 
-    pub fn new_simple(location: I64Vec3) -> Organism {
+    pub fn simple_producer(location: I64Vec3) -> Organism {
         let organs = vec![
             Organ::new(OrganType::Producer(Producer::new()), (-1, 1, 0).into()),
             Organ::new(OrganType::Mouth, (0, 0, 0).into()),
             Organ::new(OrganType::Producer(Producer::new()), (1, -1, 0).into()),
+        ];
+
+        Organism::try_new(organs, location, 50., Direction::Right, 4).unwrap()
+    }
+
+    pub fn simple_mover(location: I64Vec3) -> Organism {
+        let organs = vec![
+            Organ::new(OrganType::Mouth, (0, 0, 0).into()),
+            Organ::new(OrganType::Mover, (1, -1, 0).into()),
         ];
 
         Organism::try_new(organs, location, 50., Direction::Right, 4).unwrap()
@@ -221,6 +230,7 @@ impl Organism {
         if self.belly >= self.reproduce_at {
             requests.push(WorldRequest::Reproduce);
         }
+
         for organ in self.organs.iter_mut() {
             let mut organ = organ.lock().unwrap();
             let Some(event) = organ.tick(map, self.location, world_settings) else {
@@ -240,9 +250,9 @@ impl Organism {
                     }
                 }
             }
-            if self.r#type == OrganismType::Mover {
-                requests.push(WorldRequest::MoveBy(self.facing.delta()));
-            }
+        }
+        if self.r#type == OrganismType::Mover {
+            requests.push(WorldRequest::MoveBy(self.facing.delta()));
         }
         requests
     }
