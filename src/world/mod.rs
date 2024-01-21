@@ -56,14 +56,9 @@ impl LEWorld {
 
     pub fn insert_organism_into_map(&mut self, organism: &Arc<Mutex<Organism>>) {
         let mut map = self.map.lock().unwrap();
-        organism
-            .lock()
-            .unwrap()
-            .organs()
-            .for_each(|(location, organ)| {
-                let cell = map.get(location);
-                *cell = Cell::organism(organism, organ);
-            });
+        if let Err(e) = map.insert_organism(organism) {
+            println!("{}", e);
+        }
     }
 
     pub fn refresh_map(&mut self) {
@@ -124,6 +119,7 @@ impl LEWorld {
      */
     pub fn tick(&mut self) -> Result<(), anyhow::Error> {
         let mut dead_list: Vec<usize> = Vec::new();
+        let mut new_spawn: Vec<Arc<Mutex<Organism>>> = Vec::new();
         for (index, arc_organism) in self.organisms.iter_mut().enumerate() {
             let mut organism = arc_organism.lock().unwrap();
             let mut map = self.map.lock().unwrap();
@@ -177,6 +173,10 @@ impl LEWorld {
                         };
                         dead_list.push(index);
                     }
+                    WorldRequest::Reproduce => {
+                        println!("reproduction initiated!");
+                        new_spawn.push(Arc::clone(arc_organism));
+                    }
                 }
             }
         }
@@ -184,6 +184,27 @@ impl LEWorld {
         for index in dead_list {
             let dead_organism = self.organisms.swap_remove(index);
             self.graveyard.push(dead_organism);
+        }
+
+        for spawn in new_spawn {
+            let mut organism_to_clone = spawn.lock().unwrap();
+            let new_spawn = organism_to_clone.reproduce();
+            let mut map = self.map.lock().unwrap();
+
+            let new_spawn_location = map
+                .get_valid_spawn_point(
+                    &new_spawn.organs,
+                    organism_to_clone.location,
+                    self.settings.spawn_radius,
+                )
+                .unwrap();
+
+            let new_organism = new_spawn.into_organism(new_spawn_location);
+
+            let new_organism = Arc::new(Mutex::new(new_organism));
+
+            map.insert_organism(&new_organism).unwrap();
+            self.organisms.push(new_organism);
         }
 
         Ok(())
@@ -317,7 +338,6 @@ impl LEWorld {
     }
 
     pub fn draw(&self, commands: &mut Commands) {
-        println!("in draw");
         let map = self.map.lock().unwrap();
 
         for (location, square) in map.iter() {
@@ -341,6 +361,7 @@ pub struct WorldSettings {
     //every nth tick of an organism being alive, decrease its food consumed by 1
     pub hunger_tick: u64,
     pub reproduce_at: u64,
+    pub spawn_radius: u64,
 }
 
 impl Default for WorldSettings {
@@ -349,7 +370,8 @@ impl Default for WorldSettings {
             food_spawn_radius: 1,
             hunger_tick: 6,
             producer_threshold: 2,
-            reproduce_at: 3,
+            reproduce_at: 5,
+            spawn_radius: 10,
         }
     }
 }

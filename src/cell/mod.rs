@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use bevy::render::color::Color;
+use rand::Rng;
 
 use crate::{Organ, Organism};
 
@@ -41,6 +42,21 @@ pub enum OrganType {
     Killer,
     Armor,
     Eye,
+}
+
+impl OrganType {
+    pub fn new_rand() -> Self {
+        let mut rng = rand::thread_rng();
+        match rng.gen_range(0..=5) {
+            0 => Self::Mouth,
+            1 => Self::Producer(Producer::default()),
+            2 => Self::Mover,
+            3 => Self::Killer,
+            4 => Self::Armor,
+            5 => Self::Eye,
+            _ => panic!(),
+        }
+    }
 }
 
 impl Default for OrganType {

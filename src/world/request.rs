@@ -7,5 +7,6 @@ pub enum WorldRequest {
     Food(I64Vec3),
     Kill(I64Vec3),
     EatFood(I64Vec3),
+    Reproduce,
     Starve,
 }

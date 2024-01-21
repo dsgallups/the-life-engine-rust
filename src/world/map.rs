@@ -1,9 +1,14 @@
-use std::collections::hash_map::Iter;
+use std::{
+    collections::hash_map::Iter,
+    sync::{Arc, Mutex},
+};
 
+use anyhow::anyhow;
 use bevy::math::I64Vec3;
+use rand::Rng;
 use rustc_hash::FxHashMap;
 
-use crate::Cell;
+use crate::{Cell, NewSpawn, Organ, Organism};
 
 pub struct WorldMap {
     squares: FxHashMap<I64Vec3, Cell>,
@@ -26,12 +31,85 @@ impl WorldMap {
         self.squares.entry(location).or_default()
     }
 
+    pub fn check(&self, location: &I64Vec3) -> Option<&Cell> {
+        self.squares.get(location)
+    }
+
     pub fn clear(&mut self, location: I64Vec3) {
         let res = self.squares.entry(location).or_default();
         *res = Cell::Empty;
     }
     pub fn iter(&self) -> Iter<'_, I64Vec3, Cell> {
         self.squares.iter()
+    }
+
+    //todo(dsgallups):
+    pub fn get_valid_spawn_point(
+        &self,
+        organs: &[Organ],
+        basis: I64Vec3,
+        deviate_by: u64,
+    ) -> Result<I64Vec3, anyhow::Error> {
+        let mut rng = rand::thread_rng();
+
+        loop {
+            let x = rng.gen_range(-(deviate_by as i64)..=deviate_by as i64);
+            let y = rng.gen_range(-(deviate_by as i64)..=deviate_by as i64);
+            let new_basis = basis + I64Vec3::new(x, y, 0);
+
+            let mut valid_basis = true;
+
+            for organ in organs {
+                match self.check(&(organ.relative_location + new_basis)) {
+                    None => {}
+                    Some(Cell::Empty) => {}
+                    _ => {
+                        valid_basis = false;
+                    }
+                }
+            }
+            if valid_basis {
+                return Ok(new_basis);
+            }
+        }
+    }
+
+    pub fn insert_organism(
+        &mut self,
+        organism: &Arc<Mutex<Organism>>,
+    ) -> Result<(), anyhow::Error> {
+        let org_lock = organism.lock().unwrap();
+
+        //check to see if any of the locations are occupied
+        for (location, organ) in org_lock.organs() {
+            match self.get(location) {
+                Cell::Empty => {}
+                _ => {
+                    return Err(anyhow!(
+                        "cannot insert an organism into an occupied square!"
+                    ))
+                }
+            }
+        }
+
+        for (location, organ) in org_lock.organs() {
+            let cell = self.get(location);
+            match cell {
+                Cell::Empty => {
+                    *cell = Cell::organism(organism, organ);
+                }
+                _ => {
+                    return Err(anyhow!(
+                        "cannot insert an organism into an occupied square!"
+                    ))
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn insert_new_spawn(&mut self, new_spawn: NewSpawn) -> I64Vec3 {
+        todo!();
     }
 
     pub fn get_food_around(&self, location: I64Vec3) -> Option<Vec<I64Vec3>> {
