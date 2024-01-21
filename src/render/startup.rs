@@ -11,7 +11,7 @@ impl Plugin for StartupPlugin {
     }
 }
 
-fn spawn_camera(mut commands: Commands, world: Res<LEWorld>) {
+fn spawn_camera(mut commands: Commands, _world: Res<LEWorld>) {
     let transform =
         Transform::from_scale(Vec3::new(0.04, 0.04, 1.)).with_translation(Vec3::new(0., 0., 10.));
     let camera = Camera2dBundle {

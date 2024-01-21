@@ -1,7 +1,4 @@
-use std::{
-    collections::hash_map::Entry,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 use crate::{Cell, Drawable, Organism};
 use bevy::{
@@ -64,13 +61,8 @@ impl LEWorld {
             .unwrap()
             .organs()
             .for_each(|(location, organ)| {
-                if map.get(&location).is_none() {
-                    map.insert(location, Cell::organism(organism, organ));
-                } else {
-                    panic!(
-                        "attempted to insert organism into a location that is already occupied!"
-                    );
-                }
+                let cell = map.get(location);
+                *cell = Cell::organism(organism, organ);
             });
     }
 
@@ -136,11 +128,11 @@ impl LEWorld {
             let mut organism = arc_organism.lock().unwrap();
             let mut map = self.map.lock().unwrap();
 
-            if map.get(&organism.location).is_none() {
-                //this organism was killed
+            if let Cell::Empty = map.get(organism.location) {
                 dead_list.push(index);
                 continue;
             }
+
             let requests = organism.tick(&map, &self.settings);
 
             for request in requests {
@@ -162,7 +154,6 @@ impl LEWorld {
                         }
                     }
                     WorldRequest::EatFood(location) => {
-                        println!("\n\n\neat food request!!\n\n\n");
                         if let Err(_e) = Self::try_eat(&mut map, &mut organism, location) {
                             //do something
                             continue;
@@ -195,19 +186,13 @@ impl LEWorld {
             self.graveyard.push(dead_organism);
         }
 
-        let map = self.map.lock().unwrap();
-        println!("map:\n");
-        for square in map.iter() {
-            println!("{:?}: {:?}", square.0, square.1);
-        }
-
         Ok(())
     }
 
     fn try_starve(map: &mut WorldMap, organism: &Organism) -> Result<(), anyhow::Error> {
-        organism.occupied_locations().for_each(|location| {
-            map.remove(&location);
-        });
+        organism
+            .occupied_locations()
+            .for_each(|location| map.clear(location));
         Ok(())
     }
 
@@ -216,7 +201,7 @@ impl LEWorld {
         organism: &mut Organism,
         kill: I64Vec3,
     ) -> Result<Arc<Mutex<Organism>>, anyhow::Error> {
-        let Some(Cell::Organism(organism_to_kill, _)) = map.get(&kill) else {
+        let Cell::Organism(organism_to_kill, _) = map.get(kill) else {
             return Err(anyhow!("Cannot kill!"));
         };
         let organism_to_kill_arc = Arc::clone(organism_to_kill);
@@ -226,7 +211,7 @@ impl LEWorld {
         let mut feed_count = 0;
         for location in organism_to_kill.occupied_locations() {
             feed_count += 1;
-            map.remove(&location);
+            map.clear(location);
         }
 
         organism.feed(feed_count);
@@ -241,10 +226,9 @@ impl LEWorld {
         eat: I64Vec3,
     ) -> Result<(), anyhow::Error> {
         let mut can_eat = true;
-        match map.get(&eat) {
-            Some(Cell::Food) => {}
-            Some(_) => can_eat = false,
-            None => can_eat = false,
+        match map.get(eat) {
+            Cell::Food => {}
+            _ => can_eat = false,
         }
         if !can_eat {
             return Err(anyhow!("Cannot eat!"));
@@ -252,7 +236,7 @@ impl LEWorld {
 
         organism.feed(1);
 
-        map.remove(&eat);
+        map.clear(eat);
 
         Ok(())
     }
@@ -268,9 +252,12 @@ impl LEWorld {
         //validate that the locations it wants to move to are unoccupied
         let mut can_move = true;
         for location in organism_info.occupied_locations() {
-            if map.get(&(location + move_by)).is_some() {
-                can_move = false;
-                break;
+            match map.get(location + move_by) {
+                Cell::Empty => {}
+                _ => {
+                    can_move = false;
+                    break;
+                }
             }
         }
 
@@ -279,8 +266,9 @@ impl LEWorld {
         }
 
         for (location, organ) in organism_info.organs() {
-            map.insert(location + move_by, Cell::organism(arc_organism, organ));
-            map.remove(&location);
+            let cell = map.get(location + move_by);
+            *cell = Cell::organism(arc_organism, organ);
+            map.clear(location);
         }
 
         organism_info.move_by(move_by);
@@ -297,25 +285,29 @@ impl LEWorld {
 
         let mut x = rng.gen_range(-radius..=radius);
         let mut y = rng.gen_range(-radius..=radius);
-        if x == 0 {
-            x = if rng.gen::<bool>() { 1 } else { -1 };
+        if x == 0 && y == 0 {
+            if rng.gen::<bool>() {
+                x = if rng.gen::<bool>() { 1 } else { -1 };
+            } else {
+                y = if rng.gen::<bool>() { 1 } else { -1 };
+            }
         }
-        if y == 0 {
-            y = if rng.gen::<bool>() { 1 } else { -1 };
-        }
+
         let random_spot = location + I64Vec3::new(x, y, 0);
 
         let mut attempts = 0;
         loop {
-            match map.entry(random_spot) {
-                Entry::Occupied(_) => {
-                    attempts += 1;
-                }
-                Entry::Vacant(_) => {
-                    map.insert(random_spot, Cell::Food);
+            match map.get(random_spot) {
+                Cell::Empty => {
+                    let food_cell = map.get(random_spot);
+                    *food_cell = Cell::Food;
                     return Ok(());
                 }
-            };
+                _ => {
+                    attempts += 1;
+                }
+            }
+
             if attempts == 3 {
                 return Err(anyhow!(
                     "Could not spawn food after three randomized attempts!"

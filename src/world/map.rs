@@ -1,12 +1,9 @@
-use std::{
-    collections::hash_map::{Entry, Iter},
-    sync::{Arc, Mutex},
-};
+use std::collections::hash_map::Iter;
 
 use bevy::math::I64Vec3;
 use rustc_hash::FxHashMap;
 
-use crate::{Cell, Organism};
+use crate::Cell;
 
 pub struct WorldMap {
     squares: FxHashMap<I64Vec3, Cell>,
@@ -25,20 +22,16 @@ impl WorldMap {
         }
     }
 
-    pub fn get(&self, location: &I64Vec3) -> Option<&Cell> {
-        self.squares.get(location)
+    pub fn get(&mut self, location: I64Vec3) -> &mut Cell {
+        self.squares.entry(location).or_default()
     }
-    pub fn insert(&mut self, location: I64Vec3, square: Cell) -> Option<Cell> {
-        self.squares.insert(location, square)
-    }
-    pub fn remove(&mut self, location: &I64Vec3) -> Option<Cell> {
-        self.squares.remove(location)
+
+    pub fn clear(&mut self, location: I64Vec3) {
+        let res = self.squares.entry(location).or_default();
+        *res = Cell::Empty;
     }
     pub fn iter(&self) -> Iter<'_, I64Vec3, Cell> {
         self.squares.iter()
-    }
-    pub fn entry(&mut self, location: I64Vec3) -> Entry<'_, I64Vec3, Cell> {
-        self.squares.entry(location)
     }
 
     pub fn get_food_around(&self, location: I64Vec3) -> Option<Vec<I64Vec3>> {

@@ -3,7 +3,7 @@ use anyhow::anyhow;
 use bevy::{math::I64Vec3, render::color::Color};
 use std::{
     fmt::Debug,
-    sync::{Arc, Mutex, MutexGuard},
+    sync::{Arc, Mutex},
 };
 use uuid::Uuid;
 

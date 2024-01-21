@@ -54,7 +54,7 @@ fn fixed_update(
     mut commands: Commands,
     mut last_time: Local<f32>,
     time: Res<Time>,
-    fixed_time: Res<Time<Fixed>>,
+    _fixed_time: Res<Time<Fixed>>,
     mut world: ResMut<LEWorld>,
 ) {
     let _ = world.tick();
