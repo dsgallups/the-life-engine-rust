@@ -28,9 +28,9 @@ use uuid::Uuid;
 pub struct LEWorld {
     settings: WorldSettings,
     map: RwLock<WorldMap>,
-    organisms: Vec<Arc<Mutex<Organism>>>,
+    organisms: Vec<Arc<RwLock<Organism>>>,
     lifetime: u64,
-    graveyard: Vec<Arc<Mutex<Organism>>>,
+    graveyard: RwLock<Vec<Organism>>,
     n_threads: u64,
 }
 
@@ -48,7 +48,7 @@ impl LEWorld {
             map: RwLock::new(WorldMap::new()),
             lifetime: 0,
             organisms: Vec::new(),
-            graveyard: Vec::new(),
+            graveyard: RwLock::new(Vec::new()),
             n_threads: thread_count,
         }
     }
@@ -60,7 +60,7 @@ impl LEWorld {
             map: RwLock::new(WorldMap::new_walled(length)),
             lifetime: 0,
             organisms: Vec::new(),
-            graveyard: Vec::new(),
+            graveyard: RwLock::new(Vec::new()),
             n_threads: thread_count,
         }
     }
@@ -72,14 +72,14 @@ impl LEWorld {
         self.add_organism(Organism::simple_mover(location));
     }
     pub fn add_organism(&mut self, organism: Organism) {
-        let organism = Arc::new(Mutex::new(organism));
+        let organism = Arc::new(RwLock::new(organism));
 
         self.insert_organism_into_map(&organism);
 
         self.organisms.push(organism);
     }
 
-    pub fn insert_organism_into_map(&mut self, organism: &Arc<Mutex<Organism>>) {
+    pub fn insert_organism_into_map(&mut self, organism: &Arc<RwLock<Organism>>) {
         let mut map = self.map.write().unwrap();
         if let Err(e) = map.insert_organism(organism) {
             println!("{}", e);
@@ -87,102 +87,119 @@ impl LEWorld {
     }
 
     pub fn tick(&mut self) -> Result<(), anyhow::Error> {
-        println!(
-            "tick {} - organism count: alive - {}, dead - {}",
-            self.lifetime,
-            self.organisms.len(),
-            self.graveyard.len()
-        );
+        {
+            let graveyard = self.graveyard.read().unwrap();
+            println!(
+                "tick {} - organism count: alive - {}, dead - {}",
+                self.lifetime,
+                self.organisms.len(),
+                graveyard.len()
+            );
+        }
+
         self.lifetime += 1;
         if self.organisms.is_empty() {
             return Err(anyhow!("everyone died!!!"));
         }
-        let mut dead_list: Vec<Uuid> = Vec::new();
 
-        let mut new_spawn: Vec<Arc<Mutex<Organism>>> = Vec::new();
+        let requests = self
+            .organisms
+            .iter_mut()
+            .map(|arc_organism| {
+                let mut organism_lock = arc_organism.write().unwrap();
+                let requests = organism_lock.tick(&self.settings);
+                (Arc::clone(&arc_organism), requests)
+            })
+            .collect::<Vec<_>>();
 
-        let organism_count = self.organisms.len();
-
-        for arc_organism in self.organisms.iter_mut() {
-            let mut organism = arc_organism.lock().unwrap();
-
-            {
-                let map = self.map.read().unwrap();
-                if map.get(&organism.location).is_none() {
-                    dead_list.push(organism.id);
-                    continue;
-                }
-            }
-
-            let requests = organism.tick(&self.settings);
-
-            for request in requests {
-                let mut map = self.map.write().unwrap();
-                match request {
-                    OrganismRequest::ProduceFoodAround(location) => {
-                        if let Err(e) =
-                            map.produce_food_around(location, self.settings.food_spawn_radius)
-                        {
-                            println!("Couldn't make food: {}", e);
-                            continue;
-                        }
-                    }
-                    OrganismRequest::MoveBy(location) => {
-                        if let Err(e) = map.move_organism(arc_organism, location) {
-                            println!("Couldn't move organism: {}", e);
-                            //do someething
-                            continue;
-                        }
-                    }
-                    OrganismRequest::EatFoodAround(location) => {
-                        let amount_consumed = map.eat_around(location);
-                        organism.feed(amount_consumed);
-                    }
-                    OrganismRequest::KillAround(location) => {
-                        let mut killed = map.kill_around(&organism, location);
-                        dead_list.append(&mut killed);
-                    }
-                    OrganismRequest::Starve => match map.kill_organism(organism.location) {
-                        Ok(id) => dead_list.push(id),
-                        Err(e) => {
-                            println!("Error killing organism! {}", e);
-                        }
-                    },
-                    OrganismRequest::Reproduce => {
-                        match map.deliver_child(&mut organism, self.settings.spawn_radius) {
-                            Ok(child) => {
-                                new_spawn.push(child);
+        let (dead_list, mut new_spawn) = {
+            let mut map = self.map.write().unwrap();
+            requests.into_iter().fold(
+                (Vec::new(), Vec::new()),
+                |(mut dead_list, mut new_spawn), (organism, requests)| {
+                    //tosdowjefwio
+                    //werwf
+                    for request in requests {
+                        match request {
+                            OrganismRequest::ProduceFoodAround(location) => {
+                                if let Err(e) = map
+                                    .produce_food_around(location, self.settings.food_spawn_radius)
+                                {
+                                    println!("Couldn't make food: {}", e);
+                                    continue;
+                                }
                             }
-                            Err(e) => {
-                                println!("Error reproducing: {}", e);
+                            OrganismRequest::MoveBy(location) => {
+                                if let Err(e) = map.move_organism(&organism, location) {
+                                    println!("Couldn't move organism: {}", e);
+                                    //do someething
+                                    continue;
+                                }
+                            }
+                            OrganismRequest::EatFoodAround(location) => {
+                                match map.feed_organism(&organism, location) {
+                                    Ok(()) => {}
+                                    Err(e) => println!("Error feeding organism: {}", e),
+                                }
+                            }
+
+                            OrganismRequest::KillAround(location) => {
+                                let mut killed = map.kill_around(&organism, location);
+                                dead_list.append(&mut killed);
+                            }
+                            OrganismRequest::Starve => match map.kill_organism(&organism) {
+                                Ok(id) => dead_list.push(id),
+                                Err(e) => {
+                                    println!("Error killing organism! {}", e);
+                                }
+                            },
+                            OrganismRequest::Reproduce => {
+                                match map.deliver_child(&organism, self.settings.spawn_radius) {
+                                    Ok(child) => {
+                                        new_spawn.push(child);
+                                    }
+                                    Err(e) => {
+                                        println!("Error reproducing: {}", e);
+                                    }
+                                }
                             }
                         }
                     }
-                }
-            }
-        }
+
+                    (dead_list, new_spawn)
+                },
+            )
+        };
 
         if !dead_list.is_empty() {
-            let (mut dead_organisms, alive_organisms) =
-                self.organisms.clone().into_iter().enumerate().fold(
-                    (Vec::new(), Vec::new()),
-                    |mut acc, (index, org)| {
-                        let dead = {
-                            let org_lock = org.lock().unwrap();
-                            dead_list.contains(&org_lock.id)
+            let (mut dead_organisms, alive_organisms) = self.organisms.clone().into_iter().fold(
+                (Vec::new(), Vec::new()),
+                |(mut dead_organisms, mut alive_organisms), organism| {
+                    let dead = {
+                        let org_lock = organism.read().unwrap();
+                        dead_list.contains(&org_lock.id)
+                    };
+
+                    if dead {
+                        //nothing should be holding onto this
+                        let count = Arc::strong_count(&organism);
+                        let Some(organism) = Arc::into_inner(organism) else {
+                            println!("organism is still referenced! count is: {}", count);
+                            return (dead_organisms, alive_organisms);
                         };
 
-                        if dead {
-                            acc.0.push(org)
-                        } else {
-                            acc.1.push(org)
-                        }
-                        acc
-                    },
-                );
+                        let organism = organism.into_inner().unwrap();
+                        dead_organisms.push(organism);
+                    } else {
+                        alive_organisms.push(organism);
+                    }
+
+                    (dead_organisms, alive_organisms)
+                },
+            );
             self.organisms = alive_organisms;
 
-            self.graveyard.append(&mut dead_organisms);
+            self.graveyard.write().unwrap().append(&mut dead_organisms);
         }
 
         self.organisms.append(&mut new_spawn);

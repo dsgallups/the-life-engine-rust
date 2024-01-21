@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 use bevy::render::color::Color;
 use rand::Rng;
@@ -13,10 +13,10 @@ pub trait Drawable {
 pub enum Cell {
     Food,
     Wall,
-    Organism(Arc<Mutex<Organism>>, Arc<Mutex<Organ>>),
+    Organism(Arc<RwLock<Organism>>, Arc<RwLock<Organ>>),
 }
 impl Cell {
-    pub fn organism(organism: &Arc<Mutex<Organism>>, organ: &Arc<Mutex<Organ>>) -> Self {
+    pub fn organism(organism: &Arc<RwLock<Organism>>, organ: &Arc<RwLock<Organ>>) -> Self {
         Self::Organism(Arc::clone(organism), Arc::clone(organ))
     }
 }
@@ -26,7 +26,7 @@ impl Drawable for Cell {
         match self {
             Cell::Food => Color::BLUE,
             Cell::Wall => Color::DARK_GRAY,
-            Cell::Organism(_, organism_cell) => organism_cell.lock().unwrap().color(),
+            Cell::Organism(_, organism_cell) => organism_cell.read().unwrap().color(),
         }
     }
 }
