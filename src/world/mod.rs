@@ -1,4 +1,8 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
 
 use crate::{Cell, Drawable, Organism};
 use bevy::{
@@ -19,13 +23,12 @@ pub use map::*;
 //use threading::*;
 
 ///holds the map and organisms
-#[derive(Resource)]
 pub struct LEWorld {
     settings: WorldSettings,
-    map: Mutex<WorldMap>,
-    organisms: Vec<Arc<Mutex<Organism>>>,
+    map: WorldMap,
+    organisms: Vec<Rc<RefCell<Organism>>>,
     lifetime: u64,
-    graveyard: Vec<Arc<Mutex<Organism>>>,
+    graveyard: Vec<Rc<RefCell<Organism>>>,
 }
 
 impl Default for LEWorld {
@@ -38,7 +41,7 @@ impl LEWorld {
     pub fn new() -> LEWorld {
         LEWorld {
             settings: WorldSettings::default(),
-            map: Mutex::new(WorldMap::new()),
+            map: WorldMap::new(),
             lifetime: 0,
             organisms: Vec::new(),
             graveyard: Vec::new(),
@@ -48,7 +51,7 @@ impl LEWorld {
     pub fn new_walled(length: u64) -> LEWorld {
         LEWorld {
             settings: WorldSettings::default(),
-            map: Mutex::new(WorldMap::new_walled(length)),
+            map: WorldMap::new_walled(length),
             lifetime: 0,
             organisms: Vec::new(),
             graveyard: Vec::new(),
@@ -59,16 +62,15 @@ impl LEWorld {
         self.add_organism(Organism::new_simple(location));
     }
     pub fn add_organism(&mut self, organism: Organism) {
-        let organism = Arc::new(Mutex::new(organism));
+        let organism = Rc::new(RefCell::new(organism));
 
         self.insert_organism_into_map(&organism);
 
         self.organisms.push(organism);
     }
 
-    pub fn insert_organism_into_map(&mut self, organism: &Arc<Mutex<Organism>>) {
-        let mut map = self.map.lock().unwrap();
-        if let Err(e) = map.insert_organism(organism) {
+    pub fn insert_organism_into_map(&mut self, organism: &Rc<RefCell<Organism>>) {
+        if let Err(e) = self.map.insert_organism(organism) {
             println!("{}", e);
         }
     }
@@ -85,38 +87,41 @@ impl LEWorld {
             return Err(anyhow!("everyone died!!!"));
         }
         let mut dead_list: Vec<usize> = Vec::new();
-        let mut new_spawn: Vec<Arc<Mutex<Organism>>> = Vec::new();
-        let organism_count = self.organisms.len();
+        let mut new_spawn: Vec<Rc<RefCell<Organism>>> = Vec::new();
         for (index, arc_organism) in self.organisms.iter_mut().enumerate() {
-            let mut organism = arc_organism.lock().unwrap();
-            let mut map = self.map.lock().unwrap();
+            let mut organism = arc_organism.borrow_mut();
 
             if dead_list.contains(&index) {
                 continue;
             }
-            if let Cell::Empty = map.get(organism.location) {
+            if let Cell::Empty = self.map.get(organism.location) {
                 dead_list.push(index);
                 continue;
             }
 
-            let requests = organism.tick(&map, &self.settings);
+            let requests = organism.tick(&self.map, &self.settings);
 
             let mut reverse_direction = false;
 
             for request in requests {
                 match request {
                     WorldRequest::Food(location) => {
-                        if let Err(_e) =
-                            Self::try_gen_food(&mut map, self.settings.food_spawn_radius, location)
-                        {
+                        if let Err(_e) = Self::try_gen_food(
+                            &mut self.map,
+                            self.settings.food_spawn_radius,
+                            location,
+                        ) {
                             //do nothing
                             continue;
                         }
                     }
                     WorldRequest::MoveBy(location) => {
-                        if let Err(e) =
-                            Self::try_move_organism(&mut map, arc_organism, &mut organism, location)
-                        {
+                        if let Err(e) = Self::try_move_organism(
+                            &mut self.map,
+                            arc_organism,
+                            &mut organism,
+                            location,
+                        ) {
                             println!("error: {}", e);
                             reverse_direction = true;
                             //do something
@@ -124,13 +129,13 @@ impl LEWorld {
                         }
                     }
                     WorldRequest::EatFood(location) => {
-                        if let Err(_e) = Self::try_eat(&mut map, &mut organism, location) {
+                        if let Err(_e) = Self::try_eat(&mut self.map, &mut organism, location) {
                             //do something
                             continue;
                         }
                     }
                     WorldRequest::Kill(location) => {
-                        match map.kill(location) {
+                        match self.map.kill(location) {
                             Ok(_dead_organism) => {
                                 println!("killed")
                                 //we don't do anything here, because the dead organism is
@@ -142,14 +147,14 @@ impl LEWorld {
                         }
                     }
                     WorldRequest::Starve => {
-                        if let Err(_e) = Self::try_starve(&mut map, &organism) {
+                        if let Err(_e) = Self::try_starve(&mut self.map, &organism) {
                             //do something
                             continue;
                         };
                         dead_list.push(index);
                     }
                     WorldRequest::Reproduce => {
-                        new_spawn.push(Arc::clone(arc_organism));
+                        new_spawn.push(Rc::clone(arc_organism));
                     }
                 }
             }
@@ -176,14 +181,12 @@ impl LEWorld {
         }
 
         for spawn in new_spawn {
-            let mut organism_to_clone = spawn.lock().unwrap();
+            let mut organism_to_clone = spawn.borrow_mut();
             let Some(new_spawn) = organism_to_clone.reproduce() else {
                 continue;
             };
 
-            let mut map = self.map.lock().unwrap();
-
-            let Ok(new_spawn_location) = map.get_valid_spawn_point(
+            let Ok(new_spawn_location) = self.map.get_valid_spawn_point(
                 &new_spawn.organs,
                 organism_to_clone.location,
                 self.settings.spawn_radius,
@@ -193,9 +196,9 @@ impl LEWorld {
 
             let new_organism = new_spawn.into_organism(new_spawn_location);
 
-            let new_organism = Arc::new(Mutex::new(new_organism));
+            let new_organism = Rc::new(RefCell::new(new_organism));
 
-            map.insert_organism(&new_organism).unwrap();
+            self.map.insert_organism(&new_organism).unwrap();
             self.organisms.push(new_organism);
         }
 
@@ -238,7 +241,7 @@ impl LEWorld {
     //organism is used for the locations of the organism's organs.
     fn try_move_organism(
         map: &mut WorldMap,
-        arc_organism: &Arc<Mutex<Organism>>,
+        arc_organism: &Rc<RefCell<Organism>>,
         organism_info: &mut Organism,
         move_by: I64Vec3,
     ) -> Result<(), anyhow::Error> {
@@ -311,9 +314,7 @@ impl LEWorld {
     }
 
     pub fn draw(&self, commands: &mut Commands) {
-        let map = self.map.lock().unwrap();
-
-        for (location, square) in map.iter() {
+        for (location, square) in self.map.iter() {
             let color = square.color();
             commands.spawn(SpriteBundle {
                 sprite: Sprite { color, ..default() },

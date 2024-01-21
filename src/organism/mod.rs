@@ -3,7 +3,9 @@ use anyhow::anyhow;
 use bevy::{math::I64Vec3, render::color::Color};
 use rand::Rng;
 use std::{
+    cell::RefCell,
     fmt::Debug,
+    rc::Rc,
     sync::{Arc, Mutex},
 };
 use uuid::Uuid;
@@ -117,7 +119,7 @@ impl NewSpawn {
 pub struct Organism {
     id: Uuid,
     r#type: OrganismType,
-    organs: Vec<Arc<Mutex<Organ>>>,
+    organs: Vec<Rc<RefCell<Organ>>>,
     pub location: I64Vec3,
     facing: Direction,
     has_eye: bool,
@@ -160,7 +162,7 @@ impl Organism {
             id: Uuid::new_v4(),
             organs: organs
                 .into_iter()
-                .map(|o| Arc::new(Mutex::new(o)))
+                .map(|o| Rc::new(RefCell::new(o)))
                 .collect(),
             r#type: organism_type,
             has_eye,
@@ -193,9 +195,9 @@ impl Organism {
         }
     }
 
-    pub fn organs(&self) -> impl Iterator<Item = (I64Vec3, &'_ Arc<Mutex<Organ>>)> + '_ {
+    pub fn organs(&self) -> impl Iterator<Item = (I64Vec3, &'_ Rc<RefCell<Organ>>)> + '_ {
         return self.organs.iter().map(|organ| {
-            let organ_inner = organ.lock().unwrap();
+            let organ_inner = organ.borrow();
             (self.location + organ_inner.relative_location, organ)
         });
     }
@@ -203,7 +205,7 @@ impl Organism {
         return self
             .organs
             .iter()
-            .map(|organ| self.location + organ.lock().unwrap().relative_location);
+            .map(|organ| self.location + organ.borrow().relative_location);
     }
 
     pub fn tick(&mut self, map: &WorldMap, world_settings: &WorldSettings) -> Vec<WorldRequest> {
@@ -222,7 +224,7 @@ impl Organism {
             requests.push(WorldRequest::Reproduce);
         }
         for organ in self.organs.iter_mut() {
-            let mut organ = organ.lock().unwrap();
+            let mut organ = organ.borrow_mut();
             let Some(event) = organ.tick(map, self.location, world_settings) else {
                 continue;
             };
@@ -254,7 +256,7 @@ impl Organism {
         let mut new_organs = self
             .organs()
             .map(|(_l, organ)| {
-                let organ = organ.lock().unwrap();
+                let organ = organ.borrow();
                 organ.clone()
             })
             .collect::<Vec<_>>();
@@ -375,7 +377,7 @@ impl Organism {
     pub fn get_color_for_cell(&self, location: &I64Vec3) -> Result<Color, anyhow::Error> {
         let relative_location = *location - self.location;
         for organ in self.organs.iter() {
-            let organ = organ.lock().unwrap();
+            let organ = organ.borrow();
             if organ.relative_location == relative_location {
                 return Ok(organ.color());
             }

@@ -1,7 +1,4 @@
-use std::{
-    collections::hash_map::Iter,
-    sync::{Arc, Mutex},
-};
+use std::{cell::RefCell, collections::hash_map::Iter, rc::Rc};
 
 use anyhow::anyhow;
 use bevy::math::I64Vec3;
@@ -57,11 +54,9 @@ impl WorldMap {
             return Err(anyhow!("Cannot kill!"));
         };
 
-        let organism_to_kill = Arc::clone(organism_to_kill);
+        let organism_to_kill = Rc::clone(organism_to_kill);
 
-        let organism_to_kill = organism_to_kill.lock().unwrap();
-
-        for location in organism_to_kill.occupied_locations() {
+        for location in organism_to_kill.borrow().occupied_locations() {
             let res = self.squares.entry(location).or_default();
             *res = Cell::Food;
         }
@@ -122,9 +117,9 @@ impl WorldMap {
 
     pub fn insert_organism(
         &mut self,
-        organism: &Arc<Mutex<Organism>>,
+        organism: &Rc<RefCell<Organism>>,
     ) -> Result<(), anyhow::Error> {
-        let org_lock = organism.lock().unwrap();
+        let org_lock = organism.borrow();
 
         //check to see if any of the locations are occupied
         for (location, _organ) in org_lock.organs() {

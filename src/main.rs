@@ -3,8 +3,8 @@ pub mod cell;
 pub mod organism;
 pub mod world;
 
-mod render;
-use render::begin_ticking;
+//mod render;
+//use render::begin_ticking;
 
 pub use cell::*;
 //pub use messages::*;
