@@ -1,7 +1,4 @@
-use std::task::Wake;
-
 use crate::LEWorld;
-use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy::{
     app::{App, FixedUpdate, Update},
@@ -34,13 +31,11 @@ pub fn begin_ticking(world: LEWorld) {
 }
 
 fn move_camera(
-    mut commands: Commands,
     mut camera_query: Query<(&Camera, &GlobalTransform, &mut Transform)>,
     mouse_button: Res<Input<MouseButton>>,
     mut cursor_moved: EventReader<MouseMotion>,
     mut mouse_wheel: EventReader<MouseWheel>,
     windows: Query<&Window>,
-    mut world: ResMut<LEWorld>,
     mut gizmos: Gizmos,
 ) {
     let (camera, camera_transform, mut transform) = camera_query.single_mut();
@@ -100,7 +95,7 @@ fn fixed_update(
         panic!("{}", e);
     }
 
-    let new_sprites = world.draw(&mut commands);
+    let new_sprites = world.draw();
 
     for (ent, _sprites) in &mut sprites_query {
         commands.entity(ent).despawn();
@@ -123,6 +118,3 @@ fn fixed_update(
     );*/
     *last_time = time.elapsed_seconds();
 }
-
-#[derive(Component)]
-pub struct Sprites;

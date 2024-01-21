@@ -9,12 +9,10 @@ pub trait Drawable {
     fn color(&self) -> Color;
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub enum Cell {
     Food,
     Wall,
-    #[default]
-    Empty,
     Organism(Arc<Mutex<Organism>>, Arc<Mutex<Organ>>),
 }
 impl Cell {
@@ -28,7 +26,6 @@ impl Drawable for Cell {
         match self {
             Cell::Food => Color::ORANGE_RED,
             Cell::Wall => Color::DARK_GRAY,
-            Cell::Empty => Color::BLACK,
             Cell::Organism(_, organism_cell) => organism_cell.lock().unwrap().color(),
         }
     }

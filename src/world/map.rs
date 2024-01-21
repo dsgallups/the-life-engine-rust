@@ -1,5 +1,5 @@
 use std::{
-    collections::hash_map::Iter,
+    collections::hash_map::{Entry, Iter},
     sync::{Arc, Mutex},
 };
 
@@ -48,8 +48,8 @@ impl WorldMap {
         Self { squares }
     }
 
-    pub fn get(&mut self, location: I64Vec3) -> &mut Cell {
-        self.squares.entry(location).or_default()
+    pub fn get(&mut self, location: &I64Vec3) -> Option<&Cell> {
+        self.squares.get(location)
     }
 
     pub fn kill(&mut self, location: I64Vec3) -> Result<(), anyhow::Error> {
@@ -62,8 +62,9 @@ impl WorldMap {
         let organism_to_kill = organism_to_kill.lock().unwrap();
 
         for location in organism_to_kill.occupied_locations() {
-            let res = self.squares.entry(location).or_default();
-            *res = Cell::Food;
+            if let Some(cell) = self.squares.get_mut(&location) {
+                *cell = Cell::Food;
+            }
         }
         Ok(())
     }
@@ -72,14 +73,13 @@ impl WorldMap {
         self.squares.get(location)
     }
 
-    pub fn clear(&mut self, location: I64Vec3) {
-        let res = self.squares.entry(location).or_default();
-        *res = Cell::Empty;
+    pub fn remove(&mut self, location: I64Vec3) -> Option<Cell> {
+        self.squares.remove(&location)
     }
-    pub fn replace(&mut self, location: I64Vec3, block: Cell) {
-        let res = self.squares.entry(location).or_default();
-        *res = block;
+    pub fn insert(&mut self, location: I64Vec3, block: Cell) -> Option<Cell> {
+        self.squares.insert(location, block)
     }
+
     pub fn iter(&self) -> Iter<'_, I64Vec3, Cell> {
         self.squares.iter()
     }
@@ -104,7 +104,6 @@ impl WorldMap {
             for organ in organs {
                 match self.squares.get(&(organ.relative_location + new_basis)) {
                     None => {}
-                    Some(Cell::Empty) => {}
                     _ => {
                         valid_basis = false;
                     }
@@ -128,26 +127,22 @@ impl WorldMap {
 
         //check to see if any of the locations are occupied
         for (location, _organ) in org_lock.organs() {
-            match self.get(location) {
-                Cell::Empty => {}
-                _ => {
-                    return Err(anyhow!(
-                        "cannot insert an organism into an occupied square!"
-                    ))
-                }
+            if self.get(&location).is_some() {
+                return Err(anyhow!(
+                    "cannot insert an organism into an occupied square!"
+                ));
             }
         }
 
         for (location, organ) in org_lock.organs() {
-            let cell = self.get(location);
-            match cell {
-                Cell::Empty => {
-                    *cell = Cell::organism(organism, organ);
-                }
-                _ => {
+            match self.squares.entry(location) {
+                Entry::Occupied(_) => {
                     return Err(anyhow!(
                         "cannot insert an organism into an occupied square!"
                     ))
+                }
+                Entry::Vacant(e) => {
+                    e.insert(Cell::organism(organism, organ));
                 }
             }
         }

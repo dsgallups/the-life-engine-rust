@@ -4,6 +4,7 @@ pub mod organism;
 pub mod world;
 
 mod render;
+
 use render::begin_ticking;
 
 pub use cell::*;
@@ -12,8 +13,8 @@ pub use organism::*;
 pub use world::*;
 
 fn main() {
-    //println!("ozymandias");
     let mut world = LEWorld::new();
     world.add_simple_organism((0, 0, 0).into());
+
     begin_ticking(world);
 }

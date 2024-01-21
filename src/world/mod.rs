@@ -1,8 +1,11 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    sync::{Arc, Mutex},
+    thread,
+};
 
 use crate::{Cell, Drawable, Organism};
 use bevy::{
-    ecs::system::{Commands, EntityCommands, Resource},
+    ecs::system::Resource,
     math::{I64Vec3, Vec3},
     prelude::default,
     sprite::{Sprite, SpriteBundle},
@@ -20,12 +23,14 @@ pub use map::*;
 
 ///holds the map and organisms
 #[derive(Resource)]
+#[allow(dead_code)]
 pub struct LEWorld {
     settings: WorldSettings,
     map: Mutex<WorldMap>,
     organisms: Vec<Arc<Mutex<Organism>>>,
     lifetime: u64,
     graveyard: Vec<Arc<Mutex<Organism>>>,
+    n_threads: u64,
 }
 
 impl Default for LEWorld {
@@ -36,22 +41,26 @@ impl Default for LEWorld {
 
 impl LEWorld {
     pub fn new() -> LEWorld {
+        let thread_count = thread::available_parallelism().unwrap().get() as u64;
         LEWorld {
             settings: WorldSettings::default(),
             map: Mutex::new(WorldMap::new()),
             lifetime: 0,
             organisms: Vec::new(),
             graveyard: Vec::new(),
+            n_threads: thread_count,
         }
     }
 
     pub fn new_walled(length: u64) -> LEWorld {
+        let thread_count = thread::available_parallelism().unwrap().get() as u64;
         LEWorld {
             settings: WorldSettings::default(),
             map: Mutex::new(WorldMap::new_walled(length)),
             lifetime: 0,
             organisms: Vec::new(),
             graveyard: Vec::new(),
+            n_threads: thread_count,
         }
     }
 
@@ -86,7 +95,7 @@ impl LEWorld {
         }
         let mut dead_list: Vec<usize> = Vec::new();
         let mut new_spawn: Vec<Arc<Mutex<Organism>>> = Vec::new();
-        let organism_count = self.organisms.len();
+
         for (index, arc_organism) in self.organisms.iter_mut().enumerate() {
             let mut organism = arc_organism.lock().unwrap();
             let mut map = self.map.lock().unwrap();
@@ -94,7 +103,7 @@ impl LEWorld {
             if dead_list.contains(&index) {
                 continue;
             }
-            if let Cell::Empty = map.get(organism.location) {
+            if map.get(&organism.location).is_none() {
                 dead_list.push(index);
                 continue;
             }
@@ -203,14 +212,10 @@ impl LEWorld {
     }
 
     fn try_starve(map: &mut WorldMap, organism: &Organism) -> Result<(), anyhow::Error> {
-        organism
-            .occupied_locations()
-            .for_each(|location| map.replace(location, Cell::Food));
+        organism.occupied_locations().for_each(|location| {
+            map.insert(location, Cell::Food);
+        });
         Ok(())
-    }
-
-    fn try_kill(map: &mut WorldMap, kill: I64Vec3) -> Result<(), anyhow::Error> {
-        map.kill(kill)
     }
 
     fn try_eat(
@@ -219,8 +224,8 @@ impl LEWorld {
         eat: I64Vec3,
     ) -> Result<(), anyhow::Error> {
         let mut can_eat = true;
-        match map.get(eat) {
-            Cell::Food => {}
+        match map.get(&eat) {
+            Some(Cell::Food) => {}
             _ => can_eat = false,
         }
         if !can_eat {
@@ -229,7 +234,7 @@ impl LEWorld {
 
         organism.feed(1);
 
-        map.clear(eat);
+        map.remove(eat);
 
         Ok(())
     }
@@ -246,8 +251,8 @@ impl LEWorld {
         let mut can_move = true;
         for location in organism_info.occupied_locations() {
             #[allow(clippy::single_match)]
-            match map.get(location + move_by) {
-                Cell::Wall => {
+            match map.get(&(location + move_by)) {
+                Some(Cell::Wall) => {
                     can_move = false;
                     break;
                 }
@@ -260,9 +265,9 @@ impl LEWorld {
         }
 
         for (location, organ) in organism_info.organs() {
-            let cell = map.get(location + move_by);
-            *cell = Cell::organism(arc_organism, organ);
-            map.clear(location);
+            map.insert(location + move_by, Cell::organism(arc_organism, organ));
+
+            map.remove(location);
         }
 
         organism_info.move_by(move_by);
@@ -291,10 +296,9 @@ impl LEWorld {
 
         let mut attempts = 0;
         loop {
-            match map.get(random_spot) {
-                Cell::Empty => {
-                    let food_cell = map.get(random_spot);
-                    *food_cell = Cell::Food;
+            match map.get(&random_spot) {
+                None => {
+                    map.insert(random_spot, Cell::Food);
                     return Ok(());
                 }
                 _ => {
@@ -310,27 +314,22 @@ impl LEWorld {
         }
     }
 
-    pub fn draw(&self, commands: &mut Commands) -> Vec<SpriteBundle> {
+    pub fn draw(&self) -> Vec<SpriteBundle> {
         let map = self.map.lock().unwrap();
 
         let mut sprites: Vec<SpriteBundle> = Vec::with_capacity(self.organisms.len());
 
         for (location, square) in map.iter() {
-            match square {
-                Cell::Empty => {}
-                _ => {
-                    let color = square.color();
-                    sprites.push(SpriteBundle {
-                        sprite: Sprite { color, ..default() },
-                        transform: Transform::from_translation(Vec3::new(
-                            location.x as f32,
-                            location.y as f32,
-                            0.,
-                        )),
-                        ..default()
-                    });
-                }
-            }
+            let color = square.color();
+            sprites.push(SpriteBundle {
+                sprite: Sprite { color, ..default() },
+                transform: Transform::from_translation(Vec3::new(
+                    location.x as f32,
+                    location.y as f32,
+                    0.,
+                )),
+                ..default()
+            });
         }
         sprites
     }
