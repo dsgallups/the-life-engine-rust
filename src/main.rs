@@ -20,7 +20,7 @@ pub trait Drawable {
 fn main() {
     //println!("ozymandias");
     let mut world = LEWorld::new();
-    world.add_simple_organism((0, 0, 1).into());
+    world.add_simple_organism((0, 0, 0).into());
 
     let mut count = 0;
     loop {

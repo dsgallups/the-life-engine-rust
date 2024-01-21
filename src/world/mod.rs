@@ -1,11 +1,17 @@
 use std::{
+    collections::hash_map::Entry,
     sync::{Arc, Mutex},
-    thread,
 };
 
 use crate::Organism;
 use bevy::math::I64Vec3;
+use rand::Rng;
 use rustc_hash::FxHashMap;
+mod request;
+use anyhow::anyhow;
+pub use request::*;
+
+use self::square::Square;
 
 mod square;
 //mod threading;
@@ -14,7 +20,7 @@ mod square;
 ///holds the map and organisms
 pub struct LEWorld {
     settings: WorldSettings,
-    map: FxHashMap<I64Vec3, Option<Arc<Mutex<Organism>>>>,
+    map: Mutex<FxHashMap<I64Vec3, Square>>,
     organisms: Vec<Arc<Mutex<Organism>>>,
 }
 
@@ -26,11 +32,9 @@ impl Default for LEWorld {
 
 impl LEWorld {
     pub fn new() -> LEWorld {
-        let thread = thread::spawn(move || {});
-
         LEWorld {
             settings: WorldSettings::default(),
-            map: FxHashMap::default(),
+            map: Mutex::new(FxHashMap::default()),
             organisms: Vec::new(),
         }
     }
@@ -47,13 +51,14 @@ impl LEWorld {
     }
 
     pub fn insert_organism_into_map(&mut self, organism: &Arc<Mutex<Organism>>) {
+        let mut map = self.map.lock().unwrap();
         organism
             .lock()
             .unwrap()
             .occupied_locations()
             .for_each(|location| {
-                if self.map.get(&location).is_none() {
-                    self.map.insert(location, Some(organism.clone()));
+                if map.get(&location).is_none() {
+                    map.insert(location, Square::Organism(organism.clone()));
                 } else {
                     panic!(
                         "attempted to insert organism into a location that is already occupied!"
@@ -118,23 +123,128 @@ impl LEWorld {
      *
      * organism.tick(response);
      */
-    pub fn tick(&mut self) {
-        for organism in self.organisms.iter_mut() {
-            let organism = organism.lock().unwrap();
+    pub fn tick(&mut self) -> Result<(), anyhow::Error> {
+        for arc_organism in self.organisms.iter_mut() {
+            let mut organism = arc_organism.lock().unwrap();
+            let requests = organism.tick(&self.settings);
+            let mut map = self.map.lock().unwrap();
+            for request in requests {
+                match request {
+                    WorldRequest::Food(location) => {
+                        if let Err(_e) =
+                            Self::try_gen_food(&mut map, self.settings.food_spawn_radius, location)
+                        {
+                            //do nothing
+                            continue;
+                        }
+                    }
+                    WorldRequest::MoveBy(location) => {
+                        if let Err(_e) = Self::try_move_organism(
+                            &mut map,
+                            &arc_organism,
+                            &mut organism,
+                            location,
+                        ) {
+                            //do something
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            //after the request, we should try to feed the organism
+            let result = organism.feed(&map)
+        }
+
+        let map = self.map.lock().unwrap();
+        println!("map:\n");
+        for square in map.iter() {
+            println!("{:?}: {:?}", square.0, square.1);
+        }
+
+        Ok(())
+    }
+
+    //arc_organism is for cloning
+    //organism is used for the locations of the organism's organs.
+    fn try_move_organism(
+        map: &mut FxHashMap<I64Vec3, Square>,
+        arc_organism: &Arc<Mutex<Organism>>,
+        organism_info: &mut Organism,
+        move_by: I64Vec3,
+    ) -> Result<(), anyhow::Error> {
+        //validate that the locations it wants to move to are unoccupied
+        let mut can_move = true;
+        for location in organism_info.occupied_locations() {
+            if map.get(&(location + move_by)).is_some() {
+                can_move = false;
+                break;
+            }
+        }
+
+        if !can_move {
+            return Err(anyhow!("Can't move organism to new location!"));
+        }
+
+        for location in organism_info.occupied_locations() {
+            map.insert(
+                location + move_by,
+                Square::Organism(Arc::clone(arc_organism)),
+            );
+            map.remove(&location);
+        }
+        organism_info.move_by(move_by);
+
+        Ok(())
+    }
+
+    fn try_gen_food(
+        map: &mut FxHashMap<I64Vec3, Square>,
+        radius: i64,
+        location: I64Vec3,
+    ) -> Result<(), anyhow::Error> {
+        let mut rng = rand::thread_rng();
+
+        let mut x = rng.gen_range(-radius..=radius);
+        let mut y = rng.gen_range(-radius..=radius);
+        if x == 0 {
+            x = if rng.gen::<bool>() { 1 } else { -1 };
+        }
+        if y == 0 {
+            y = if rng.gen::<bool>() { 1 } else { -1 };
+        }
+        let random_spot = location + I64Vec3::new(x, y, 0);
+
+        let mut attempts = 0;
+        loop {
+            match map.entry(random_spot) {
+                Entry::Occupied(_) => {
+                    attempts += 1;
+                }
+                Entry::Vacant(_) => {
+                    map.insert(random_spot, Square::Food);
+                    return Ok(());
+                }
+            };
+            if attempts == 3 {
+                return Err(anyhow!(
+                    "Could not spawn food after three randomized attempts!"
+                ));
+            }
         }
     }
 }
 
 pub struct WorldSettings {
-    food_spawn_radius: u64,
-    producer_threshold: u8,
+    pub food_spawn_radius: i64,
+    pub producer_threshold: u8,
 }
 
 impl Default for WorldSettings {
     fn default() -> Self {
         WorldSettings {
             food_spawn_radius: 1,
-            producer_threshold: 10,
+            producer_threshold: 2,
         }
     }
 }
@@ -143,12 +253,12 @@ impl Default for WorldSettings {
 fn create_world() {
     let mut world = LEWorld::new();
 
-    world.add_simple_organism((0, 0, 1).into());
+    world.add_simple_organism((0, 0, 0).into());
 }
 
 #[test]
 fn create_world_panic() {
     let mut world = LEWorld::new();
-    world.add_simple_organism((0, 0, 1).into());
-    world.add_simple_organism((0, 0, 1).into());
+    world.add_simple_organism((0, 0, 0).into());
+    world.add_simple_organism((0, 0, 0).into());
 }
