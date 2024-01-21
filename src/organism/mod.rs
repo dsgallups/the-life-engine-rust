@@ -282,7 +282,7 @@ impl Organism {
         requests
     }
 
-    pub fn reproduce(&mut self) -> Option<NewSpawn> {
+    pub fn reproduce(&mut self) -> Result<NewSpawn, anyhow::Error> {
         let mut rng = rand::thread_rng();
         self.belly /= 2;
 
@@ -319,7 +319,7 @@ impl Organism {
             match mutation {
                 MutationAction::Delete => {
                     if new_organs.is_empty() {
-                        return None;
+                        return Err(anyhow!("the new spawn has no organs :("));
                     }
                     let index = rng.gen_range(0..new_organs.len());
                     new_organs.swap_remove(index);
@@ -331,14 +331,14 @@ impl Organism {
                         .map(|o| o.relative_location)
                         .collect::<Vec<_>>();
 
-                    if occupied_locations.is_empty() {
-                        return None;
-                    }
-
-                    //pick a random location in the list
-                    let attach_to = occupied_locations
-                        .get(rng.gen_range(0..occupied_locations.len()))
-                        .unwrap();
+                    let attach_to = if occupied_locations.is_empty() {
+                        I64Vec3::new(0, 0, 0)
+                    } else {
+                        //pick a random location in the list
+                        *occupied_locations
+                            .get(rng.gen_range(0..occupied_locations.len()))
+                            .unwrap()
+                    };
 
                     //pick a random place to start
                     let mut x = rng.gen_range(-1..=1);
@@ -354,9 +354,11 @@ impl Organism {
                     let mut count = 0;
                     loop {
                         if count > 11 {
-                            return None;
+                            return Err(anyhow!(
+                                "This spawn couldn't add an organ after 11 randomized attempts!"
+                            ));
                         }
-                        if occupied_locations.contains(&(*attach_to + I64Vec3::new(x, y, 0))) {
+                        if occupied_locations.contains(&(attach_to + I64Vec3::new(x, y, 0))) {
                             if x == 1 {
                                 if y == -1 {
                                     y = 0
@@ -382,7 +384,7 @@ impl Organism {
                             }
                             count += 1;
                         } else {
-                            new_organs.push(Organ::new_rand(*attach_to + I64Vec3::new(x, y, 0)));
+                            new_organs.push(Organ::new_rand(attach_to + I64Vec3::new(x, y, 0)));
                             break;
                         }
                     }
@@ -397,7 +399,7 @@ impl Organism {
             }
         }
         self.offspring += 1;
-        Some(NewSpawn::new(
+        Ok(NewSpawn::new(
             new_organs,
             new_organism_mutability,
             self.belly,

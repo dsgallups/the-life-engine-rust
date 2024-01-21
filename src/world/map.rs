@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 use crate::{Cell, OrganType, Organism};
 
+#[derive(Debug)]
 pub struct WorldMap {
     squares: FxHashMap<I64Vec3, Cell>,
 }
@@ -139,20 +140,22 @@ impl WorldMap {
             (lock.id, lock.location)
         };
 
-        let locations_to_remove: Vec<I64Vec3> = {
-            let Some(Cell::Organism(organism, _organ)) = self.get(&dead_organism_location) else {
-                return Err(anyhow!(
-                    "An organism doesn't exist at this location anymore!"
-                ));
-            };
-
-            let org_lock = organism.read().unwrap();
-            org_lock.occupied_locations().collect()
+        let Some(Cell::Organism(organism, _organ)) = self.get(&dead_organism_location) else {
+            return Err(anyhow!(
+                "An organism doesn't exist at this location anymore!"
+            ));
         };
 
+        let locations_to_remove: Vec<I64Vec3> =
+            { organism.read().unwrap().occupied_locations().collect() };
+
         for location in locations_to_remove {
-            if let None = self.insert(location, Cell::Food) {
-                panic!("somehow, the organism is not in locations to remove!");
+            if self.insert(location, Cell::Food).is_none() {
+                //this can happen if an organism that is being killed just reproduced
+                return Err(anyhow!(
+                    "Somehow, the organism is not in locations to remove!\nlocation: {}",
+                    location
+                ));
             };
         }
 
@@ -188,7 +191,7 @@ impl WorldMap {
         }
 
         for (location, organ) in org_lock.arc_organs() {
-            self.insert(location + move_by, Cell::organism(&organism, organ));
+            self.insert(location + move_by, Cell::organism(organism, organ));
 
             self.remove(location);
         }
@@ -243,8 +246,11 @@ impl WorldMap {
     ) -> Result<Arc<RwLock<Organism>>, anyhow::Error> {
         let mut parent = parent.write().unwrap();
 
-        let Some(new_spawn) = parent.reproduce() else {
-            return Err(anyhow!("The parent failed to produce a baby"));
+        let new_spawn = match parent.reproduce() {
+            Ok(spawn) => spawn,
+            Err(e) => {
+                return Err(anyhow!("The parent failed to produce a new spawn: {}", e));
+            }
         };
 
         let mut rng = rand::thread_rng();
@@ -262,7 +268,6 @@ impl WorldMap {
                 match self.squares.get(&(new_basis + organ.relative_location)) {
                     None => {}
                     _ => {
-                        println!("item found at {}", new_basis + organ.relative_location);
                         valid_basis = false;
                     }
                 }
@@ -281,7 +286,7 @@ impl WorldMap {
 
         let new_organism = Arc::new(RwLock::new(new_spawn.into_organism(baby_location)));
 
-        self.insert_organism(&new_organism).unwrap();
+        self.insert_organism(&new_organism)?;
 
         Ok(new_organism)
     }

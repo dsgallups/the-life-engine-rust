@@ -1,4 +1,8 @@
 use crate::LEWorld;
+use bevy::app::AppExit;
+use bevy::input::keyboard::KeyboardInput;
+use bevy::input::mouse::MouseButtonInput;
+use bevy::input::ButtonState;
 use bevy::prelude::*;
 use bevy::{
     app::{App, FixedUpdate, Update},
@@ -86,13 +90,42 @@ fn frame_update(mut last_time: Local<f32>, time: Res<Time>) {
 fn fixed_update(
     mut commands: Commands,
     mut last_time: Local<f32>,
+    mut mouse_button: EventReader<MouseButtonInput>,
+    mut key_presses: EventReader<KeyboardInput>,
     mut sprites_query: Query<(Entity, &Sprite)>,
+    mut _exit: EventWriter<AppExit>,
     time: Res<Time>,
     _fixed_time: Res<Time<Fixed>>,
     mut world: ResMut<LEWorld>,
 ) {
+    if let Some(event) = mouse_button.read().next() {
+        if event.button == MouseButton::Right && event.state == ButtonState::Pressed {
+            if !world.paused {
+                world.pause()
+            } else {
+                world.log()
+            }
+        } else if event.button == MouseButton::Middle && event.state == ButtonState::Pressed {
+            world.unpause();
+        }
+    }
+    if let Some(event) = key_presses.read().next() {
+        if let Some(key_code) = event.key_code {
+            if world.paused && event.state == ButtonState::Pressed {
+                match key_code {
+                    KeyCode::R => world.reset(),
+                    KeyCode::D => world.decimate(),
+                    KeyCode::L => world.limit_organism_population(Some(200)),
+                    KeyCode::C => world.limit_organism_population(None),
+                    _ => {}
+                }
+            }
+        }
+    }
+
     if let Err(e) = world.tick() {
-        panic!("{}", e);
+        println!("Error ticking world:\n{}", e);
+        world.pause();
     }
 
     let new_sprites = world.draw();

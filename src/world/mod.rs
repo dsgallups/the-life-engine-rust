@@ -1,5 +1,5 @@
 use std::{
-    sync::{Arc, Mutex, RwLock},
+    sync::{Arc, RwLock},
     thread,
 };
 
@@ -11,7 +11,7 @@ use bevy::{
     sprite::{Sprite, SpriteBundle},
     transform::components::Transform,
 };
-use rand::Rng;
+use rand::{seq::SliceRandom, Rng};
 mod request;
 use anyhow::anyhow;
 pub use request::*;
@@ -19,19 +19,19 @@ pub use request::*;
 mod map;
 pub use map::*;
 use uuid::Uuid;
-//mod threading;
-//use threading::*;
 
 ///holds the map and organisms
-#[derive(Resource)]
+#[derive(Resource, Debug)]
 #[allow(dead_code)]
 pub struct LEWorld {
     settings: WorldSettings,
     map: RwLock<WorldMap>,
     organisms: Vec<Arc<RwLock<Organism>>>,
     lifetime: u64,
-    graveyard: RwLock<Vec<Organism>>,
+    graveyard: Vec<Arc<RwLock<Organism>>>,
     n_threads: u64,
+    max_organisms: Option<usize>,
+    pub paused: bool,
 }
 
 impl Default for LEWorld {
@@ -48,8 +48,10 @@ impl LEWorld {
             map: RwLock::new(WorldMap::new()),
             lifetime: 0,
             organisms: Vec::new(),
-            graveyard: RwLock::new(Vec::new()),
+            graveyard: Vec::new(),
             n_threads: thread_count,
+            paused: false,
+            max_organisms: None,
         }
     }
 
@@ -60,8 +62,10 @@ impl LEWorld {
             map: RwLock::new(WorldMap::new_walled(length)),
             lifetime: 0,
             organisms: Vec::new(),
-            graveyard: RwLock::new(Vec::new()),
+            graveyard: Vec::new(),
             n_threads: thread_count,
+            paused: false,
+            max_organisms: None,
         }
     }
 
@@ -86,9 +90,63 @@ impl LEWorld {
         }
     }
 
+    pub fn reset(&mut self) {
+        *self = LEWorld::new();
+
+        self.add_simple_producer((0, 0, 0).into());
+    }
+
+    pub fn decimate(&mut self) {
+        let num_organisms_to_kill = self.organisms.len() / 2;
+        let mut rng = rand::thread_rng();
+        self.organisms.shuffle(&mut rng);
+
+        let mut map = self.map.write().unwrap();
+
+        let mut dead_list = Vec::new();
+
+        for (index, organism) in self.organisms.iter().enumerate() {
+            match map.kill_organism(organism) {
+                Ok(id) => dead_list.push(id),
+                Err(e) => {
+                    println!("failure killing organism: {}", e)
+                }
+            }
+            if index > num_organisms_to_kill {
+                break;
+            }
+        }
+    }
+
+    pub fn limit_organism_population(&mut self, population: Option<usize>) {
+        self.max_organisms = population;
+    }
+
+    pub fn pause(&mut self) {
+        #[cfg(feature = "log")]
+        println!("paused!");
+
+        self.paused = true;
+    }
+
+    pub fn unpause(&mut self) {
+        #[cfg(feature = "log")]
+        println!("unpaused!");
+        self.paused = false;
+    }
+
+    pub fn log(&self) {
+        println!("World Information:");
+        println!("Alive Organisms: {:?}", self.organisms);
+    }
+
     pub fn tick(&mut self) -> Result<(), anyhow::Error> {
+        if self.paused {
+            return Ok(());
+        }
+
+        #[cfg(feature = "log")]
         {
-            let graveyard = self.graveyard.read().unwrap();
             println!(
                 "tick {} - organism count: alive - {}, dead - {}",
                 self.lifetime,
@@ -108,30 +166,30 @@ impl LEWorld {
             .map(|arc_organism| {
                 let mut organism_lock = arc_organism.write().unwrap();
                 let requests = organism_lock.tick(&self.settings);
-                (Arc::clone(&arc_organism), requests)
+                (Arc::clone(arc_organism), requests)
             })
             .collect::<Vec<_>>();
 
-        let (dead_list, mut new_spawn) = {
+        let (dead_list, mut new_spawn, critical_errors) = {
             let mut map = self.map.write().unwrap();
             requests.into_iter().fold(
-                (Vec::new(), Vec::new()),
-                |(mut dead_list, mut new_spawn), (organism, requests)| {
+                (Vec::new(), Vec::new(), Vec::<anyhow::Error>::new()),
+                |(mut dead_list, mut new_spawn, errors), (organism, requests)| {
                     //tosdowjefwio
                     //werwf
                     for request in requests {
                         match request {
                             OrganismRequest::ProduceFoodAround(location) => {
-                                if let Err(e) = map
+                                if let Err(_e) = map
                                     .produce_food_around(location, self.settings.food_spawn_radius)
                                 {
-                                    println!("Couldn't make food: {}", e);
+                                    //println!("Couldn't make food: {}", e);
                                     continue;
                                 }
                             }
                             OrganismRequest::MoveBy(location) => {
-                                if let Err(e) = map.move_organism(&organism, location) {
-                                    println!("Couldn't move organism: {}", e);
+                                if let Err(_e) = map.move_organism(&organism, location) {
+                                    //println!("Couldn't move organism: {}", e);
                                     //do someething
                                     continue;
                                 }
@@ -139,7 +197,9 @@ impl LEWorld {
                             OrganismRequest::EatFoodAround(location) => {
                                 match map.feed_organism(&organism, location) {
                                     Ok(()) => {}
-                                    Err(e) => println!("Error feeding organism: {}", e),
+                                    Err(_e) => {
+                                        //println!("Error feeding organism: {}", e)
+                                    }
                                 }
                             }
 
@@ -149,46 +209,69 @@ impl LEWorld {
                             }
                             OrganismRequest::Starve => match map.kill_organism(&organism) {
                                 Ok(id) => dead_list.push(id),
-                                Err(e) => {
-                                    println!("Error killing organism! {}", e);
+                                Err(_e) => {
+                                    //println!("Error killing organism! {}", e);
                                 }
                             },
                             OrganismRequest::Reproduce => {
+                                if let Some(max_pop) = self.max_organisms {
+                                    if self.organisms.len() > max_pop {
+                                        continue;
+                                    }
+                                }
                                 match map.deliver_child(&organism, self.settings.spawn_radius) {
                                     Ok(child) => {
                                         new_spawn.push(child);
                                     }
-                                    Err(e) => {
-                                        println!("Error reproducing: {}", e);
+                                    Err(_e) => {
+                                        let _organism = organism.read().unwrap();
+                                        /*println!( "Error reproducing - Info:\norganism: {:#?}\n Error: {}",
+                                        organism,
+                                        e);
+                                        */
+                                        /*errors.push(anyhow!(
+                                            "Error reproducing - Info:\norganism: {:#?}\n Error: {}",
+                                            organism,
+                                            e
+                                        ));
+                                        */
                                     }
                                 }
                             }
                         }
                     }
 
-                    (dead_list, new_spawn)
+                    (dead_list, new_spawn, errors)
                 },
             )
         };
 
-        if !dead_list.is_empty() {
+        if !critical_errors.is_empty() {
+            let mut error_msg = "Critical error(s) encountered:\n".to_string();
+            for error in critical_errors {
+                error_msg += &format!("{}\n", error);
+            }
+            return Err(anyhow!("{}", error_msg));
+        }
+        self.remove_dead(dead_list);
+
+        self.organisms.append(&mut new_spawn);
+
+        Ok(())
+    }
+
+    pub fn remove_dead(&mut self, list: Vec<Uuid>) {
+        if !list.is_empty() {
             let (mut dead_organisms, alive_organisms) = self.organisms.clone().into_iter().fold(
                 (Vec::new(), Vec::new()),
                 |(mut dead_organisms, mut alive_organisms), organism| {
                     let dead = {
                         let org_lock = organism.read().unwrap();
-                        dead_list.contains(&org_lock.id)
+                        list.contains(&org_lock.id)
                     };
 
                     if dead {
                         //nothing should be holding onto this
-                        let count = Arc::strong_count(&organism);
-                        let Some(organism) = Arc::into_inner(organism) else {
-                            println!("organism is still referenced! count is: {}", count);
-                            return (dead_organisms, alive_organisms);
-                        };
-
-                        let organism = organism.into_inner().unwrap();
                         dead_organisms.push(organism);
                     } else {
                         alive_organisms.push(organism);
@@ -199,12 +282,8 @@ impl LEWorld {
             );
             self.organisms = alive_organisms;
 
-            self.graveyard.write().unwrap().append(&mut dead_organisms);
+            self.graveyard.append(&mut dead_organisms);
         }
-
-        self.organisms.append(&mut new_spawn);
-
-        Ok(())
     }
 
     pub fn draw(&self) -> Vec<SpriteBundle> {
@@ -228,6 +307,7 @@ impl LEWorld {
     }
 }
 
+#[derive(Debug)]
 pub struct WorldSettings {
     pub food_spawn_radius: i64,
     pub producer_threshold: u8,
