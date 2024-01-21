@@ -1,4 +1,7 @@
+use std::task::Wake;
+
 use crate::LEWorld;
+use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy::{
     app::{App, FixedUpdate, Update},
@@ -23,7 +26,7 @@ use startup::StartupPlugin;
 pub fn begin_ticking(world: LEWorld) {
     App::new()
         .insert_resource(world)
-        .insert_resource(Time::<Fixed>::from_seconds(1.))
+        .insert_resource(Time::<Fixed>::from_seconds(0.2))
         .add_plugins((DefaultPlugins, StartupPlugin))
         .add_systems(Update, (move_camera, frame_update))
         .add_systems(FixedUpdate, fixed_update)
@@ -40,10 +43,6 @@ fn move_camera(
     mut world: ResMut<LEWorld>,
     mut gizmos: Gizmos,
 ) {
-    if let Err(e) = world.tick() {
-        panic!("{}", e);
-    }
-
     let (camera, camera_transform, mut transform) = camera_query.single_mut();
 
     let Some(cursor_position) = windows.single().cursor_position() else {
@@ -92,11 +91,22 @@ fn frame_update(mut last_time: Local<f32>, time: Res<Time>) {
 fn fixed_update(
     mut commands: Commands,
     mut last_time: Local<f32>,
+    mut sprites_query: Query<(Entity, &Sprite)>,
     time: Res<Time>,
     _fixed_time: Res<Time<Fixed>>,
-    world: ResMut<LEWorld>,
+    mut world: ResMut<LEWorld>,
 ) {
-    world.draw(&mut commands);
+    if let Err(e) = world.tick() {
+        panic!("{}", e);
+    }
+
+    let new_sprites = world.draw(&mut commands);
+
+    for (ent, _sprites) in &mut sprites_query {
+        commands.entity(ent).despawn();
+    }
+
+    commands.spawn_batch(new_sprites);
     //let _ = world.tick();
     //world.draw(&mut commands);
     // Default `Time`is `Time<Fixed>` here
@@ -113,3 +123,6 @@ fn fixed_update(
     );*/
     *last_time = time.elapsed_seconds();
 }
+
+#[derive(Component)]
+pub struct Sprites;

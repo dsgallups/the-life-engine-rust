@@ -15,12 +15,5 @@ fn main() {
     //println!("ozymandias");
     let mut world = LEWorld::new();
     world.add_simple_organism((0, 0, 0).into());
-    loop {
-        if let Err(e) = world.tick() {
-            println!("error: {}", e);
-            break;
-        }
-    }
-
-    //begin_ticking(world);
+    begin_ticking(world);
 }

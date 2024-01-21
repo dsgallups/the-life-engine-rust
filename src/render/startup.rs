@@ -2,6 +2,8 @@ use bevy::prelude::*;
 
 use crate::LEWorld;
 
+use super::Sprites;
+
 pub struct StartupPlugin;
 
 impl Plugin for StartupPlugin {
@@ -21,4 +23,6 @@ fn spawn_camera(mut commands: Commands, _world: Res<LEWorld>) {
     };
 
     commands.spawn(camera);
+    commands.spawn(SpatialBundle::default());
+    println!("spawned");
 }

@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::{Cell, Drawable, Organism};
 use bevy::{
-    ecs::system::{Commands, Resource},
+    ecs::system::{Commands, EntityCommands, Resource},
     math::{I64Vec3, Vec3},
     prelude::default,
     sprite::{Sprite, SpriteBundle},
@@ -310,21 +310,29 @@ impl LEWorld {
         }
     }
 
-    pub fn draw(&self, commands: &mut Commands) {
+    pub fn draw(&self, commands: &mut Commands) -> Vec<SpriteBundle> {
         let map = self.map.lock().unwrap();
 
+        let mut sprites: Vec<SpriteBundle> = Vec::with_capacity(self.organisms.len());
+
         for (location, square) in map.iter() {
-            let color = square.color();
-            commands.spawn(SpriteBundle {
-                sprite: Sprite { color, ..default() },
-                transform: Transform::from_translation(Vec3::new(
-                    location.x as f32,
-                    location.y as f32,
-                    0.,
-                )),
-                ..default()
-            });
+            match square {
+                Cell::Empty => {}
+                _ => {
+                    let color = square.color();
+                    sprites.push(SpriteBundle {
+                        sprite: Sprite { color, ..default() },
+                        transform: Transform::from_translation(Vec3::new(
+                            location.x as f32,
+                            location.y as f32,
+                            0.,
+                        )),
+                        ..default()
+                    });
+                }
+            }
         }
+        sprites
     }
 }
 

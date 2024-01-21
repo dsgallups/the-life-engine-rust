@@ -154,7 +154,7 @@ impl Organism {
             }
         }
 
-        let reproduce_at = organs.len() * 2;
+        let reproduce_at = organs.len() * 3;
 
         Ok(Organism {
             id: Uuid::new_v4(),
@@ -213,7 +213,7 @@ impl Organism {
             self.belly -= 1;
         }
 
-        if self.belly == 0 || self.time_alive == 100 {
+        if self.belly == 0 || self.time_alive == 200 {
             return vec![WorldRequest::Starve];
         }
 
