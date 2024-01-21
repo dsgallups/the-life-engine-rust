@@ -7,12 +7,16 @@ use bevy::{
     time::{Fixed, Time},
     transform::components::GlobalTransform,
     window::Window,
+    DefaultPlugins,
 };
+mod startup;
+use startup::StartupPlugin;
 
 pub fn begin_ticking(world: LEWorld) {
     App::new()
         .insert_resource(world)
         .insert_resource(Time::<Fixed>::from_seconds(1.))
+        .add_plugins((DefaultPlugins, StartupPlugin))
         .add_systems(Update, (draw_cursor, frame_update))
         .add_systems(FixedUpdate, fixed_update)
         .run();

@@ -328,6 +328,7 @@ impl LEWorld {
     }
 
     pub fn draw(&self, commands: &mut Commands) {
+        println!("in draw");
         let map = self.map.lock().unwrap();
 
         for (location, square) in map.iter() {
