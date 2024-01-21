@@ -44,7 +44,6 @@ fn move_camera(
         panic!("{}", e);
     }
 
-    world.draw(&mut commands);
     let (camera, camera_transform, mut transform) = camera_query.single_mut();
 
     let Some(cursor_position) = windows.single().cursor_position() else {
@@ -91,12 +90,13 @@ fn frame_update(mut last_time: Local<f32>, time: Res<Time>) {
 }
 
 fn fixed_update(
-    mut _commands: Commands,
+    mut commands: Commands,
     mut last_time: Local<f32>,
     time: Res<Time>,
     _fixed_time: Res<Time<Fixed>>,
-    mut _world: ResMut<LEWorld>,
+    world: ResMut<LEWorld>,
 ) {
+    world.draw(&mut commands);
     //let _ = world.tick();
     //world.draw(&mut commands);
     // Default `Time`is `Time<Fixed>` here

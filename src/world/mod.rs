@@ -74,11 +74,12 @@ impl LEWorld {
     }
 
     pub fn tick(&mut self) -> Result<(), anyhow::Error> {
-        /*println!(
-            "organism count: alive - {}, dead - {}",
+        println!(
+            "tick {} - organism count: alive - {}, dead - {}",
+            self.lifetime,
             self.organisms.len(),
             self.graveyard.len()
-        );*/
+        );
         self.lifetime += 1;
         if self.organisms.is_empty() {
             return Err(anyhow!("everyone died!!!"));
@@ -129,8 +130,9 @@ impl LEWorld {
                         }
                     }
                     WorldRequest::Kill(location) => {
-                        match Self::try_kill(&mut map, location) {
+                        match map.kill(location) {
                             Ok(_dead_organism) => {
+                                println!("killed")
                                 //we don't do anything here, because the dead organism is
                                 //no longer in our map, so it's all fine.
                             }
@@ -243,7 +245,6 @@ impl LEWorld {
         move_by: I64Vec3,
     ) -> Result<(), anyhow::Error> {
         //validate that the locations it wants to move to are unoccupied
-        println!("trying to move organism");
         let mut can_move = true;
         for location in organism_info.occupied_locations() {
             #[allow(clippy::single_match)]
