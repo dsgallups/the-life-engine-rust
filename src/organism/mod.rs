@@ -20,6 +20,7 @@ pub struct Organ {
 pub enum OrganismEvent {
     MakeFood(I64Vec3),
     EatFood(Vec<I64Vec3>),
+    Kill(Vec<I64Vec3>),
 }
 
 impl Organ {
@@ -70,6 +71,10 @@ impl Organ {
             OrganType::Mouth => map
                 .get_food_around(self.relative_location + organism_location)
                 .map(OrganismEvent::EatFood),
+
+            OrganType::Killer => map
+                .get_organisms_touching(self.relative_location + organism_location)
+                .map(OrganismEvent::Kill),
             _ => None,
         }
     }
@@ -115,7 +120,7 @@ impl NewSpawn {
 #[derive(Default, Debug)]
 #[allow(dead_code)]
 pub struct Organism {
-    id: Uuid,
+    pub id: Uuid,
     r#type: OrganismType,
     organs: Vec<Arc<Mutex<Organ>>>,
     pub location: I64Vec3,
@@ -123,7 +128,9 @@ pub struct Organism {
     has_eye: bool,
     reproduce_at: u64,
     time_alive: u64,
+    time_since_consumption: u64,
     belly: u64,
+    offspring: u64,
     food_collected: u64,
     mutation_rate: f64,
 }
@@ -168,6 +175,8 @@ impl Organism {
             location,
             facing,
             time_alive: 0,
+            time_since_consumption: 0,
+            offspring: 0,
             belly,
             food_collected: 0,
             mutation_rate,
@@ -215,19 +224,27 @@ impl Organism {
             .map(|organ| self.location + organ.lock().unwrap().relative_location);
     }
 
+    pub fn collide(&mut self) {
+        //change direction
+        self.facing.randomize();
+    }
     pub fn tick(&mut self, map: &WorldMap, world_settings: &WorldSettings) -> Vec<WorldRequest> {
         self.time_alive += 1;
-
-        if self.time_alive % world_settings.hunger_tick == 0 {
-            self.belly -= 1;
-        }
+        self.time_since_consumption += 1;
 
         if self.belly == 0 || self.time_alive == 200 {
             return vec![WorldRequest::Starve];
         }
 
+        if self.time_alive % world_settings.hunger_tick == 0 {
+            self.belly -= 1;
+            if self.r#type == OrganismType::Mover && self.time_since_consumption > 20 {
+                self.facing.randomize();
+            }
+        }
+
         let mut requests = Vec::new();
-        if self.belly >= self.reproduce_at {
+        if self.belly >= self.reproduce_at * self.offspring {
             requests.push(WorldRequest::Reproduce);
         }
 
@@ -248,9 +265,30 @@ impl Organism {
                     for location in locations {
                         requests.push(WorldRequest::EatFood(location))
                     }
+                    self.time_since_consumption = 0;
+                }
+                OrganismEvent::Kill(locations) => {
+                    for location in locations {
+                        requests.push(WorldRequest::Kill(location))
+                    }
                 }
             }
         }
+
+        let mut requests = requests
+            .into_iter()
+            .filter_map(|request| match request {
+                WorldRequest::Kill(location) => {
+                    if !self.organs().any(|organ_loc| organ_loc.0 == location) {
+                        Some(request)
+                    } else {
+                        None
+                    }
+                }
+                _ => Some(request),
+            })
+            .collect::<Vec<_>>();
+
         if self.r#type == OrganismType::Mover {
             requests.push(WorldRequest::MoveBy(self.facing.delta()));
         }
@@ -374,6 +412,7 @@ impl Organism {
                 }
             }
         }
+        self.offspring += 1;
         Some(NewSpawn::new(
             new_organs,
             new_organism_mutability,

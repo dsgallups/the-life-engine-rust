@@ -31,13 +31,27 @@ pub fn begin_ticking(world: LEWorld) {
 }
 
 fn move_camera(
+    mut commands: Commands,
     mut camera_query: Query<(&Camera, &GlobalTransform, &mut Transform)>,
     mouse_button: Res<Input<MouseButton>>,
     mut cursor_moved: EventReader<MouseMotion>,
+    mut sprites_query: Query<(Entity, &Sprite)>,
     mut mouse_wheel: EventReader<MouseWheel>,
     windows: Query<&Window>,
     mut gizmos: Gizmos,
+    mut world: ResMut<LEWorld>,
 ) {
+    if let Err(e) = world.tick() {
+        panic!("{}", e);
+    }
+
+    let new_sprites = world.draw();
+
+    for (ent, _sprites) in &mut sprites_query {
+        commands.entity(ent).despawn();
+    }
+
+    commands.spawn_batch(new_sprites);
     let (camera, camera_transform, mut transform) = camera_query.single_mut();
 
     let Some(cursor_position) = windows.single().cursor_position() else {
@@ -91,17 +105,6 @@ fn fixed_update(
     _fixed_time: Res<Time<Fixed>>,
     mut world: ResMut<LEWorld>,
 ) {
-    if let Err(e) = world.tick() {
-        panic!("{}", e);
-    }
-
-    let new_sprites = world.draw();
-
-    for (ent, _sprites) in &mut sprites_query {
-        commands.entity(ent).despawn();
-    }
-
-    commands.spawn_batch(new_sprites);
     //let _ = world.tick();
     //world.draw(&mut commands);
     // Default `Time`is `Time<Fixed>` here

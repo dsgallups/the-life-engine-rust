@@ -114,8 +114,6 @@ impl LEWorld {
 
             let requests = organism.tick(&map, &self.settings);
 
-            let mut reverse_direction = false;
-
             for request in requests {
                 match request {
                     WorldRequest::Food(location) => {
@@ -130,8 +128,7 @@ impl LEWorld {
                         if let Err(e) =
                             Self::try_move_organism(&mut map, arc_organism, &mut organism, location)
                         {
-                            println!("error: {}", e);
-                            reverse_direction = true;
+                            //println!("error: {}", e);
                             //do something
                             continue;
                         }
@@ -143,6 +140,7 @@ impl LEWorld {
                         }
                     }
                     WorldRequest::Kill(location) => {
+                        println!("going to kill");
                         match map.kill(location) {
                             Ok(_dead_organism) => {
                                 println!("killed")
@@ -165,9 +163,6 @@ impl LEWorld {
                         new_spawn.push(Arc::clone(arc_organism));
                     }
                 }
-            }
-            if reverse_direction {
-                organism.reverse_direction();
             }
         }
 
@@ -252,21 +247,20 @@ impl LEWorld {
         move_by: I64Vec3,
     ) -> Result<(), anyhow::Error> {
         //validate that the locations it wants to move to are unoccupied
-        println!("trying to move organism");
         let mut can_move = true;
         for location in organism_info.occupied_locations() {
-            #[allow(clippy::single_match)]
             match map.get(&(location + move_by)) {
-                Some(Cell::Wall) => {
+                None => {}
+                Some(Cell::Food) => {}
+                _ => {
                     can_move = false;
                     break;
                 }
-                _ => {}
             }
         }
 
         if !can_move {
-            println!("can't move");
+            organism_info.collide();
             return Err(anyhow!("Can't move organism to new location!"));
         }
 

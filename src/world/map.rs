@@ -8,7 +8,7 @@ use bevy::math::I64Vec3;
 use rand::Rng;
 use rustc_hash::FxHashMap;
 
-use crate::{Cell, Organ, Organism};
+use crate::{Cell, Organ, OrganType, Organism};
 
 pub struct WorldMap {
     squares: FxHashMap<I64Vec3, Cell>,
@@ -170,6 +170,34 @@ impl WorldMap {
             None
         } else {
             Some(food_locations)
+        }
+    }
+
+    //this doesn't account for the organism of the square that calls this
+    pub fn get_organisms_touching(&self, location: I64Vec3) -> Option<Vec<I64Vec3>> {
+        let mut touching_organisms = Vec::new();
+        for i in -1..=1 {
+            for j in -1..=1 {
+                if i == 0 && j == 0 {
+                    continue;
+                }
+
+                let check = location + I64Vec3::new(i, j, 0);
+
+                match self.squares.get(&check) {
+                    Some(Cell::Organism(_organism, _organ)) => {
+                        touching_organisms.push(check);
+                    }
+                    Some(_) => {}
+                    None => {}
+                };
+            }
+        }
+
+        if touching_organisms.is_empty() {
+            None
+        } else {
+            Some(touching_organisms)
         }
     }
 }
