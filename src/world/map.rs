@@ -9,7 +9,7 @@ use rand::Rng;
 use rustc_hash::FxHashMap;
 use uuid::Uuid;
 
-use crate::{Cell, Organ, OrganType, Organism};
+use crate::{Cell, OrganType, Organism};
 
 pub struct WorldMap {
     squares: FxHashMap<I64Vec3, Cell>,
@@ -142,10 +142,118 @@ impl WorldMap {
 
     pub fn move_organism(
         &mut self,
-        organism: &mut Organism,
+        organism: &Arc<Mutex<Organism>>,
         move_by: I64Vec3,
     ) -> Result<(), anyhow::Error> {
-        todo!()
+        let mut can_move = true;
+        let mut org_lock = organism.lock().unwrap();
+
+        for location in org_lock.occupied_locations() {
+            match self.get(&(location + move_by)) {
+                None => {}
+                Some(Cell::Food) => {}
+                _ => {
+                    can_move = false;
+                    break;
+                }
+            }
+        }
+        if !can_move {
+            org_lock.collide();
+            return Err(anyhow!("Can't move organism to new location!"));
+        }
+
+        for (location, organ) in org_lock.organs() {
+            self.insert(location + move_by, Cell::organism(&organism, organ));
+
+            self.remove(location);
+        }
+
+        org_lock.move_by(move_by);
+        Ok(())
+    }
+
+    pub fn produce_food_around(
+        &mut self,
+        location: I64Vec3,
+        radius: i64,
+    ) -> Result<(), anyhow::Error> {
+        let mut rng = rand::thread_rng();
+
+        let mut x = rng.gen_range(-radius..=radius);
+        let mut y = rng.gen_range(-radius..=radius);
+        if x == 0 && y == 0 {
+            if rng.gen::<bool>() {
+                x = if rng.gen::<bool>() { 1 } else { -1 };
+            } else {
+                y = if rng.gen::<bool>() { 1 } else { -1 };
+            }
+        }
+
+        let random_spot = location + I64Vec3::new(x, y, 0);
+
+        let mut attempts = 0;
+        loop {
+            match self.get(&random_spot) {
+                None => {
+                    self.insert(random_spot, Cell::Food);
+                    return Ok(());
+                }
+                _ => {
+                    attempts += 1;
+                }
+            }
+
+            if attempts == 3 {
+                return Err(anyhow!(
+                    "Could not spawn food after three randomized attempts!"
+                ));
+            }
+        }
+    }
+
+    pub fn deliver_child(
+        &mut self,
+        parent: &mut Organism,
+        spawn_radius: u64,
+    ) -> Result<Arc<Mutex<Organism>>, anyhow::Error> {
+        let Some(new_spawn) = parent.reproduce() else {
+            return Err(anyhow!("The parent failed to produce a baby"));
+        };
+
+        let mut rng = rand::thread_rng();
+        let basis = parent.location;
+
+        let mut attempt_count = 0;
+        let baby_location: I64Vec3 = loop {
+            let x = rng.gen_range(-(spawn_radius as i64)..=spawn_radius as i64);
+            let y = rng.gen_range(-(spawn_radius as i64)..=spawn_radius as i64);
+            let new_basis = basis + I64Vec3::new(x, y, 0);
+
+            let mut valid_basis = true;
+
+            for (abs, organ) in parent.organs() {
+                match self.squares.get(&abs) {
+                    None => {}
+                    _ => {
+                        valid_basis = false;
+                    }
+                }
+            }
+            if valid_basis {
+                break new_basis;
+            }
+            attempt_count += 1;
+            if attempt_count == 10 {
+                return Err(anyhow!("couldn't find place to put down organism"));
+            }
+        };
+
+        let new_organism = Arc::new(Mutex::new(new_spawn.into_organism(baby_location)));
+
+        self.insert_organism(&new_organism).unwrap();
+
+        Ok(new_organism)
     }
 
     pub fn check(&self, location: &I64Vec3) -> Option<&Cell> {
@@ -161,41 +269,6 @@ impl WorldMap {
 
     pub fn iter(&self) -> Iter<'_, I64Vec3, Cell> {
         self.squares.iter()
-    }
-
-    //todo(dsgallups):
-    pub fn get_valid_spawn_point(
-        &self,
-        organs: &[Organ],
-        basis: I64Vec3,
-        deviate_by: u64,
-    ) -> Result<I64Vec3, anyhow::Error> {
-        let mut rng = rand::thread_rng();
-
-        let mut attempt_count = 0;
-        loop {
-            let x = rng.gen_range(-(deviate_by as i64)..=deviate_by as i64);
-            let y = rng.gen_range(-(deviate_by as i64)..=deviate_by as i64);
-            let new_basis = basis + I64Vec3::new(x, y, 0);
-
-            let mut valid_basis = true;
-
-            for organ in organs {
-                match self.squares.get(&(organ.relative_location + new_basis)) {
-                    None => {}
-                    _ => {
-                        valid_basis = false;
-                    }
-                }
-            }
-            if valid_basis {
-                return Ok(new_basis);
-            }
-            attempt_count += 1;
-            if attempt_count == 10 {
-                return Err(anyhow!("couldn't find place to put down organism"));
-            }
-        }
     }
 
     pub fn insert_organism(

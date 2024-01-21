@@ -3,7 +3,7 @@ use std::{
     thread,
 };
 
-use crate::{Cell, Drawable, Organism};
+use crate::{Drawable, Organism};
 use bevy::{
     ecs::system::Resource,
     math::{I64Vec3, Vec3},
@@ -103,7 +103,7 @@ impl LEWorld {
 
         let organism_count = self.organisms.len();
 
-        for (index, arc_organism) in self.organisms.iter_mut().enumerate() {
+        for arc_organism in self.organisms.iter_mut() {
             let mut organism = arc_organism.lock().unwrap();
 
             {
@@ -120,22 +120,17 @@ impl LEWorld {
                 let mut map = self.map.write().unwrap();
                 match request {
                     OrganismRequest::ProduceFoodAround(location) => {
-                        if let Err(_e) = Self::try_gen_food_around(
-                            &mut map,
-                            self.settings.food_spawn_radius,
-                            location,
-                        ) {
-                            //do nothing
+                        if let Err(e) =
+                            map.produce_food_around(location, self.settings.food_spawn_radius)
+                        {
+                            println!("Couldn't make food: {}", e);
                             continue;
                         }
                     }
                     OrganismRequest::MoveBy(location) => {
-                        map.move_organism(&mut organism, location);
-                        if let Err(e) =
-                            Self::try_move_organism(&mut map, arc_organism, &mut organism, location)
-                        {
-                            //println!("error: {}", e);
-                            //do something
+                        if let Err(e) = map.move_organism(arc_organism, location) {
+                            println!("Couldn't move organism: {}", e);
+                            //do someething
                             continue;
                         }
                     }
@@ -147,14 +142,20 @@ impl LEWorld {
                         let mut killed = map.kill_around(&organism, location);
                         dead_list.append(&mut killed);
                     }
-                    OrganismRequest::Starve => {
-                        map.kill_organism(organism.location);
-                        dead_list.push(organism.id);
-                    }
+                    OrganismRequest::Starve => match map.kill_organism(organism.location) {
+                        Ok(id) => dead_list.push(id),
+                        Err(e) => {
+                            println!("Error killing organism! {}", e);
+                        }
+                    },
                     OrganismRequest::Reproduce => {
-                        let new_organism = map.bear_child(&organism);
-                        if organism_count <= 2800 {
-                            new_spawn.push(Arc::clone(arc_organism));
+                        match map.deliver_child(&mut organism, self.settings.spawn_radius) {
+                            Ok(child) => {
+                                new_spawn.push(child);
+                            }
+                            Err(e) => {
+                                println!("Error reproducing: {}", e);
+                            }
                         }
                     }
                 }
@@ -166,7 +167,12 @@ impl LEWorld {
                 self.organisms.clone().into_iter().enumerate().fold(
                     (Vec::new(), Vec::new()),
                     |mut acc, (index, org)| {
-                        if dead_list.contains(&index) {
+                        let dead = {
+                            let org_lock = org.lock().unwrap();
+                            dead_list.contains(&org_lock.id)
+                        };
+
+                        if dead {
                             acc.0.push(org)
                         } else {
                             acc.1.push(org)
@@ -179,113 +185,9 @@ impl LEWorld {
             self.graveyard.append(&mut dead_organisms);
         }
 
-        for spawn in new_spawn.iter() {
-            let mut organism_to_clone = spawn.lock().unwrap();
-            let mut map = self.map.write().unwrap();
-            let Some(new_spawn) = organism_to_clone.reproduce() else {
-                continue;
-            };
-
-            let Ok(new_spawn_location) = map.get_valid_spawn_point(
-                &new_spawn.organs,
-                organism_to_clone.location,
-                self.settings.spawn_radius,
-            ) else {
-                continue;
-            };
-
-            let new_organism = new_spawn.into_organism(new_spawn_location);
-
-            let new_organism = Arc::new(Mutex::new(new_organism));
-
-            map.insert_organism(&new_organism).unwrap();
-            self.organisms.push(new_organism);
-        }
+        self.organisms.append(&mut new_spawn);
 
         Ok(())
-    }
-
-    fn try_starve(map: &mut WorldMap, organism: &Organism) -> Result<(), anyhow::Error> {
-        organism.occupied_locations().for_each(|location| {
-            map.insert(location, Cell::Food);
-        });
-        Ok(())
-    }
-
-    //arc_organism is for cloning
-    //organism is used for the locations of the organism's organs.
-    fn try_move_organism(
-        map: &mut WorldMap,
-        arc_organism: &Arc<Mutex<Organism>>,
-        organism_info: &mut Organism,
-        move_by: I64Vec3,
-    ) -> Result<(), anyhow::Error> {
-        //validate that the locations it wants to move to are unoccupied
-        let mut can_move = true;
-        for location in organism_info.occupied_locations() {
-            match map.get(&(location + move_by)) {
-                None => {}
-                Some(Cell::Food) => {}
-                _ => {
-                    can_move = false;
-                    break;
-                }
-            }
-        }
-
-        if !can_move {
-            organism_info.collide();
-            return Err(anyhow!("Can't move organism to new location!"));
-        }
-
-        for (location, organ) in organism_info.organs() {
-            map.insert(location + move_by, Cell::organism(arc_organism, organ));
-
-            map.remove(location);
-        }
-
-        organism_info.move_by(move_by);
-
-        Ok(())
-    }
-
-    fn try_gen_food_around(
-        map: &mut WorldMap,
-        radius: i64,
-        location: I64Vec3,
-    ) -> Result<(), anyhow::Error> {
-        let mut rng = rand::thread_rng();
-
-        let mut x = rng.gen_range(-radius..=radius);
-        let mut y = rng.gen_range(-radius..=radius);
-        if x == 0 && y == 0 {
-            if rng.gen::<bool>() {
-                x = if rng.gen::<bool>() { 1 } else { -1 };
-            } else {
-                y = if rng.gen::<bool>() { 1 } else { -1 };
-            }
-        }
-
-        let random_spot = location + I64Vec3::new(x, y, 0);
-
-        let mut attempts = 0;
-        loop {
-            match map.get(&random_spot) {
-                None => {
-                    map.insert(random_spot, Cell::Food);
-                    return Ok(());
-                }
-                _ => {
-                    attempts += 1;
-                }
-            }
-
-            if attempts == 3 {
-                return Err(anyhow!(
-                    "Could not spawn food after three randomized attempts!"
-                ));
-            }
-        }
     }
 
     pub fn draw(&self) -> Vec<SpriteBundle> {
