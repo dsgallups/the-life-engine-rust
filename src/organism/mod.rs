@@ -104,6 +104,7 @@ impl NewSpawn {
 }
 
 #[derive(Default, Debug)]
+#[allow(dead_code)]
 pub struct Organism {
     id: Uuid,
     r#type: OrganismType,
@@ -190,11 +191,9 @@ impl Organism {
         if self.belly == 0 {
             return vec![WorldRequest::Starve];
         }
-        println!("belly: {}", self.belly);
 
         let mut requests = Vec::new();
         if self.belly >= world_settings.reproduce_at {
-            println!("I'm gonna make myself again");
             requests.push(WorldRequest::Reproduce);
         }
         for organ in self.organs.iter_mut() {
@@ -216,7 +215,7 @@ impl Organism {
         requests
     }
 
-    pub fn reproduce(&mut self) -> NewSpawn {
+    pub fn reproduce(&mut self) -> Option<NewSpawn> {
         let mut rng = rand::thread_rng();
         self.belly /= 2;
 
@@ -247,6 +246,9 @@ impl Organism {
         for mutation in mutation_list {
             match mutation {
                 MutationAction::Delete => {
+                    if new_organs.is_empty() {
+                        return None;
+                    }
                     let index = rng.gen_range(0..new_organs.len());
                     new_organs.swap_remove(index);
                 }
@@ -256,6 +258,10 @@ impl Organism {
                         .iter()
                         .map(|o| o.relative_location)
                         .collect::<Vec<_>>();
+
+                    if occupied_locations.is_empty() {
+                        return None;
+                    }
 
                     //pick a random location in the list
                     let attach_to = occupied_locations
@@ -273,7 +279,11 @@ impl Organism {
                         }
                     }
 
+                    let mut count = 0;
                     loop {
+                        if count > 11 {
+                            return None;
+                        }
                         if occupied_locations.contains(&(*attach_to + I64Vec3::new(x, y, 0))) {
                             if x == 1 {
                                 if y == -1 {
@@ -298,6 +308,7 @@ impl Organism {
                                     y = 0;
                                 }
                             }
+                            count += 1;
                         } else {
                             new_organs.push(Organ::new_rand(*attach_to + I64Vec3::new(x, y, 0)));
                             break;
@@ -306,23 +317,23 @@ impl Organism {
                 }
                 MutationAction::MutateOrgan => {
                     let new_organs_len = new_organs.len();
-                    let mut organ_to_mutate = new_organs
+                    let organ_to_mutate = new_organs
                         .get_mut(rng.gen_range(0..new_organs_len))
                         .unwrap();
                     organ_to_mutate.mutate();
                 }
             }
         }
-
-        for organ in new_organs.iter_mut() {}
-
-        NewSpawn::new(new_organs, new_organism_mutability, self.belly)
+        Some(NewSpawn::new(
+            new_organs,
+            new_organism_mutability,
+            self.belly,
+        ))
     }
 
     pub fn get_color_for_cell(&self, location: &I64Vec3) -> Result<Color, anyhow::Error> {
         let relative_location = *location - self.location;
         for organ in self.organs.iter() {
-            let s = organ.as_ref();
             let organ = organ.lock().unwrap();
             if organ.relative_location == relative_location {
                 return Ok(organ.color());

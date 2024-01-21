@@ -24,6 +24,7 @@ pub struct LEWorld {
     settings: WorldSettings,
     map: Mutex<WorldMap>,
     organisms: Vec<Arc<Mutex<Organism>>>,
+    lifetime: u64,
     graveyard: Vec<Arc<Mutex<Organism>>>,
 }
 
@@ -38,6 +39,7 @@ impl LEWorld {
         LEWorld {
             settings: WorldSettings::default(),
             map: Mutex::new(WorldMap::new()),
+            lifetime: 0,
             organisms: Vec::new(),
             graveyard: Vec::new(),
         }
@@ -61,63 +63,16 @@ impl LEWorld {
         }
     }
 
-    pub fn refresh_map(&mut self) {
-        /*for organism in self.organisms.iter() {
-            let position = &organism.location;
-            for organ in organism.organs.iter() {
-                println!("organ_position = {:?}", organ.relative_location);
-                println!("position = {:?}", position);
-                let position = (organ.relative_location + (*position).as_i64vec3()).as_u64vec3();
-                println!("position = {:?}", position);
-                self.map[position.x as usize][position.y as usize] =
-                    Cell::Organism(organ.cell.clone());
-            }
-        }*/
-    }
-
-    /// world will provide the organism with a request for its context requirements
-    /// given the requirements provided by the organism, the world will provide the organism with the information it knows
-    /// the organism will then provide the world with a request to update the world
-    /// the world will then provide the organism with a response to the request, as its request may not always be fulfilled
-    /**
-     * Example 1
-     *
-     * let requested_context = organism.context_request();
-     *
-     * let OrganismContextRequest { nearest_food } = requested_context;
-     *
-     * let context_response = if !nearest_food {
-     *      WorldContextResponse { nearest_food: None }
-     * } else {
-     *      let mut nearest_food_loc = I64Vec3::MAX;
-     *      let position = organism.origin();
-     *      let mut nearest_distance = std::u64::MAX;
-     *      for (x, col) in self.map.iter().enumerate() {
-     *          for (y, cell) in col.iter().enumerate() {
-     *              if let Cell::Inert(InertCell::Food) = cell {
-     *                  let distance = (position.x - x as u64).pow(2) + (position.y - y as u64).pow(2);
-     *                      if distance < nearest_distance {
-     *                          let x = x as i64 - position.x as i64;
-     *                          let y = y as i64 - position.y as i64;
-     *                          nearest_distance = distance;
-     *                          nearest_food_loc = (x, y, 1).into();
-     *                      }
-     *                  }
-     *              }
-     *          }
-     *     }
-     *      WorldContextResponse {
-     *          nearest_food: Some(nearest_food_loc),
-     *      }
-     * };
-     *
-     * let _requested_update = organism.update_request(context_response);
-     *
-     * let response = WorldUpdateResponse {};
-     *
-     * organism.tick(response);
-     */
     pub fn tick(&mut self) -> Result<(), anyhow::Error> {
+        println!(
+            "organism count: alive - {}, dead - {}",
+            self.organisms.len(),
+            self.graveyard.len()
+        );
+        self.lifetime += 1;
+        if self.organisms.is_empty() {
+            return Err(anyhow!("everyone died!!!"));
+        }
         let mut dead_list: Vec<usize> = Vec::new();
         let mut new_spawn: Vec<Arc<Mutex<Organism>>> = Vec::new();
         for (index, arc_organism) in self.organisms.iter_mut().enumerate() {
@@ -125,7 +80,6 @@ impl LEWorld {
             let mut map = self.map.lock().unwrap();
 
             if let Cell::Empty = map.get(organism.location) {
-                println!("cell died: {:?}", organism.location);
                 dead_list.push(index);
                 continue;
             }
@@ -175,41 +129,44 @@ impl LEWorld {
                         dead_list.push(index);
                     }
                     WorldRequest::Reproduce => {
-                        println!("reproduction initiated!");
                         new_spawn.push(Arc::clone(arc_organism));
                     }
                 }
             }
         }
+        if !dead_list.is_empty() {
+            let (mut dead_organisms, alive_organisms) =
+                self.organisms.clone().into_iter().enumerate().fold(
+                    (Vec::new(), Vec::new()),
+                    |mut acc, (index, org)| {
+                        if dead_list.contains(&index) {
+                            acc.0.push(org)
+                        } else {
+                            acc.1.push(org)
+                        }
+                        acc
+                    },
+                );
+            self.organisms = alive_organisms;
 
-        let og_organisms = self.organisms.clone();
-        let (mut dead_organisms, alive_organisms) = og_organisms.into_iter().enumerate().fold(
-            (Vec::new(), Vec::new()),
-            |mut acc, (index, org)| {
-                if dead_list.contains(&index) {
-                    acc.0.push(org)
-                } else {
-                    acc.1.push(org)
-                }
-                acc
-            },
-        );
-        self.organisms = alive_organisms;
-
-        self.graveyard.append(&mut dead_organisms);
+            self.graveyard.append(&mut dead_organisms);
+        }
 
         for spawn in new_spawn {
             let mut organism_to_clone = spawn.lock().unwrap();
-            let new_spawn = organism_to_clone.reproduce();
+            let Some(new_spawn) = organism_to_clone.reproduce() else {
+                continue;
+            };
+
             let mut map = self.map.lock().unwrap();
 
-            let new_spawn_location = map
-                .get_valid_spawn_point(
-                    &new_spawn.organs,
-                    organism_to_clone.location,
-                    self.settings.spawn_radius,
-                )
-                .unwrap();
+            let Ok(new_spawn_location) = map.get_valid_spawn_point(
+                &new_spawn.organs,
+                organism_to_clone.location,
+                self.settings.spawn_radius,
+            ) else {
+                continue;
+            };
 
             let new_organism = new_spawn.into_organism(new_spawn_location);
 

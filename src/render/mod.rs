@@ -8,15 +8,13 @@ use bevy::{
     },
     gizmos::gizmos::Gizmos,
     input::{
-        mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
+        mouse::{MouseButton, MouseMotion, MouseWheel},
         Input,
     },
-    math::Vec3,
-    reflect::Reflect,
     render::{camera::Camera, color::Color},
     time::{Fixed, Time},
     transform::components::{GlobalTransform, Transform},
-    window::{CursorMoved, Window},
+    window::Window,
     DefaultPlugins,
 };
 mod startup;
@@ -42,7 +40,10 @@ fn move_camera(
     mut world: ResMut<LEWorld>,
     mut gizmos: Gizmos,
 ) {
-    let _ = world.tick();
+    if let Err(e) = world.tick() {
+        panic!("{}", e);
+    }
+
     world.draw(&mut commands);
     let (camera, camera_transform, mut transform) = camera_query.single_mut();
 
@@ -63,10 +64,8 @@ fn move_camera(
             pan += ev.delta;
         }
         if pan.x.abs() <= 30. && pan.y.abs() <= 30. {
-            println!("pan: {:?}", pan);
             transform.translation.x += -pan.x * 0.05;
             transform.translation.y += pan.y * 0.05;
-            println!("transform.translation = {:?}", transform.translation);
         }
     }
 
@@ -92,13 +91,12 @@ fn frame_update(mut last_time: Local<f32>, time: Res<Time>) {
 }
 
 fn fixed_update(
-    mut commands: Commands,
+    mut _commands: Commands,
     mut last_time: Local<f32>,
     time: Res<Time>,
     _fixed_time: Res<Time<Fixed>>,
-    mut world: ResMut<LEWorld>,
+    mut _world: ResMut<LEWorld>,
 ) {
-    println!("called");
     //let _ = world.tick();
     //world.draw(&mut commands);
     // Default `Time`is `Time<Fixed>` here

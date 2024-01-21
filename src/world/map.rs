@@ -52,6 +52,7 @@ impl WorldMap {
     ) -> Result<I64Vec3, anyhow::Error> {
         let mut rng = rand::thread_rng();
 
+        let mut attempt_count = 0;
         loop {
             let x = rng.gen_range(-(deviate_by as i64)..=deviate_by as i64);
             let y = rng.gen_range(-(deviate_by as i64)..=deviate_by as i64);
@@ -70,6 +71,10 @@ impl WorldMap {
             }
             if valid_basis {
                 return Ok(new_basis);
+            }
+            attempt_count += 1;
+            if attempt_count == 10 {
+                return Err(anyhow!("couldn't find place to put down organism"));
             }
         }
     }
