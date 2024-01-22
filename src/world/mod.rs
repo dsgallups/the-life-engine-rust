@@ -19,19 +19,20 @@ pub use request::*;
 mod map;
 pub use map::*;
 use rustc_hash::FxHashSet;
+#[cfg(feature = "log")]
 use uuid::Uuid;
 
 ///holds the map and organisms
 #[derive(Resource, Debug)]
 #[allow(dead_code)]
 pub struct LEWorld {
-    settings: WorldSettings,
+    settings: Arc<WorldSettings>,
     map: RwLock<WorldMap>,
     organisms: Vec<Arc<RwLock<Organism>>>,
     lifetime: u64,
     graveyard: Vec<Arc<RwLock<Organism>>>,
     n_threads: u64,
-    max_organisms: Option<usize>,
+    #[cfg(feature = "log")]
     events: Vec<Event>,
     pub paused: bool,
 }
@@ -45,34 +46,43 @@ impl Default for LEWorld {
 impl LEWorld {
     pub fn new() -> LEWorld {
         let thread_count = thread::available_parallelism().unwrap().get() as u64;
+        let settings = Arc::new(WorldSettings::default());
         LEWorld {
-            settings: WorldSettings::default(),
-            map: RwLock::new(WorldMap::new()),
+            settings: Arc::clone(&settings),
+            map: RwLock::new(WorldMap::new(&settings)),
             lifetime: 0,
             organisms: Vec::new(),
             graveyard: Vec::new(),
             n_threads: thread_count,
             paused: false,
-            max_organisms: None,
+            #[cfg(feature = "log")]
             events: Vec::new(),
         }
     }
 
-    pub fn new_walled(length: u64) -> LEWorld {
+    pub fn new_walled(max_organisms: usize, length: u64) -> LEWorld {
+        let settings = WorldSettings {
+            max_organisms: Some(max_organisms),
+            wall_length_half: Some((length / 2) as i64),
+            ..Default::default()
+        };
+        let settings = Arc::new(settings);
+
         let thread_count = thread::available_parallelism().unwrap().get() as u64;
         LEWorld {
-            settings: WorldSettings::default(),
-            map: RwLock::new(WorldMap::new_walled(length)),
+            settings: Arc::clone(&settings),
+            map: RwLock::new(WorldMap::new(&settings)),
             lifetime: 0,
             organisms: Vec::new(),
             graveyard: Vec::new(),
             n_threads: thread_count,
             paused: false,
+            #[cfg(feature = "log")]
             events: Vec::new(),
-            max_organisms: None,
         }
     }
 
+    #[cfg(feature = "log")]
     pub fn push_evt(&mut self, actor: Actor, evt: EventType, on: On) {
         self.events.push(Event::new(self.lifetime, actor, evt, on))
     }
@@ -127,7 +137,12 @@ impl LEWorld {
     }
 
     pub fn limit_organism_population(&mut self, population: Option<usize>) {
-        self.max_organisms = population;
+        let mut new_settings = self.settings.as_ref().clone();
+        new_settings.max_organisms = population;
+        let new_settings = Arc::new(new_settings);
+        let mut map = self.map.write().unwrap();
+        map.set_settings(&new_settings);
+        self.settings = new_settings;
     }
 
     pub fn pause(&mut self) {
@@ -168,6 +183,7 @@ impl LEWorld {
         println!("Map; Live Organism count - {}", live_organisms_in_map.len());
         println!("Map: Live Organ count - {}", live_organs_in_map_count);
 
+        #[cfg(feature = "log")]
         if self.organisms.len() > live_organisms_in_map.len() {
             for organism in self.organisms.iter() {
                 let o = organism.read().unwrap();
@@ -179,6 +195,7 @@ impl LEWorld {
         }
     }
 
+    #[cfg(feature = "log")]
     pub fn log_id(&self, id: Uuid) {
         println!("====begin event search====");
         for event in self.events.iter() {
@@ -225,11 +242,11 @@ impl LEWorld {
             }
         }
 
-        let Some(id) = id else {
+        let Some(_id) = id else {
             return;
         };
-
-        self.log_id(id);
+        #[cfg(feature = "log")]
+        self.log_id(_id);
     }
 
     pub fn log(&self) {
@@ -240,16 +257,6 @@ impl LEWorld {
     pub fn tick(&mut self) -> Result<(), anyhow::Error> {
         if self.paused {
             return Ok(());
-        }
-
-        #[cfg(feature = "log")]
-        {
-            println!(
-                "tick {} - organism count: alive - {}, dead - {}",
-                self.lifetime,
-                self.organisms.len(),
-                graveyard.len()
-            );
         }
 
         self.lifetime += 1;
@@ -267,7 +274,7 @@ impl LEWorld {
             })
             .collect::<Vec<_>>();
 
-        let (dead_list, mut new_spawn, critical_errors, mut events) = {
+        let (dead_list, mut new_spawn, critical_errors, mut _events) = {
             let mut map = self.map.write().unwrap();
             requests.into_iter().fold(
                 (
@@ -282,24 +289,22 @@ impl LEWorld {
                     for request in requests {
                         match request {
                             OrganismRequest::ProduceFoodAround(location) => {
-                                match map
-                                    .produce_food_around(location, self.settings.food_spawn_radius)
-                                {
+                                match map.produce_food_around(location) {
                                     Ok(()) => {
-                                        let o = organism.read().unwrap();
+                                        #[cfg(feature = "log")]
                                         events.push(Event::new(
                                             self.lifetime,
-                                            o.actor(),
+                                            organism.read().unwrap().actor(),
                                             EventType::Produced,
                                             On::Around(location),
                                         ));
                                     }
-                                    Err(e) => {
-                                        let o = organism.read().unwrap();
+                                    Err(_e) => {
+                                        #[cfg(feature = "log")]
                                         events.push(Event::new(
                                             self.lifetime,
-                                            o.actor(),
-                                            EventType::FailProduced(e.to_string()),
+                                            organism.read().unwrap().actor(),
+                                            EventType::FailProduced(_e.to_string()),
                                             On::Around(location),
                                         ));
                                     }
@@ -307,21 +312,22 @@ impl LEWorld {
                             }
                             OrganismRequest::MoveBy(location) => {
                                 match map.move_organism(&organism, location) {
-                                    Ok(()) => {
-                                        let o = organism.read().unwrap();
+                                    Ok(()) =>
+                                    {
+                                        #[cfg(feature = "log")]
                                         events.push(Event::new(
                                             self.lifetime,
-                                            o.actor(),
+                                            organism.read().unwrap().actor(),
                                             EventType::Moved,
                                             On::To(location),
                                         ))
                                     }
-                                    Err(e) => {
-                                        let o = organism.read().unwrap();
+                                    Err(_e) => {
+                                        #[cfg(feature = "log")]
                                         events.push(Event::new(
                                             self.lifetime,
-                                            o.actor(),
-                                            EventType::FailMoved(e.to_string()),
+                                            organism.read().unwrap().actor(),
+                                            EventType::FailMoved(_e.to_string()),
                                             On::To(location),
                                         ));
                                     }
@@ -329,21 +335,23 @@ impl LEWorld {
                             }
                             OrganismRequest::IntelligentMove(eyes) => {
                                 match map.move_organism_with_eyes(&organism, eyes) {
-                                    Ok(location) => {
-                                        let o = organism.read().unwrap();
+                                    Ok(_location) =>
+                                    {
+                                        #[cfg(feature = "log")]
                                         events.push(Event::new(
                                             self.lifetime,
-                                            o.actor(),
+                                            organism.read().unwrap().actor(),
                                             EventType::Moved,
-                                            On::To(location),
+                                            On::To(_location),
                                         ))
                                     }
-                                    Err(e) => {
-                                        let o = organism.read().unwrap();
+                                    Err(_e) =>
+                                    {
+                                        #[cfg(feature = "log")]
                                         events.push(Event::new(
                                             self.lifetime,
-                                            o.actor(),
-                                            EventType::FailMoved(e.to_string()),
+                                            organism.read().unwrap().actor(),
+                                            EventType::FailMoved(_e.to_string()),
                                             On::None,
                                         ))
                                     }
@@ -352,21 +360,20 @@ impl LEWorld {
                             OrganismRequest::EatFoodAround(location) => {
                                 match map.feed_organism(&organism, location) {
                                     Ok(()) => {
-                                        let o = organism.read().unwrap();
+                                        #[cfg(feature = "log")]
                                         events.push(Event::new(
                                             self.lifetime,
-                                            o.actor(),
+                                            organism.read().unwrap().actor(),
                                             EventType::Ate,
                                             On::Food(location),
                                         ));
                                     }
-                                    Err(e) => {
-                                        let o = organism.read().unwrap();
-
+                                    Err(_e) => {
+                                        #[cfg(feature = "log")]
                                         events.push(Event::new(
                                             self.lifetime,
-                                            o.actor(),
-                                            EventType::FailAte(e.to_string()),
+                                            organism.read().unwrap().actor(),
+                                            EventType::FailAte(_e.to_string()),
                                             On::Food(location),
                                         ));
                                     }
@@ -427,27 +434,30 @@ impl LEWorld {
                                 }
                             },
                             OrganismRequest::Reproduce => {
-                                if let Some(max_pop) = self.max_organisms {
-                                    if self.organisms.len() > max_pop {
-                                        continue;
+                                if let Some(max_pop) = self.settings.max_organisms {
+                                    if self.organisms.len() >= max_pop {
+                                        let mut o = organism.write().unwrap();
+                                        //it shouldn't hold onto the food it has
+                                        let _ = o.reproduce();
                                     }
-                                }
-                                match map.deliver_child(&organism, self.settings.spawn_radius) {
-                                    Ok(child) => {
-                                        new_spawn.push(child);
-                                    }
-                                    Err(_e) => {
-                                        let _organism = organism.read().unwrap();
-                                        /*println!( "Error reproducing - Info:\norganism: {:#?}\n Error: {}",
-                                        organism,
-                                        e);
-                                        */
-                                        /*errors.push(anyhow!(
-                                            "Error reproducing - Info:\norganism: {:#?}\n Error: {}",
+                                } else {
+                                    match map.deliver_child(&organism, self.settings.spawn_radius) {
+                                        Ok(child) => {
+                                            new_spawn.push(child);
+                                        }
+                                        Err(_e) => {
+                                            let _organism = organism.read().unwrap();
+                                            /*println!( "Error reproducing - Info:\norganism: {:#?}\n Error: {}",
                                             organism,
-                                            e
-                                        ));
-                                        */
+                                            e);
+                                            */
+                                            /*errors.push(anyhow!(
+                                                "Error reproducing - Info:\norganism: {:#?}\n Error: {}",
+                                                organism,
+                                                e
+                                            ));
+                                            */
+                                        }
                                     }
                                 }
                             }
@@ -458,7 +468,8 @@ impl LEWorld {
                 },
             )
         };
-        self.events.append(&mut events);
+        #[cfg(feature = "log")]
+        self.events.append(&mut _events);
 
         if !critical_errors.is_empty() {
             let mut error_msg = "Critical error(s) encountered:\n".to_string();
@@ -481,10 +492,10 @@ impl LEWorld {
                 .map(|o| o.read().unwrap().id)
                 .collect::<Vec<_>>();
 
-            let (mut dead_organisms, alive_organisms, mut events) =
+            let (mut dead_organisms, alive_organisms, mut _events) =
                 self.organisms.clone().into_iter().fold(
-                    (Vec::new(), Vec::new(), Vec::new()),
-                    |(mut dead_organisms, mut alive_organisms, mut events), organism| {
+                    (Vec::new(), Vec::new(), Vec::<Event>::new()),
+                    |(mut dead_organisms, mut alive_organisms, mut _events), organism| {
                         let dead = {
                             let org_lock = organism.read().unwrap();
                             uuid_list.contains(&org_lock.id)
@@ -493,7 +504,8 @@ impl LEWorld {
                         if dead {
                             //nothing should be holding onto this
                             dead_organisms.push(Arc::clone(&organism));
-                            events.push(Event::new(
+                            #[cfg(feature = "log")]
+                            _events.push(Event::new(
                                 self.lifetime,
                                 Actor::Map,
                                 EventType::MovedToGraveyard,
@@ -503,14 +515,15 @@ impl LEWorld {
                             alive_organisms.push(organism);
                         }
 
-                        (dead_organisms, alive_organisms, events)
+                        (dead_organisms, alive_organisms, _events)
                     },
                 );
             self.organisms = alive_organisms;
 
             self.graveyard.append(&mut dead_organisms);
 
-            self.events.append(&mut events);
+            #[cfg(feature = "log")]
+            self.events.append(&mut _events);
         }
     }
 
@@ -535,22 +548,24 @@ impl LEWorld {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WorldSettings {
-    pub food_spawn_radius: i64,
     pub producer_threshold: u8,
     //every nth tick of an organism being alive, decrease its food consumed by 1
     pub hunger_tick: u64,
     pub spawn_radius: u64,
+    pub max_organisms: Option<usize>,
+    pub wall_length_half: Option<i64>,
 }
 
 impl Default for WorldSettings {
     fn default() -> Self {
         WorldSettings {
-            food_spawn_radius: 1,
             hunger_tick: 6,
             producer_threshold: 2,
             spawn_radius: 15,
+            max_organisms: Some(200),
+            wall_length_half: Some(40),
         }
     }
 }

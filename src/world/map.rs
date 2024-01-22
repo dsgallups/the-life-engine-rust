@@ -8,45 +8,41 @@ use bevy::math::I64Vec2;
 use rand::Rng;
 use rustc_hash::FxHashMap;
 
-use crate::{Cell, Direction, OrganType, Organism};
+use crate::{Cell, Direction, OrganType, Organism, WorldSettings};
 
 #[derive(Debug)]
 pub struct WorldMap {
+    settings: Arc<WorldSettings>,
     squares: FxHashMap<I64Vec2, Cell>,
 }
 
-impl Default for WorldMap {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl WorldMap {
-    pub fn new() -> Self {
-        Self {
-            squares: FxHashMap::default(),
-        }
-    }
-
-    pub fn new_walled(length: u64) -> Self {
+    pub fn new(settings: &Arc<WorldSettings>) -> Self {
         let mut squares = FxHashMap::default();
 
-        let half = (length / 2) as i64;
-
-        for i in -half..half {
-            for j in -2..=2 {
-                let location = I64Vec2::new(i, -half + j);
-                squares.insert(location, Cell::Wall);
-                let location = I64Vec2::new(i, half + j);
-                squares.insert(location, Cell::Wall);
-                let location = I64Vec2::new(-half + j, i);
-                squares.insert(location, Cell::Wall);
-                let location = I64Vec2::new(half + j, i);
-                squares.insert(location, Cell::Wall);
+        if let Some(half) = settings.wall_length_half {
+            for i in -half..half {
+                for j in -2..=2 {
+                    let location = I64Vec2::new(i, -half + j);
+                    squares.insert(location, Cell::Wall);
+                    let location = I64Vec2::new(i, half + j);
+                    squares.insert(location, Cell::Wall);
+                    let location = I64Vec2::new(-half + j, i);
+                    squares.insert(location, Cell::Wall);
+                    let location = I64Vec2::new(half + j, i);
+                    squares.insert(location, Cell::Wall);
+                }
             }
         }
 
-        Self { squares }
+        Self {
+            settings: Arc::clone(settings),
+            squares,
+        }
+    }
+
+    pub fn set_settings(&mut self, settings: &Arc<WorldSettings>) {
+        self.settings = Arc::clone(settings);
     }
 
     pub fn get(&self, location: &I64Vec2) -> Option<&Cell> {
@@ -176,21 +172,25 @@ impl WorldMap {
                                 best_move =
                                     Some(BestMoveReason::Danger(block_number as u64, direction));
                             }
+                            break;
                         }
                         (None | Some(BestMoveReason::Wall(_, _)), Some(Cell::Food)) => {
                             best_move = Some(BestMoveReason::Food(block_number as u64, direction));
+                            break;
                         }
                         (None, Some(Cell::Wall)) => {
                             best_move = Some(BestMoveReason::Wall(block_number as u64, direction));
+                            break;
                         }
                         (Some(BestMoveReason::Wall(distance, _)), Some(Cell::Wall)) => {
                             if (block_number as u64) < *distance {
                                 best_move =
                                     Some(BestMoveReason::Wall(block_number as u64, direction))
                             }
+                            break;
                         }
                         (Some(_), Some(Cell::Wall)) => {
-                            continue;
+                            break;
                         }
 
                         (
@@ -204,6 +204,7 @@ impl WorldMap {
                                 best_move =
                                     Some(BestMoveReason::Food(block_number as u64, direction));
                             }
+                            break;
                         }
                         (
                             Some(
@@ -217,8 +218,21 @@ impl WorldMap {
                                 best_move =
                                     Some(BestMoveReason::Food(block_number as u64, direction));
                             }
+                            break;
                         }
-                        (_, None) => {}
+                        (
+                            Some(
+                                BestMoveReason::Danger(d, _)
+                                | BestMoveReason::Food(d, _)
+                                | BestMoveReason::Wall(d, _),
+                            ),
+                            None,
+                        ) => {
+                            if *d <= block_number as u64 {
+                                break;
+                            }
+                        }
+                        (None, None) => {}
                     }
                 }
             }
@@ -273,41 +287,34 @@ impl WorldMap {
         Ok(())
     }
 
-    pub fn produce_food_around(
-        &mut self,
-        location: I64Vec2,
-        radius: i64,
-    ) -> Result<(), anyhow::Error> {
+    pub fn produce_food_around(&mut self, location: I64Vec2) -> Result<(), anyhow::Error> {
         let mut rng = rand::thread_rng();
 
-        let mut x = rng.gen_range(-radius..=radius);
-        let mut y = rng.gen_range(-radius..=radius);
-        if x == 0 && y == 0 {
-            if rng.gen::<bool>() {
-                x = if rng.gen::<bool>() { 1 } else { -1 };
-            } else {
-                y = if rng.gen::<bool>() { 1 } else { -1 };
-            }
-        }
-
-        let random_spot = location + I64Vec2::new(x, y);
+        let mut x_val = rng.gen::<bool>();
+        let mut y_val = rng.gen::<bool>();
 
         let mut attempts = 0;
         loop {
-            match self.get(&random_spot) {
-                None => {
-                    self.insert(random_spot, Cell::Food);
-                    return Ok(());
-                }
-                _ => {
-                    attempts += 1;
-                }
+            let random_spot =
+                location + I64Vec2::new(if x_val { 1 } else { -1 }, if y_val { 1 } else { -1 });
+
+            if self.get(&random_spot).is_none() {
+                self.insert(random_spot, Cell::Food);
+                return Ok(());
             }
 
             if attempts == 3 {
                 return Err(anyhow!(
                     "Could not spawn food after three randomized attempts!"
                 ));
+            }
+            attempts += 1;
+
+            (x_val, y_val) = match (x_val, y_val) {
+                (true, true) => (true, false),
+                (true, false) => (false, false),
+                (false, false) => (false, true),
+                (false, true) => (true, true),
             }
         }
     }
@@ -334,6 +341,16 @@ impl WorldMap {
             let x = rng.gen_range(-(spawn_radius as i64)..=spawn_radius as i64);
             let y = rng.gen_range(-(spawn_radius as i64)..=spawn_radius as i64);
             let new_basis = basis + I64Vec2::new(x, y);
+            //there could be an instance where it's on the edge and this doesn't work, so then the insert organism code should prevent the other case.
+            if let Some(wall_half) = self.settings.wall_length_half {
+                if new_basis.x <= -wall_half
+                    || new_basis.x >= wall_half
+                    || new_basis.y <= -wall_half
+                    || new_basis.y >= wall_half
+                {
+                    continue;
+                }
+            }
 
             let mut valid_basis = true;
 
@@ -392,6 +409,18 @@ impl WorldMap {
                     "cannot insert an organism into an occupied square! location in question: {}",
                     location
                 ));
+            }
+            if let Some(wall_half) = self.settings.wall_length_half {
+                if location.x <= -wall_half
+                    || location.x >= wall_half
+                    || location.y <= -wall_half
+                    || location.y >= wall_half
+                {
+                    return Err(anyhow!(
+                        "Cannot insert an organism past the wall! location in question: {}",
+                        location
+                    ));
+                }
             }
         }
 

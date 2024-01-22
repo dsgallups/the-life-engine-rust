@@ -18,6 +18,9 @@ uuid = "1.7.0"
 too_many_arguments = "allow"
 type_complexity = "allow"
 
+[features]
+log = []
+
 
 [profile.release]
 opt-level = 3
