@@ -3,7 +3,7 @@ use std::{
     thread,
 };
 
-use crate::{Actor, Cell, Drawable, Event, EventType, On, Organism};
+use crate::{Cell, Drawable, Event, EventType, On, Organism};
 use bevy::{
     ecs::system::Resource,
     math::{I64Vec2, Vec3},
@@ -13,9 +13,10 @@ use bevy::{
 };
 use rand::{seq::SliceRandom, Rng};
 mod request;
+#[cfg(feature = "log")]
+use crate::Actor;
 use anyhow::anyhow;
 pub use request::*;
-
 mod map;
 pub use map::*;
 use rustc_hash::FxHashSet;
@@ -283,7 +284,7 @@ impl LEWorld {
                     Vec::<anyhow::Error>::new(),
                     Vec::new(),
                 ),
-                |(mut dead_list, mut new_spawn, mut errors, mut events), (organism, requests)| {
+                |(mut dead_list, mut new_spawn, mut _errors, mut events), (organism, requests)| {
                     //tosdowjefwio
                     //werwf
                     for request in requests {
@@ -381,56 +382,54 @@ impl LEWorld {
                             }
 
                             OrganismRequest::KillAround(location) => {
-                                let (mut killed, errors) = map.kill_around(&organism, location);
-                                let o = organism.read().unwrap();
-                                for kill in killed.iter() {
-                                    let k = kill.read().unwrap();
-                                    events.push(Event::new(
-                                        self.lifetime,
-                                        o.actor(),
-                                        EventType::Killed,
-                                        On::Actor(k.actor()),
-                                    ));
-                                }
+                                let mut killed = if cfg!(feature = "log") {
+                                    let (killed, errors) = map.kill_around(&organism, location);
+                                    let o = organism.read().unwrap();
+                                    for kill in killed.iter() {
+                                        let k = kill.read().unwrap();
+                                        events.push(Event::new(
+                                            self.lifetime,
+                                            organism.read().unwrap().actor(),
+                                            EventType::Killed,
+                                            On::Actor(k.actor()),
+                                        ));
+                                    }
 
-                                for error in errors {
-                                    events.push(Event::new(
-                                        self.lifetime,
-                                        o.actor(),
-                                        EventType::FailKilled(error.to_string()),
-                                        On::None,
-                                    ));
-                                }
+                                    for error in errors {
+                                        events.push(Event::new(
+                                            self.lifetime,
+                                            o.actor(),
+                                            EventType::FailKilled(error.to_string()),
+                                            On::None,
+                                        ));
+                                    }
+                                    killed
+                                } else {
+                                    let (killed, _) = map.kill_around(&organism, location);
+                                    killed
+                                };
 
                                 dead_list.append(&mut killed);
                             }
                             OrganismRequest::Starve => match map.kill_organism(&organism) {
                                 Ok(()) => {
-                                    let o = organism.read().unwrap();
+                                    #[cfg(feature = "log")]
                                     events.push(Event::new(
                                         self.lifetime,
                                         Actor::Map,
                                         EventType::Starved,
-                                        On::Actor(o.actor()),
+                                        On::Actor(organism.read().unwrap().actor()),
                                     ));
                                     dead_list.push(Arc::clone(&organism))
                                 }
-                                Err(e) => {
-                                    let org_info = organism.read().unwrap();
-
+                                Err(_e) => {
+                                    #[cfg(feature = "log")]
                                     events.push(Event::new(
                                         self.lifetime,
                                         Actor::Map,
-                                        EventType::FailStarved(e.to_string()),
-                                        On::Actor(org_info.actor()),
+                                        EventType::FailStarved(_e.to_string()),
+                                        On::Actor(organism.read().unwrap().actor()),
                                     ));
-
-                                    //println!("Error killing organism! {}", e);
-                                    errors.push(anyhow!(
-                                        "Cannot starve organism: {:#?}\nerror: {}",
-                                        org_info,
-                                        e
-                                    ))
                                 }
                             },
                             OrganismRequest::Reproduce => {
@@ -439,6 +438,27 @@ impl LEWorld {
                                         let mut o = organism.write().unwrap();
                                         //it shouldn't hold onto the food it has
                                         let _ = o.reproduce();
+                                    } else {
+                                        match map
+                                            .deliver_child(&organism, self.settings.spawn_radius)
+                                        {
+                                            Ok(child) => {
+                                                new_spawn.push(child);
+                                            }
+                                            Err(_e) => {
+                                                let _organism = organism.read().unwrap();
+                                                /*println!( "Error reproducing - Info:\norganism: {:#?}\n Error: {}",
+                                                organism,
+                                                e);
+                                                */
+                                                /*errors.push(anyhow!(
+                                                    "Error reproducing - Info:\norganism: {:#?}\n Error: {}",
+                                                    organism,
+                                                    e
+                                                ));
+                                                */
+                                            }
+                                        }
                                     }
                                 } else {
                                     match map.deliver_child(&organism, self.settings.spawn_radius) {
@@ -464,7 +484,7 @@ impl LEWorld {
                         }
                     }
 
-                    (dead_list, new_spawn, errors, events)
+                    (dead_list, new_spawn, _errors, events)
                 },
             )
         };

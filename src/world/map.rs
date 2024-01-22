@@ -55,23 +55,18 @@ impl WorldMap {
         location: I64Vec2,
     ) -> Result<(), anyhow::Error> {
         let mut consumed = 0;
-        for i in -1..=1 {
-            for j in -1..=1 {
-                if i == 0 && j == 0 {
-                    continue;
+
+        for adjustment in AroundSquare::new() {
+            let looking_at = location + adjustment;
+
+            match self.squares.get(&looking_at) {
+                Some(Cell::Food) => {
+                    self.squares.remove(&looking_at);
+                    consumed += 1;
                 }
-
-                let looking_at = location + I64Vec2::new(i, j);
-
-                match self.squares.get(&looking_at) {
-                    Some(Cell::Food) => {
-                        self.squares.remove(&looking_at);
-                        consumed += 1;
-                    }
-                    Some(_) => {}
-                    None => {}
-                };
-            }
+                Some(_) => {}
+                None => {}
+            };
         }
 
         let mut org_lock = organism.write().unwrap();
@@ -85,31 +80,25 @@ impl WorldMap {
         killer_organ_location: I64Vec2,
     ) -> (Vec<Arc<RwLock<Organism>>>, Vec<anyhow::Error>) {
         let mut kill_list = Vec::new();
-        for i in -1..=1 {
-            for j in -1..=1 {
-                if i == 0 && j == 0 {
-                    continue;
-                }
 
-                let looking_at = killer_organ_location + I64Vec2::new(i, j);
-
-                match self.squares.get(&looking_at) {
-                    Some(Cell::Organism(organism, organ)) => {
-                        let organism_lock = organism.read().unwrap();
-                        let killer_lock = killer.read().unwrap();
-                        if killer_lock.id == organism_lock.id {
-                            continue;
-                        }
-                        let organ_lock = organ.read().unwrap();
-                        if organ_lock.r#type == OrganType::Armor {
-                            continue;
-                        }
-                        kill_list.push(Arc::clone(organism));
+        for adjustment in AroundSquare::new() {
+            let looking_at = killer_organ_location + adjustment;
+            match self.squares.get(&looking_at) {
+                Some(Cell::Organism(organism, organ)) => {
+                    let organism_lock = organism.read().unwrap();
+                    let killer_lock = killer.read().unwrap();
+                    if killer_lock.id == organism_lock.id {
+                        continue;
                     }
-                    Some(_) => {}
-                    None => {}
-                };
-            }
+                    let organ_lock = organ.read().unwrap();
+                    if organ_lock.r#type == OrganType::Armor {
+                        continue;
+                    }
+                    kill_list.push(Arc::clone(organism));
+                }
+                Some(_) => {}
+                None => {}
+            };
         }
 
         let mut actually_killed = Vec::new();
@@ -288,35 +277,16 @@ impl WorldMap {
     }
 
     pub fn produce_food_around(&mut self, location: I64Vec2) -> Result<(), anyhow::Error> {
-        let mut rng = rand::thread_rng();
-
-        let mut x_val = rng.gen::<bool>();
-        let mut y_val = rng.gen::<bool>();
-
-        let mut attempts = 0;
-        loop {
-            let random_spot =
-                location + I64Vec2::new(if x_val { 1 } else { -1 }, if y_val { 1 } else { -1 });
-
+        for adjustment in AroundSquare::new() {
+            let random_spot = location + adjustment;
             if self.get(&random_spot).is_none() {
                 self.insert(random_spot, Cell::Food);
                 return Ok(());
             }
-
-            if attempts == 3 {
-                return Err(anyhow!(
-                    "Could not spawn food after three randomized attempts!"
-                ));
-            }
-            attempts += 1;
-
-            (x_val, y_val) = match (x_val, y_val) {
-                (true, true) => (true, false),
-                (true, false) => (false, false),
-                (false, false) => (false, true),
-                (false, true) => (true, true),
-            }
         }
+        Err(anyhow!(
+            "Could not spawn food after three randomized attempts!"
+        ))
     }
 
     pub fn deliver_child(
@@ -510,4 +480,54 @@ pub enum BestMoveReason {
     Food(u64, Direction),
     Danger(u64, Direction),
     Wall(u64, Direction),
+}
+
+impl Default for AroundSquare {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+pub struct AroundSquare {
+    x_val: bool,
+    y_val: bool,
+    counter: u8,
+}
+impl AroundSquare {
+    pub fn new() -> Self {
+        let mut rng = rand::thread_rng();
+        let x_val = rng.gen::<bool>();
+        let y_val = rng.gen::<bool>();
+
+        Self {
+            x_val,
+            y_val,
+            counter: 0,
+        }
+    }
+}
+
+impl Iterator for AroundSquare {
+    type Item = I64Vec2;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.counter == 3 {
+            return None;
+        }
+
+        self.counter += 1;
+        (self.x_val, self.y_val) = match (self.x_val, self.y_val) {
+            (true, true) => (true, false),
+            (true, false) => (false, false),
+            (false, false) => (false, true),
+            (false, true) => (true, true),
+        };
+
+        let (x, y) = match (self.x_val, self.y_val) {
+            (true, true) => (1, 0),
+            (true, false) => (0, 1),
+            (false, false) => (-1, 0),
+            (false, true) => (0, -1),
+        };
+        Some(I64Vec2::new(x, y))
+    }
 }

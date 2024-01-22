@@ -62,7 +62,8 @@ fn move_camera(
             pan += ev.delta;
         }
     }
-    if mouse_down && pan.x.abs() <= 30. && pan.y.abs() <= 30. {
+
+    if mouse_down {
         transform.translation.x += -pan.x * 0.05;
         transform.translation.y += pan.y * 0.05;
     }
