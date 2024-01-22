@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.79"
 bevy = "0.12"
-primitive-types = "0.12.1"
 rand = "0.8"
 rustc-hash = "1.1.0"
 uuid = "1.7.0"
@@ -20,6 +19,13 @@ type_complexity = "allow"
 
 [features]
 log = []
+
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
 
 
 [profile.release]
