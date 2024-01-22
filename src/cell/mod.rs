@@ -3,7 +3,7 @@ use std::sync::{Arc, RwLock};
 use bevy::render::color::Color;
 use rand::Rng;
 
-use crate::{Organ, Organism};
+use crate::{Direction, Organ, Organism};
 
 pub trait Drawable {
     fn color(&self) -> Color;
@@ -38,7 +38,7 @@ pub enum OrganType {
     Mover,
     Killer,
     Armor,
-    Eye,
+    Eye(Direction),
 }
 
 impl OrganType {
@@ -50,7 +50,7 @@ impl OrganType {
             2 => Self::Mover,
             3 => Self::Killer,
             4 => Self::Armor,
-            5 => Self::Eye,
+            5 => Self::Eye(Direction::rand()),
             _ => panic!(),
         }
     }
@@ -70,7 +70,7 @@ impl Drawable for OrganType {
             OrganType::Mover => Color::AQUAMARINE,
             OrganType::Killer => Color::RED,
             OrganType::Armor => Color::PURPLE,
-            OrganType::Eye => Color::SALMON,
+            OrganType::Eye(_) => Color::SALMON,
         }
     }
 }

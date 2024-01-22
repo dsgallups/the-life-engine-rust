@@ -8,7 +8,7 @@ use bevy::math::I64Vec2;
 use rand::Rng;
 use rustc_hash::FxHashMap;
 
-use crate::{Cell, OrganType, Organism};
+use crate::{Cell, Direction, OrganType, Organism};
 
 #[derive(Debug)]
 pub struct WorldMap {
@@ -152,6 +152,87 @@ impl WorldMap {
         }
 
         Ok(())
+    }
+
+    pub fn move_organism_with_eyes(
+        &mut self,
+        organism: &Arc<RwLock<Organism>>,
+        eyes: Vec<(I64Vec2, Direction)>,
+    ) -> Result<I64Vec2, anyhow::Error> {
+        let head_towards = {
+            let org_lock = organism.read().unwrap();
+            let mut best_move = None;
+            //eyes can see five blocks ahead
+            for (eye_location, direction) in eyes {
+                for block_number in 1..=5 {
+                    let look_to = direction.delta() * block_number;
+                    match (&best_move, self.get(&(eye_location + look_to))) {
+                        (
+                            None | Some(BestMoveReason::Wall(_, _)),
+                            Some(Cell::Organism(_, organ)),
+                        ) => {
+                            let o = organ.read().unwrap();
+                            if o.r#type == OrganType::Killer {
+                                best_move =
+                                    Some(BestMoveReason::Danger(block_number as u64, direction));
+                            }
+                        }
+                        (None | Some(BestMoveReason::Wall(_, _)), Some(Cell::Food)) => {
+                            best_move = Some(BestMoveReason::Food(block_number as u64, direction));
+                        }
+                        (None, Some(Cell::Wall)) => {
+                            best_move = Some(BestMoveReason::Wall(block_number as u64, direction));
+                        }
+                        (Some(BestMoveReason::Wall(distance, _)), Some(Cell::Wall)) => {
+                            if (block_number as u64) < *distance {
+                                best_move =
+                                    Some(BestMoveReason::Wall(block_number as u64, direction))
+                            }
+                        }
+                        (Some(_), Some(Cell::Wall)) => {
+                            continue;
+                        }
+
+                        (
+                            Some(
+                                BestMoveReason::Food(distance, _)
+                                | BestMoveReason::Danger(distance, _),
+                            ),
+                            Some(Cell::Food),
+                        ) => {
+                            if (block_number as u64) < *distance {
+                                best_move =
+                                    Some(BestMoveReason::Food(block_number as u64, direction));
+                            }
+                        }
+                        (
+                            Some(
+                                BestMoveReason::Food(distance, _)
+                                | BestMoveReason::Danger(distance, _),
+                            ),
+                            Some(Cell::Organism(_, organ)),
+                        ) => {
+                            let o = organ.read().unwrap();
+                            if o.r#type == OrganType::Killer && (block_number as u64) < *distance {
+                                best_move =
+                                    Some(BestMoveReason::Food(block_number as u64, direction));
+                            }
+                        }
+                        (_, None) => {}
+                    }
+                }
+            }
+
+            match best_move {
+                Some(BestMoveReason::Danger(_, d) | BestMoveReason::Wall(_, d)) => d.to_reversed(),
+                Some(BestMoveReason::Food(_, d)) => d,
+                None => org_lock.facing(),
+            }
+        };
+
+        self.move_organism(organism, head_towards.delta())?;
+
+        Ok(head_towards.delta())
     }
 
     pub fn move_organism(
@@ -394,4 +475,10 @@ impl IntoIterator for WorldMap {
     fn into_iter(self) -> Self::IntoIter {
         self.squares.into_iter()
     }
+}
+
+pub enum BestMoveReason {
+    Food(u64, Direction),
+    Danger(u64, Direction),
+    Wall(u64, Direction),
 }

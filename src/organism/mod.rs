@@ -117,7 +117,6 @@ pub struct Organism {
     organs: Vec<Arc<RwLock<Organ>>>,
     pub location: I64Vec2,
     facing: Direction,
-    has_eye: bool,
     reproduce_at: u64,
     time_alive: u64,
     time_since_consumption: u64,
@@ -139,7 +138,6 @@ impl Organism {
         belly: u64,
     ) -> Result<Self, anyhow::Error> {
         let mut organism_type = OrganismType::None;
-        let mut has_eye = false;
         for organ in organs.iter() {
             match organ.organ_type() {
                 OrganType::Producer(_) => {
@@ -151,7 +149,6 @@ impl Organism {
                     organism_type = OrganismType::Mover;
                     break;
                 }
-                OrganType::Eye => has_eye = true,
                 _ => {}
             }
         }
@@ -165,7 +162,6 @@ impl Organism {
                 .map(|o| Arc::new(RwLock::new(o)))
                 .collect(),
             r#type: organism_type,
-            has_eye,
             reproduce_at: reproduce_at.try_into().unwrap(),
             location,
             facing,
@@ -197,12 +193,93 @@ impl Organism {
         Organism::try_new(organs, location, 50., Direction::Right, 4).unwrap()
     }
 
+    pub fn turn_to(&mut self, face: Direction) {
+        let turn_amount = self.facing.turn(face);
+        self.facing = face;
+        for organ in self.organs.iter() {
+            let mut organ = organ.write().unwrap();
+            let loc = &mut organ.relative_location;
+            let og = *loc;
+            match turn_amount {
+                -1 => {
+                    //counter-clockwise
+                    loc.x = -og.y;
+                    loc.y = og.x;
+                }
+                1 => {
+                    //clockwise
+                    loc.x = og.y;
+                    loc.y = -loc.x;
+                }
+                2 => {
+                    //opposite
+                    loc.x = -og.x;
+                    loc.y = -og.y;
+                }
+                0 => {
+                    //none
+                }
+                _ => unreachable!(),
+            }
+        }
+    }
+
+    pub fn randomize_direction(&mut self) {
+        let original_direction = self.facing;
+        self.facing.randomize();
+        let new_direction = self.facing;
+
+        let turn_amount = original_direction.turn(new_direction);
+        for organ in self.organs.iter() {
+            let mut organ = organ.write().unwrap();
+            let loc = &mut organ.relative_location;
+            let og = *loc;
+            match turn_amount {
+                -1 => {
+                    //counter-clockwise
+                    loc.x = -og.y;
+                    loc.y = og.x;
+                }
+                1 => {
+                    //clockwise
+                    loc.x = og.y;
+                    loc.y = -loc.x;
+                }
+                2 => {
+                    //opposite
+                    loc.x = -og.x;
+                    loc.y = -og.y;
+                }
+                0 => {
+                    //none
+                }
+                _ => unreachable!(),
+            }
+        }
+    }
+
     pub fn reverse_direction(&mut self) {
-        let mut rng = rand::thread_rng();
-        if rng.gen_range(0..10) == 9 {
-            self.facing.randomize();
-        } else {
-            self.facing.reverse();
+        self.facing.reverse();
+
+        match self.facing {
+            Direction::Down | Direction::Up => {
+                //reverse the locations across the y axis
+                for organ in self.organs.iter() {
+                    let mut organ = organ.write().unwrap();
+                    let loc = &mut organ.relative_location;
+
+                    loc.y = -loc.y
+                }
+            }
+            Direction::Left | Direction::Right => {
+                //reverse the locations across the x axis
+                for organ in self.organs.iter() {
+                    let mut organ = organ.write().unwrap();
+                    let loc = &mut organ.relative_location;
+
+                    loc.x = -loc.x
+                }
+            }
         }
     }
 
@@ -224,6 +301,10 @@ impl Organism {
             .organs
             .iter()
             .map(|organ| self.location + organ.read().unwrap().relative_location);
+    }
+
+    pub fn facing(&self) -> Direction {
+        self.facing
     }
 
     pub fn collide(&mut self) {
@@ -250,8 +331,25 @@ impl Organism {
             requests.push(OrganismRequest::Reproduce);
         }
 
+        let mut eye_locations: Option<Vec<(I64Vec2, Direction)>> = None;
         for organ in self.organs.iter_mut() {
             let mut organ = organ.write().unwrap();
+            if let OrganType::Eye(direction) = organ.r#type {
+                if self.r#type == OrganismType::Mover {
+                    match eye_locations {
+                        Some(ref mut v) => {
+                            v.push((self.location + organ.relative_location, direction))
+                        }
+                        None => {
+                            eye_locations =
+                                Some(vec![(self.location + organ.relative_location, direction)])
+                        }
+                    }
+                }
+
+                continue;
+            }
+
             let Some(event) = organ.tick(world_settings) else {
                 continue;
             };
@@ -280,7 +378,11 @@ impl Organism {
         }
 
         if self.r#type == OrganismType::Mover {
-            requests.push(OrganismRequest::MoveBy(self.facing.delta()));
+            if let Some(eye_locations) = eye_locations {
+                requests.push(OrganismRequest::IntelligentMove(eye_locations))
+            } else {
+                requests.push(OrganismRequest::MoveBy(self.facing.delta()));
+            }
         }
         requests
     }
