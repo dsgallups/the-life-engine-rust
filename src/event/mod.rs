@@ -14,12 +14,14 @@ pub enum EventType {
     Moved,
     FailMoved(String),
     Produced,
+    Reproduced,
+    FailReproduced(String),
 }
 
 #[derive(Debug)]
 pub enum On {
     Actor(Actor),
-    Food(I64Vec2),
+    Food(I64Vec2, u64),
     Around(I64Vec2),
     To(I64Vec2),
     None,

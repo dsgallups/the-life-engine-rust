@@ -141,6 +141,7 @@ fn fixed_update(
                     KeyCode::L => world.limit_organism_population(Some(200)),
                     KeyCode::B => world.limit_organism_population(None),
                     KeyCode::C => world.check_alive(),
+                    KeyCode::M => world.postmortem(),
                     _ => {}
                 }
             }

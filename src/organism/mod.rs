@@ -53,12 +53,11 @@ impl Organ {
     }
 
     pub fn tick(&mut self, world_settings: &WorldSettings) -> Option<OrganEvent> {
+        let mut rng = rand::thread_rng();
         match self.r#type {
             OrganType::Producer(ref mut producer) => {
-                producer.counter += 1;
-
-                if producer.counter >= world_settings.producer_threshold {
-                    producer.counter = 0;
+                if rng.gen_range(0..=100) < world_settings.producer_probability {
+                    producer.counter += 1;
                     return Some(OrganEvent::MakeFoodAround(self.relative_location));
                 }
 
@@ -66,7 +65,7 @@ impl Organ {
             }
             OrganType::Mouth => Some(OrganEvent::EatFoodAround(self.relative_location)),
 
-            OrganType::Killer => Some(OrganEvent::EatFoodAround(self.relative_location)),
+            OrganType::Killer => Some(OrganEvent::KillAround(self.relative_location)),
             _ => None,
         }
     }
@@ -116,7 +115,7 @@ pub struct Organism {
     r#type: OrganismType,
     organs: Vec<Arc<RwLock<Organ>>>,
     pub location: I64Vec2,
-    facing: Direction,
+    pub facing: Direction,
     reproduce_at: u64,
     time_alive: u64,
     time_since_consumption: u64,
@@ -193,6 +192,7 @@ impl Organism {
         Organism::try_new(organs, location, 50., Direction::Right, 4).unwrap()
     }
 
+    //only the map sould call this and update appropriately
     pub fn turn_to(&mut self, face: Direction) {
         let turn_amount = self.facing.turn(face);
         self.facing = face;
@@ -307,15 +307,11 @@ impl Organism {
         self.facing
     }
 
-    pub fn collide(&mut self) {
-        //change direction
-        self.facing.randomize();
-    }
     pub fn tick(&mut self, world_settings: &WorldSettings) -> Vec<OrganismRequest> {
         self.time_alive += 1;
         self.time_since_consumption += 1;
 
-        if self.belly == 0 || self.time_alive == 200 {
+        if self.belly == 0 {
             return vec![OrganismRequest::Starve];
         }
 
@@ -327,7 +323,7 @@ impl Organism {
         }
 
         let mut requests = Vec::new();
-        if self.belly >= self.reproduce_at * self.offspring {
+        if self.belly >= self.reproduce_at {
             requests.push(OrganismRequest::Reproduce);
         }
 

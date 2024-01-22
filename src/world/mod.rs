@@ -1,4 +1,5 @@
 use std::{
+    any::Any,
     sync::{Arc, RwLock},
     thread,
 };
@@ -159,7 +160,17 @@ impl LEWorld {
         self.paused = false;
     }
 
-    pub fn check_alive(&mut self) {
+    pub fn postmortem(&self) {
+        println!("{:#?}", self.graveyard);
+
+        #[cfg(feature = "log")]
+        for organism in self.graveyard.iter() {
+            let o = organism.read().unwrap();
+            self.log_id(o.id);
+        }
+    }
+
+    pub fn check_alive(&self) {
         let map = self.map.read().unwrap();
 
         let mut live_organisms_in_map = FxHashSet::default();
@@ -285,8 +296,6 @@ impl LEWorld {
                     Vec::new(),
                 ),
                 |(mut dead_list, mut new_spawn, mut _errors, mut events), (organism, requests)| {
-                    //tosdowjefwio
-                    //werwf
                     for request in requests {
                         match request {
                             OrganismRequest::ProduceFoodAround(location) => {
@@ -360,14 +369,17 @@ impl LEWorld {
                             }
                             OrganismRequest::EatFoodAround(location) => {
                                 match map.feed_organism(&organism, location) {
-                                    Ok(()) => {
+                                    Ok(amount) =>
+                                    {
                                         #[cfg(feature = "log")]
-                                        events.push(Event::new(
-                                            self.lifetime,
-                                            organism.read().unwrap().actor(),
-                                            EventType::Ate,
-                                            On::Food(location),
-                                        ));
+                                        if amount > 0 {
+                                            events.push(Event::new(
+                                                self.lifetime,
+                                                organism.read().unwrap().actor(),
+                                                EventType::Ate,
+                                                On::Food(location, amount),
+                                            ));
+                                        }
                                     }
                                     Err(_e) => {
                                         #[cfg(feature = "log")]
@@ -375,7 +387,7 @@ impl LEWorld {
                                             self.lifetime,
                                             organism.read().unwrap().actor(),
                                             EventType::FailAte(_e.to_string()),
-                                            On::Food(location),
+                                            On::Food(location, 0),
                                         ));
                                     }
                                 }
@@ -438,11 +450,28 @@ impl LEWorld {
                                         let mut o = organism.write().unwrap();
                                         //it shouldn't hold onto the food it has
                                         let _ = o.reproduce();
+
+                                        #[cfg(feature = "log")]
+                                        events.push(Event::new(
+                                            self.lifetime,
+                                            o.actor(),
+                                            EventType::FailReproduced(
+                                                "max pop exceeded".to_string(),
+                                            ),
+                                            On::None,
+                                        ));
                                     } else {
                                         match map
                                             .deliver_child(&organism, self.settings.spawn_radius)
                                         {
                                             Ok(child) => {
+                                                #[cfg(feature = "log")]
+                                                events.push(Event::new(
+                                                    self.lifetime,
+                                                    organism.read().unwrap().actor(),
+                                                    EventType::Reproduced,
+                                                    On::Actor(child.read().unwrap().actor()),
+                                                ));
                                                 new_spawn.push(child);
                                             }
                                             Err(_e) => {
@@ -457,6 +486,13 @@ impl LEWorld {
                                                     e
                                                 ));
                                                 */
+                                                #[cfg(feature = "log")]
+                                                events.push(Event::new(
+                                                    self.lifetime,
+                                                    organism.read().unwrap().actor(),
+                                                    EventType::FailReproduced(_e.to_string()),
+                                                    On::None,
+                                                ));
                                             }
                                         }
                                     }
@@ -570,7 +606,7 @@ impl LEWorld {
 
 #[derive(Debug, Clone)]
 pub struct WorldSettings {
-    pub producer_threshold: u8,
+    pub producer_probability: u8,
     //every nth tick of an organism being alive, decrease its food consumed by 1
     pub hunger_tick: u64,
     pub spawn_radius: u64,
@@ -581,11 +617,11 @@ pub struct WorldSettings {
 impl Default for WorldSettings {
     fn default() -> Self {
         WorldSettings {
-            hunger_tick: 6,
-            producer_threshold: 2,
+            hunger_tick: 30,
+            producer_probability: 5,
             spawn_radius: 15,
-            max_organisms: Some(200),
-            wall_length_half: Some(40),
+            max_organisms: None,
+            wall_length_half: None,
         }
     }
 }

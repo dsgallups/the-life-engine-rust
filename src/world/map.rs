@@ -53,7 +53,7 @@ impl WorldMap {
         &mut self,
         organism: &Arc<RwLock<Organism>>,
         location: I64Vec2,
-    ) -> Result<(), anyhow::Error> {
+    ) -> Result<u64, anyhow::Error> {
         let mut consumed = 0;
 
         for adjustment in AroundSquare::new() {
@@ -72,7 +72,7 @@ impl WorldMap {
         let mut org_lock = organism.write().unwrap();
         org_lock.feed(consumed);
 
-        Ok(())
+        Ok(consumed)
     }
     pub fn kill_around(
         &mut self,
@@ -121,8 +121,10 @@ impl WorldMap {
         &mut self,
         dead_organism: &Arc<RwLock<Organism>>,
     ) -> Result<(), anyhow::Error> {
-        let locations_to_remove: Vec<I64Vec2> =
-            { dead_organism.read().unwrap().occupied_locations().collect() };
+        //we need a lock here
+        let dead_organism_lock = dead_organism.read().unwrap();
+
+        let locations_to_remove: Vec<I64Vec2> = dead_organism_lock.occupied_locations().collect();
 
         for location in locations_to_remove.clone() {
             if self.insert(location, Cell::Food).is_none() {
@@ -260,19 +262,24 @@ impl WorldMap {
             can_move
         };
 
-        let mut org_lock = organism.write().unwrap();
         if !can_move {
-            org_lock.collide();
-            return Err(anyhow!("Can't move organism to new location!"));
+            //todo: it needs permission first
+            let mut org_lock = organism.write().unwrap();
+            if !can_move {
+                org_lock.facing.randomize();
+                return Err(anyhow!("Can't move organism to new location!"));
+            }
         }
+
+        let mut org_lock = organism.write().unwrap();
 
         for (location, organ) in org_lock.arc_organs() {
             self.insert(location + move_by, Cell::organism(organism, organ));
 
             self.remove(location);
         }
-
         org_lock.move_by(move_by);
+
         Ok(())
     }
 
