@@ -3,7 +3,7 @@ use std::{
     thread,
 };
 
-use crate::{Drawable, Organism};
+use crate::{Actor, Cell, Drawable, Event, EventType, On, Organism};
 use bevy::{
     ecs::system::Resource,
     math::{I64Vec2, Vec3},
@@ -18,6 +18,7 @@ pub use request::*;
 
 mod map;
 pub use map::*;
+use rustc_hash::FxHashSet;
 use uuid::Uuid;
 
 ///holds the map and organisms
@@ -31,6 +32,7 @@ pub struct LEWorld {
     graveyard: Vec<Arc<RwLock<Organism>>>,
     n_threads: u64,
     max_organisms: Option<usize>,
+    events: Vec<Event>,
     pub paused: bool,
 }
 
@@ -52,6 +54,7 @@ impl LEWorld {
             n_threads: thread_count,
             paused: false,
             max_organisms: None,
+            events: Vec::new(),
         }
     }
 
@@ -65,8 +68,13 @@ impl LEWorld {
             graveyard: Vec::new(),
             n_threads: thread_count,
             paused: false,
+            events: Vec::new(),
             max_organisms: None,
         }
+    }
+
+    pub fn push_evt(&mut self, actor: Actor, evt: EventType, on: On) {
+        self.events.push(Event::new(self.lifetime, actor, evt, on))
     }
 
     pub fn add_simple_producer(&mut self, location: I64Vec2) {
@@ -135,12 +143,93 @@ impl LEWorld {
         self.paused = false;
     }
 
+    pub fn check_alive(&mut self) {
+        let map = self.map.read().unwrap();
+
+        let mut live_organisms_in_map = FxHashSet::default();
+        let mut live_organs_in_map_count = 0;
+        for (_x, y) in map.iter() {
+            if let Cell::Organism(o, _) = y {
+                let o = o.read().unwrap();
+                live_organisms_in_map.insert(o.id);
+                live_organs_in_map_count += 1;
+            }
+        }
+
+        println!("Vec: Live Organism Count - {}", self.organisms.len());
+        let mut alive_organ_count = 0;
+        for organism in self.organisms.iter() {
+            let o = organism.read().unwrap();
+            let count = o.organs().count();
+            alive_organ_count += count;
+        }
+        println!("Vec: Live Organ Count - {}", alive_organ_count);
+
+        println!("Map; Live Organism count - {}", live_organisms_in_map.len());
+        println!("Map: Live Organ count - {}", live_organs_in_map_count);
+
+        if self.organisms.len() > live_organisms_in_map.len() {
+            for organism in self.organisms.iter() {
+                let o = organism.read().unwrap();
+                println!("ONE IS MISSING!");
+                if !live_organisms_in_map.contains(&o.id) {
+                    self.log_id(o.id);
+                }
+            }
+        }
+    }
+
+    pub fn log_id(&self, id: Uuid) {
+        println!("====begin event search====");
+        for event in self.events.iter() {
+            if let Actor::Organism(o, _location) = event.actioner {
+                if o == id {
+                    println!("{:?}", event);
+                    continue;
+                }
+            }
+            if let On::Actor(Actor::Organism(o, _loc)) = event.on {
+                if o == id {
+                    println!("{:?}", event);
+                }
+            }
+        }
+        println!("====end of events====");
+    }
+
     pub fn log_square(&self, position: I64Vec2) {
         let map = self.map.read().unwrap();
 
         let square = map.get(&position);
 
         println!("Square clicked: \n{:#?}", square);
+
+        let mut id = None;
+
+        if let Some(Cell::Organism(organism, _)) = square {
+            let questioned_organism = organism.read().unwrap();
+            id = Some(questioned_organism.id);
+            let mut found = false;
+            for o in self.organisms.iter() {
+                let o = o.read().unwrap();
+
+                if o.id == questioned_organism.id {
+                    println!("this oragnism is in our alive");
+                    found = true;
+                    break;
+                }
+            }
+
+            if !found {
+                println!("this organism is not found alive");
+            }
+        }
+
+        let Some(id) = id else {
+            return;
+        };
+
+        self.log_id(id);
     }
 
     pub fn log(&self) {
@@ -178,47 +267,141 @@ impl LEWorld {
             })
             .collect::<Vec<_>>();
 
-        let (dead_list, mut new_spawn, critical_errors) = {
+        let (dead_list, mut new_spawn, critical_errors, mut events) = {
             let mut map = self.map.write().unwrap();
             requests.into_iter().fold(
-                (Vec::new(), Vec::new(), Vec::<anyhow::Error>::new()),
-                |(mut dead_list, mut new_spawn, errors), (organism, requests)| {
+                (
+                    Vec::new(),
+                    Vec::new(),
+                    Vec::<anyhow::Error>::new(),
+                    Vec::new(),
+                ),
+                |(mut dead_list, mut new_spawn, mut errors, mut events), (organism, requests)| {
                     //tosdowjefwio
                     //werwf
                     for request in requests {
                         match request {
                             OrganismRequest::ProduceFoodAround(location) => {
-                                if let Err(_e) = map
+                                match map
                                     .produce_food_around(location, self.settings.food_spawn_radius)
                                 {
-                                    //println!("Couldn't make food: {}", e);
-                                    continue;
+                                    Ok(()) => {
+                                        let o = organism.read().unwrap();
+                                        events.push(Event::new(
+                                            self.lifetime,
+                                            o.actor(),
+                                            EventType::Produced,
+                                            On::Around(location),
+                                        ));
+                                    }
+                                    Err(e) => {
+                                        let o = organism.read().unwrap();
+                                        events.push(Event::new(
+                                            self.lifetime,
+                                            o.actor(),
+                                            EventType::FailProduced(e.to_string()),
+                                            On::Around(location),
+                                        ));
+                                    }
                                 }
                             }
                             OrganismRequest::MoveBy(location) => {
-                                if let Err(_e) = map.move_organism(&organism, location) {
-                                    //println!("Couldn't move organism: {}", e);
-                                    //do someething
-                                    continue;
+                                match map.move_organism(&organism, location) {
+                                    Ok(()) => {
+                                        let o = organism.read().unwrap();
+                                        events.push(Event::new(
+                                            self.lifetime,
+                                            o.actor(),
+                                            EventType::Moved,
+                                            On::To(location),
+                                        ))
+                                    }
+                                    Err(e) => {
+                                        let o = organism.read().unwrap();
+                                        events.push(Event::new(
+                                            self.lifetime,
+                                            o.actor(),
+                                            EventType::FailMoved(e.to_string()),
+                                            On::To(location),
+                                        ));
+                                    }
                                 }
                             }
                             OrganismRequest::EatFoodAround(location) => {
                                 match map.feed_organism(&organism, location) {
-                                    Ok(()) => {}
-                                    Err(_e) => {
-                                        //println!("Error feeding organism: {}", e)
+                                    Ok(()) => {
+                                        let o = organism.read().unwrap();
+                                        events.push(Event::new(
+                                            self.lifetime,
+                                            o.actor(),
+                                            EventType::Ate,
+                                            On::Food(location),
+                                        ));
+                                    }
+                                    Err(e) => {
+                                        let o = organism.read().unwrap();
+
+                                        events.push(Event::new(
+                                            self.lifetime,
+                                            o.actor(),
+                                            EventType::FailAte(e.to_string()),
+                                            On::Food(location),
+                                        ));
                                     }
                                 }
                             }
 
                             OrganismRequest::KillAround(location) => {
-                                let mut killed = map.kill_around(&organism, location);
+                                let (mut killed, errors) = map.kill_around(&organism, location);
+                                let o = organism.read().unwrap();
+                                for kill in killed.iter() {
+                                    let k = kill.read().unwrap();
+                                    events.push(Event::new(
+                                        self.lifetime,
+                                        o.actor(),
+                                        EventType::Killed,
+                                        On::Actor(k.actor()),
+                                    ));
+                                }
+
+                                for error in errors {
+                                    events.push(Event::new(
+                                        self.lifetime,
+                                        o.actor(),
+                                        EventType::FailKilled(error.to_string()),
+                                        On::None,
+                                    ));
+                                }
+
                                 dead_list.append(&mut killed);
                             }
                             OrganismRequest::Starve => match map.kill_organism(&organism) {
-                                Ok(id) => dead_list.push(id),
-                                Err(_e) => {
+                                Ok(()) => {
+                                    let o = organism.read().unwrap();
+                                    events.push(Event::new(
+                                        self.lifetime,
+                                        Actor::Map,
+                                        EventType::Starved,
+                                        On::Actor(o.actor()),
+                                    ));
+                                    dead_list.push(Arc::clone(&organism))
+                                }
+                                Err(e) => {
+                                    let org_info = organism.read().unwrap();
+
+                                    events.push(Event::new(
+                                        self.lifetime,
+                                        Actor::Map,
+                                        EventType::FailStarved(e.to_string()),
+                                        On::Actor(org_info.actor()),
+                                    ));
+
                                     //println!("Error killing organism! {}", e);
+                                    errors.push(anyhow!(
+                                        "Cannot starve organism: {:#?}\nerror: {}",
+                                        org_info,
+                                        e
+                                    ))
                                 }
                             },
                             OrganismRequest::Reproduce => {
@@ -249,10 +432,11 @@ impl LEWorld {
                         }
                     }
 
-                    (dead_list, new_spawn, errors)
+                    (dead_list, new_spawn, errors, events)
                 },
             )
         };
+        self.events.append(&mut events);
 
         if !critical_errors.is_empty() {
             let mut error_msg = "Critical error(s) encountered:\n".to_string();
@@ -268,29 +452,43 @@ impl LEWorld {
         Ok(())
     }
 
-    pub fn remove_dead(&mut self, list: Vec<Uuid>) {
+    pub fn remove_dead(&mut self, list: Vec<Arc<RwLock<Organism>>>) {
         if !list.is_empty() {
-            let (mut dead_organisms, alive_organisms) = self.organisms.clone().into_iter().fold(
-                (Vec::new(), Vec::new()),
-                |(mut dead_organisms, mut alive_organisms), organism| {
-                    let dead = {
-                        let org_lock = organism.read().unwrap();
-                        list.contains(&org_lock.id)
-                    };
+            let uuid_list = list
+                .into_iter()
+                .map(|o| o.read().unwrap().id)
+                .collect::<Vec<_>>();
 
-                    if dead {
-                        //nothing should be holding onto this
-                        dead_organisms.push(organism);
-                    } else {
-                        alive_organisms.push(organism);
-                    }
+            let (mut dead_organisms, alive_organisms, mut events) =
+                self.organisms.clone().into_iter().fold(
+                    (Vec::new(), Vec::new(), Vec::new()),
+                    |(mut dead_organisms, mut alive_organisms, mut events), organism| {
+                        let dead = {
+                            let org_lock = organism.read().unwrap();
+                            uuid_list.contains(&org_lock.id)
+                        };
 
-                    (dead_organisms, alive_organisms)
-                },
-            );
+                        if dead {
+                            //nothing should be holding onto this
+                            dead_organisms.push(Arc::clone(&organism));
+                            events.push(Event::new(
+                                self.lifetime,
+                                Actor::Map,
+                                EventType::MovedToGraveyard,
+                                On::Actor(organism.read().unwrap().actor()),
+                            ));
+                        } else {
+                            alive_organisms.push(organism);
+                        }
+
+                        (dead_organisms, alive_organisms, events)
+                    },
+                );
             self.organisms = alive_organisms;
 
             self.graveyard.append(&mut dead_organisms);
+
+            self.events.append(&mut events);
         }
     }
 

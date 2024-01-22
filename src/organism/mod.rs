@@ -1,4 +1,4 @@
-use crate::{Direction, Drawable, OrganType, OrganismRequest, WorldSettings};
+use crate::{Actor, Direction, Drawable, OrganType, OrganismRequest, WorldSettings};
 use anyhow::anyhow;
 use bevy::{math::I64Vec2, render::color::Color};
 use rand::Rng;
@@ -128,6 +128,9 @@ pub struct Organism {
 }
 
 impl Organism {
+    pub fn actor(&self) -> Actor {
+        Actor::Organism(self.id, self.location)
+    }
     pub fn try_new(
         organs: Vec<Organ>,
         location: I64Vec2,

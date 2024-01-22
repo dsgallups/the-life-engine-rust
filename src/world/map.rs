@@ -7,7 +7,6 @@ use anyhow::anyhow;
 use bevy::math::I64Vec2;
 use rand::Rng;
 use rustc_hash::FxHashMap;
-use uuid::Uuid;
 
 use crate::{Cell, OrganType, Organism};
 
@@ -88,7 +87,7 @@ impl WorldMap {
         &mut self,
         killer: &Arc<RwLock<Organism>>,
         killer_organ_location: I64Vec2,
-    ) -> Vec<Uuid> {
+    ) -> (Vec<Arc<RwLock<Organism>>>, Vec<anyhow::Error>) {
         let mut kill_list = Vec::new();
         for i in -1..=1 {
             for j in -1..=1 {
@@ -117,49 +116,42 @@ impl WorldMap {
             }
         }
 
-        let mut dead_organisms: Vec<Uuid> = Vec::with_capacity(kill_list.len());
+        let mut actually_killed = Vec::new();
+        let mut errors = Vec::new();
 
-        for organism in kill_list {
-            match self.kill_organism(&organism) {
-                Ok(dead_id) => dead_organisms.push(dead_id),
-                Err(_e) => {
+        for organism in kill_list.iter() {
+            match self.kill_organism(organism) {
+                Ok(()) => actually_killed.push(Arc::clone(organism)),
+                Err(e) => {
                     //most likely the organism is already dead, do nothing
+                    errors.push(e)
                 }
             }
         }
-        dead_organisms
+
+        (actually_killed, errors)
     }
 
     pub fn kill_organism(
         &mut self,
         dead_organism: &Arc<RwLock<Organism>>,
-    ) -> Result<Uuid, anyhow::Error> {
-        let (id, dead_organism_location) = {
-            let lock = dead_organism.read().unwrap();
-
-            (lock.id, lock.location)
-        };
-
-        let Some(Cell::Organism(organism, _organ)) = self.get(&dead_organism_location) else {
-            return Err(anyhow!(
-                "An organism doesn't exist at this location anymore!"
-            ));
-        };
-
+    ) -> Result<(), anyhow::Error> {
         let locations_to_remove: Vec<I64Vec2> =
-            { organism.read().unwrap().occupied_locations().collect() };
+            { dead_organism.read().unwrap().occupied_locations().collect() };
 
-        for location in locations_to_remove {
+        for location in locations_to_remove.clone() {
             if self.insert(location, Cell::Food).is_none() {
                 //this can happen if an organism that is being killed just reproduced
                 return Err(anyhow!(
-                    "Somehow, the organism is not in locations to remove!\nlocation: {}",
+                    "Somehow, the organism is not in locations to remove!\nOrganism: {:?}\nlocations_to_remove: {:?}\nlocation: {}",
+                    dead_organism.read().unwrap(),
+                    locations_to_remove,
                     location
                 ));
             };
         }
 
-        Ok(id)
+        Ok(())
     }
 
     pub fn move_organism(

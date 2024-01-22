@@ -125,12 +125,10 @@ fn fixed_update(
             else {
                 return;
             };
-            println!("Cursor position: {}", cursor_position);
+            let position = I64Vec2::new(cursor_position.x as i64, cursor_position.y as i64);
+            println!("Cursor position: {}", position);
 
-            let x = cursor_position.x as i64;
-            let y = cursor_position.y as i64;
-            let flat_position = I64Vec2::new(x, y);
-            world.log_square(flat_position);
+            world.log_square(position);
         }
     }
     if let Some(event) = key_presses.read().next() {
@@ -140,7 +138,8 @@ fn fixed_update(
                     KeyCode::R => world.reset(),
                     KeyCode::D => world.decimate(),
                     KeyCode::L => world.limit_organism_population(Some(200)),
-                    KeyCode::C => world.limit_organism_population(None),
+                    KeyCode::B => world.limit_organism_population(None),
+                    KeyCode::C => world.check_alive(),
                     _ => {}
                 }
             }
