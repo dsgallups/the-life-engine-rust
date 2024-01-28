@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-use bevy::render::color::Color;
+use bevy::{ecs::entity::Entity, render::color::Color};
 use rand::Rng;
 
 use crate::{Direction, Organ, Organism};
@@ -11,21 +11,27 @@ pub trait Drawable {
 
 #[derive(Clone, Debug)]
 pub enum Cell {
-    Food,
-    Wall,
+    Food(Entity),
+    Wall(Entity),
     Organism(Arc<RwLock<Organism>>, Arc<RwLock<Organ>>),
 }
 impl Cell {
     pub fn organism(organism: &Arc<RwLock<Organism>>, organ: &Arc<RwLock<Organ>>) -> Self {
         Self::Organism(Arc::clone(organism), Arc::clone(organ))
     }
+    pub fn food(entity: Entity) -> Self {
+        Self::Food(entity)
+    }
+    pub fn wall(entity: Entity) -> Self {
+        Self::Wall(entity)
+    }
 }
 
 impl Drawable for Cell {
     fn color(&self) -> Color {
         match self {
-            Cell::Food => Color::BLUE,
-            Cell::Wall => Color::DARK_GRAY,
+            Cell::Food(_) => Color::BLUE,
+            Cell::Wall(_) => Color::DARK_GRAY,
             Cell::Organism(_, organism_cell) => organism_cell.read().unwrap().color(),
         }
     }

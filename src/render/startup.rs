@@ -8,7 +8,7 @@ pub struct StartupPlugin;
 impl Plugin for StartupPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<LEWorld>()
-            .add_systems(Startup, (spawn_camera, spawn_text));
+            .add_systems(Startup, (spawn_camera, spawn_text, spawn_first_organism));
     }
 }
 

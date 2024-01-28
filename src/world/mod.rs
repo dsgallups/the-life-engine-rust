@@ -62,7 +62,7 @@ impl LEWorld {
         }
     }
 
-    pub fn new_walled(max_organisms: usize, length: u64) -> LEWorld {
+    pub fn new_walled(max_organisms: usize, length: u64, commands: &mut Commands) -> LEWorld {
         let settings = WorldSettings {
             max_organisms: Some(max_organisms),
             wall_length_half: Some((length / 2) as i64),
@@ -71,9 +71,12 @@ impl LEWorld {
         let settings = Arc::new(settings);
 
         let thread_count = thread::available_parallelism().unwrap().get() as u64;
+        let mut map = WorldMap::new(&settings);
+        map.set_wall(commands);
+
         LEWorld {
             settings: Arc::clone(&settings),
-            map: RwLock::new(WorldMap::new(&settings)),
+            map: RwLock::new(map),
             lifetime: 0,
             organisms: Vec::new(),
             graveyard: Vec::new(),
@@ -125,7 +128,7 @@ impl LEWorld {
         //self.add_simple_producer((0, 0).into());
     }
 
-    pub fn decimate(&mut self) {
+    pub fn decimate(&mut self, commands: &mut Commands) {
         let num_organisms_to_kill = self.organisms.len() / 2;
         let mut rng = rand::thread_rng();
         self.organisms.shuffle(&mut rng);
@@ -135,7 +138,7 @@ impl LEWorld {
         let mut dead_list = Vec::new();
 
         for (index, organism) in self.organisms.iter().enumerate() {
-            match map.kill_organism(organism) {
+            match map.kill_organism(organism, commands) {
                 Ok(id) => dead_list.push(id),
                 Err(e) => {
                     println!("failure killing organism: {}", e)
@@ -283,7 +286,7 @@ impl LEWorld {
         println!("Alive Organisms: {:?}", self.organisms);
     }
 
-    pub fn tick(&mut self, mut commands: &mut Commands) -> Result<(), anyhow::Error> {
+    pub fn tick(&mut self, commands: &mut Commands) -> Result<(), anyhow::Error> {
         if self.paused {
             return Ok(());
         }
@@ -311,7 +314,7 @@ impl LEWorld {
                     for request in requests {
                         match request {
                             OrganismRequest::ProduceFoodAround(location) => {
-                                match map.produce_food_around(location) {
+                                match map.produce_food_around(location, commands) {
                                     Ok(()) => {
                                         #[cfg(feature = "log")]
                                         events.push(Event::new(
@@ -380,7 +383,7 @@ impl LEWorld {
                                 }
                             }
                             OrganismRequest::EatFoodAround(location) => {
-                                match map.feed_organism(&organism, location) {
+                                match map.feed_organism(&organism, location, commands) {
                                     Ok(_amount) =>
                                     {
                                         #[cfg(feature = "log")]
@@ -407,7 +410,8 @@ impl LEWorld {
 
                             OrganismRequest::KillAround(location) => {
                                 let mut killed = if cfg!(feature = "log") {
-                                    let (killed, errors) = map.kill_around(&organism, location);
+                                    let (killed, errors) =
+                                        map.kill_around(&organism, location, commands);
                                     let o = organism.read().unwrap();
                                     for kill in killed.iter() {
                                         let k = kill.read().unwrap();
@@ -429,13 +433,15 @@ impl LEWorld {
                                     }
                                     killed
                                 } else {
-                                    let (killed, _) = map.kill_around(&organism, location);
+                                    let (killed, _) =
+                                        map.kill_around(&organism, location, commands);
                                     killed
                                 };
 
                                 dead_list.append(&mut killed);
                             }
-                            OrganismRequest::Starve => match map.kill_organism(&organism) {
+                            OrganismRequest::Starve => match map.kill_organism(&organism, commands)
+                            {
                                 Ok(()) => {
                                     #[cfg(feature = "log")]
                                     events.push(Event::new(
@@ -477,7 +483,11 @@ impl LEWorld {
                                         continue;
                                     }
                                 }
-                                match map.deliver_child(&organism, self.settings.spawn_radius) {
+                                match map.deliver_child(
+                                    &organism,
+                                    self.settings.spawn_radius,
+                                    commands,
+                                ) {
                                     Ok(child) => {
                                         #[cfg(feature = "log")]
                                         events.push(Event::new(
@@ -694,18 +704,4 @@ impl Direction {
             (Up, Up) | (Down, Down) | (Left, Left) | (Right, Right) => 0,
         }
     }
-}
-
-#[test]
-fn create_world() {
-    let mut world = LEWorld::new();
-
-    //world.add_simple_producer((0, 0).into());
-}
-
-#[test]
-fn create_world_panic() {
-    let mut world = LEWorld::new();
-    //world.add_simple_producer((0, 0).into());
-    //world.add_simple_producer((0, 0).into());
 }

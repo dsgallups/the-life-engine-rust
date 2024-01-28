@@ -2,7 +2,7 @@ use crate::{Actor, Direction, Drawable, OrganType, OrganismRequest, WorldSetting
 use anyhow::anyhow;
 use bevy::{
     ecs::{entity::Entity, system::Commands},
-    hierarchy::BuildChildren,
+    hierarchy::{BuildChildren, DespawnRecursiveExt},
     math::{I64Vec2, Vec3},
     render::color::Color,
     sprite::{Sprite, SpriteBundle},
@@ -34,11 +34,7 @@ pub enum OrganEvent {
 }
 
 impl Organ {
-    pub fn new(
-        r#type: OrganType,
-        relative_location: I64Vec2,
-        mut commands: &mut Commands,
-    ) -> Organ {
+    pub fn new(r#type: OrganType, relative_location: I64Vec2, commands: &mut Commands) -> Organ {
         let entity = commands
             .spawn(SpriteBundle {
                 transform: Transform::from_xyz(
@@ -62,7 +58,7 @@ impl Organ {
         }
     }
 
-    pub fn new_rand(relative_location: I64Vec2, mut commands: &mut Commands) -> Organ {
+    pub fn new_rand(relative_location: I64Vec2, commands: &mut Commands) -> Organ {
         let r#type = OrganType::new_rand();
         let entity = commands
             .spawn(SpriteBundle {
@@ -160,7 +156,7 @@ pub struct Organism {
     pub id: Uuid,
     r#type: OrganismType,
     organs: Vec<Arc<RwLock<Organ>>>,
-    entity: Entity,
+    pub entity: Entity,
     pub location: I64Vec2,
     pub facing: Direction,
     reproduce_at: u64,
@@ -182,7 +178,7 @@ impl Organism {
         mutation_rate: f64,
         facing: Direction,
         belly: u64,
-        mut commands: &mut Commands,
+        commands: &mut Commands,
     ) -> Result<Self, anyhow::Error> {
         let mut organism_type = OrganismType::None;
         for organ in organs.iter() {
@@ -209,7 +205,7 @@ impl Organism {
                 ..default()
             })
             .id();
-        for organ in organs {
+        for organ in organs.iter() {
             commands.entity(parent).add_child(organ.entity);
         }
 
@@ -377,6 +373,10 @@ impl Organism {
         self.facing
     }
 
+    pub fn kill(&mut self, commands: &mut Commands) {
+        commands.entity(self.entity).despawn_recursive();
+    }
+
     pub fn tick(&mut self, world_settings: &WorldSettings) -> Vec<OrganismRequest> {
         self.time_alive += 1;
         self.time_since_consumption += 1;
@@ -453,7 +453,7 @@ impl Organism {
         requests
     }
 
-    pub fn reproduce(&mut self, mut commands: &mut Commands) -> Result<NewSpawn, anyhow::Error> {
+    pub fn reproduce(&mut self, commands: &mut Commands) -> Result<NewSpawn, anyhow::Error> {
         let mut rng = rand::thread_rng();
         self.belly /= 2;
 

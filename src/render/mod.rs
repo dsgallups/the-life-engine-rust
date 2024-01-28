@@ -113,7 +113,6 @@ fn fixed_update(
     mut last_time: Local<f32>,
     mut mouse_button: EventReader<MouseButtonInput>,
     mut key_presses: EventReader<KeyboardInput>,
-    mut sprites_query: Query<(Entity, &Sprite)>,
     mut _exit: EventWriter<AppExit>,
     windows: Query<&Window>,
     time: Res<Time>,
@@ -155,7 +154,7 @@ fn fixed_update(
             if world.paused && event.state == ButtonState::Pressed {
                 match key_code {
                     KeyCode::R => world.reset(),
-                    KeyCode::D => world.decimate(),
+                    KeyCode::D => world.decimate(&mut commands),
                     KeyCode::L => world.limit_organism_population(Some(200)),
                     KeyCode::B => world.limit_organism_population(None),
                     KeyCode::C => world.check_alive(),

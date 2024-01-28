@@ -4,7 +4,14 @@ use std::{
 };
 
 use anyhow::anyhow;
-use bevy::{ecs::system::Commands, math::I64Vec2};
+use bevy::{
+    ecs::system::Commands,
+    math::I64Vec2,
+    prelude::default,
+    render::color::Color,
+    sprite::{Sprite, SpriteBundle},
+    transform::components::Transform,
+};
 use rand::Rng;
 use rustc_hash::FxHashMap;
 
@@ -20,27 +27,58 @@ pub struct WorldMap {
 
 impl WorldMap {
     pub fn new(settings: &Arc<WorldSettings>) -> Self {
-        let mut squares = FxHashMap::default();
+        Self {
+            settings: Arc::clone(settings),
+            squares: FxHashMap::default(),
+        }
+    }
 
-        if let Some(half) = settings.wall_length_half {
+    pub fn set_wall(&mut self, commands: &mut Commands) {
+        let squares = &mut self.squares;
+        if let Some(half) = self.settings.wall_length_half {
             for i in -half..half {
                 for j in -2..=2 {
                     let location = I64Vec2::new(i, -half + j);
-                    squares.insert(location, Cell::Wall);
+                    squares.insert(location, Self::wall_at(location, commands));
                     let location = I64Vec2::new(i, half + j);
-                    squares.insert(location, Cell::Wall);
+                    squares.insert(location, Self::wall_at(location, commands));
                     let location = I64Vec2::new(-half + j, i);
-                    squares.insert(location, Cell::Wall);
+                    squares.insert(location, Self::wall_at(location, commands));
                     let location = I64Vec2::new(half + j, i);
-                    squares.insert(location, Cell::Wall);
+                    squares.insert(location, Self::wall_at(location, commands));
                 }
             }
         }
+    }
 
-        Self {
-            settings: Arc::clone(settings),
-            squares,
-        }
+    pub fn wall_at(location: I64Vec2, commands: &mut Commands) -> Cell {
+        let entity = commands
+            .spawn(SpriteBundle {
+                transform: Transform::from_xyz(location.x as f32, location.y as f32, 0.),
+                sprite: Sprite {
+                    color: Color::DARK_GRAY,
+                    ..default()
+                },
+                ..default()
+            })
+            .id();
+
+        Cell::Wall(entity)
+    }
+
+    pub fn food_at(location: I64Vec2, commands: &mut Commands) -> Cell {
+        let entity = commands
+            .spawn(SpriteBundle {
+                transform: Transform::from_xyz(location.x as f32, location.y as f32, 0.),
+                sprite: Sprite {
+                    color: Color::BLUE,
+                    ..default()
+                },
+                ..default()
+            })
+            .id();
+
+        Cell::Wall(entity)
     }
 
     pub fn set_settings(&mut self, settings: &Arc<WorldSettings>) {
@@ -55,6 +93,7 @@ impl WorldMap {
         &mut self,
         organism: &Arc<RwLock<Organism>>,
         location: I64Vec2,
+        commands: &mut Commands,
     ) -> Result<u64, anyhow::Error> {
         let mut consumed = 0;
 
@@ -62,7 +101,8 @@ impl WorldMap {
             let looking_at = location + adjustment;
 
             match self.squares.get(&looking_at) {
-                Some(Cell::Food) => {
+                Some(Cell::Food(entity)) => {
+                    commands.entity(*entity).despawn();
                     self.squares.remove(&looking_at);
                     consumed += 1;
                 }
@@ -80,6 +120,7 @@ impl WorldMap {
         &mut self,
         killer: &Arc<RwLock<Organism>>,
         killer_organ_location: I64Vec2,
+        commands: &mut Commands,
     ) -> (Vec<Arc<RwLock<Organism>>>, Vec<anyhow::Error>) {
         let mut kill_list = Vec::new();
 
@@ -107,7 +148,7 @@ impl WorldMap {
         let mut errors = Vec::new();
 
         for organism in kill_list.iter() {
-            match self.kill_organism(organism) {
+            match self.kill_organism(organism, commands) {
                 Ok(()) => actually_killed.push(Arc::clone(organism)),
                 Err(e) => {
                     //most likely the organism is already dead, do nothing
@@ -122,14 +163,20 @@ impl WorldMap {
     pub fn kill_organism(
         &mut self,
         dead_organism: &Arc<RwLock<Organism>>,
+        commands: &mut Commands,
     ) -> Result<(), anyhow::Error> {
         //we need a lock here
-        let dead_organism_lock = dead_organism.read().unwrap();
+        let mut dead_organism_lock = dead_organism.write().unwrap();
+
+        dead_organism_lock.kill(commands);
 
         let locations_to_remove: Vec<I64Vec2> = dead_organism_lock.occupied_locations().collect();
 
         for location in locations_to_remove.clone() {
-            if self.insert(location, Cell::Food).is_none() {
+            if self
+                .insert(location, Self::food_at(location, commands))
+                .is_none()
+            {
                 //this can happen if an organism that is being killed just reproduced
                 return Err(anyhow!(
                     "Somehow, the organism is not in locations to remove!\nOrganism: {:?}\nlocations_to_remove: {:?}\nlocation: {}",
@@ -167,22 +214,22 @@ impl WorldMap {
                             }
                             break;
                         }
-                        (None | Some(BestMoveReason::Wall(_, _)), Some(Cell::Food)) => {
+                        (None | Some(BestMoveReason::Wall(_, _)), Some(Cell::Food(_))) => {
                             best_move = Some(BestMoveReason::Food(block_number as u64, direction));
                             break;
                         }
-                        (None, Some(Cell::Wall)) => {
+                        (None, Some(Cell::Wall(_))) => {
                             best_move = Some(BestMoveReason::Wall(block_number as u64, direction));
                             break;
                         }
-                        (Some(BestMoveReason::Wall(distance, _)), Some(Cell::Wall)) => {
+                        (Some(BestMoveReason::Wall(distance, _)), Some(Cell::Wall(_))) => {
                             if (block_number as u64) < *distance {
                                 best_move =
                                     Some(BestMoveReason::Wall(block_number as u64, direction))
                             }
                             break;
                         }
-                        (Some(_), Some(Cell::Wall)) => {
+                        (Some(_), Some(Cell::Wall(_))) => {
                             break;
                         }
 
@@ -191,7 +238,7 @@ impl WorldMap {
                                 BestMoveReason::Food(distance, _)
                                 | BestMoveReason::Danger(distance, _),
                             ),
-                            Some(Cell::Food),
+                            Some(Cell::Food(_)),
                         ) => {
                             if (block_number as u64) < *distance {
                                 best_move =
@@ -254,7 +301,7 @@ impl WorldMap {
             for location in org_lock.occupied_locations() {
                 match self.get(&(location + move_by)) {
                     None => {}
-                    Some(Cell::Food) => {}
+                    Some(Cell::Food(_)) => {}
                     _ => {
                         can_move = false;
                         break;
@@ -285,11 +332,30 @@ impl WorldMap {
         Ok(())
     }
 
-    pub fn produce_food_around(&mut self, location: I64Vec2) -> Result<(), anyhow::Error> {
+    pub fn produce_food_around(
+        &mut self,
+        location: I64Vec2,
+        commands: &mut Commands,
+    ) -> Result<(), anyhow::Error> {
         for adjustment in NEIGHBORS.adjacent {
             let random_spot = location + adjustment;
             if self.get(&random_spot).is_none() {
-                self.insert(random_spot, Cell::Food);
+                let entity = commands
+                    .spawn(SpriteBundle {
+                        transform: Transform::from_xyz(
+                            random_spot.x as f32,
+                            random_spot.y as f32,
+                            0.,
+                        ),
+                        sprite: Sprite {
+                            color: Color::BLUE,
+                            ..default()
+                        },
+                        ..default()
+                    })
+                    .id();
+
+                self.insert(random_spot, Cell::Food(entity));
                 return Ok(());
             }
         }
@@ -354,7 +420,9 @@ impl WorldMap {
             }
         };
 
-        let new_organism = Arc::new(RwLock::new(new_spawn.into_organism(baby_location)));
+        let new_organism = Arc::new(RwLock::new(
+            new_spawn.into_organism(baby_location, commands),
+        ));
 
         self.insert_organism(&new_organism)?;
 
