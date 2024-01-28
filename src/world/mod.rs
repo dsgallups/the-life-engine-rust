@@ -1,5 +1,4 @@
 use std::{
-    any::Any,
     sync::{Arc, RwLock},
     thread,
 };
@@ -110,6 +109,15 @@ impl LEWorld {
         }
     }
 
+    pub fn simple_log(&mut self) {
+        println!(
+            "TICK {}: Alive - {}; Dead - {};",
+            self.lifetime,
+            self.organisms.len(),
+            self.graveyard.len()
+        );
+    }
+
     pub fn reset(&mut self) {
         *self = LEWorld::new();
 
@@ -197,9 +205,9 @@ impl LEWorld {
 
         #[cfg(feature = "log")]
         if self.organisms.len() > live_organisms_in_map.len() {
+            println!("AT LEAST ONE IS MISSING:");
             for organism in self.organisms.iter() {
                 let o = organism.read().unwrap();
-                println!("ONE IS MISSING!");
                 if !live_organisms_in_map.contains(&o.id) {
                     self.log_id(o.id);
                 }
@@ -220,6 +228,14 @@ impl LEWorld {
             if let On::Actor(Actor::Organism(o, _loc)) = event.on {
                 if o == id {
                     println!("{:?}", event);
+                }
+            }
+            if let On::Actors(uuids) = &event.on {
+                for uuid in uuids {
+                    if uuid.0 == id {
+                        println!("{:?}", event);
+                        break;
+                    }
                 }
             }
         }
@@ -286,15 +302,10 @@ impl LEWorld {
             })
             .collect::<Vec<_>>();
 
-        let (dead_list, mut new_spawn, critical_errors, mut _events) = {
+        let (dead_list, mut new_spawn, _critical_errors, mut _events) = {
             let mut map = self.map.write().unwrap();
             requests.into_iter().fold(
-                (
-                    Vec::new(),
-                    Vec::new(),
-                    Vec::<anyhow::Error>::new(),
-                    Vec::new(),
-                ),
+                (Vec::new(), Vec::new(), Vec::new(), Vec::new()),
                 |(mut dead_list, mut new_spawn, mut _errors, mut events), (organism, requests)| {
                     for request in requests {
                         match request {
@@ -369,15 +380,15 @@ impl LEWorld {
                             }
                             OrganismRequest::EatFoodAround(location) => {
                                 match map.feed_organism(&organism, location) {
-                                    Ok(amount) =>
+                                    Ok(_amount) =>
                                     {
                                         #[cfg(feature = "log")]
-                                        if amount > 0 {
+                                        if _amount > 0 {
                                             events.push(Event::new(
                                                 self.lifetime,
                                                 organism.read().unwrap().actor(),
                                                 EventType::Ate,
-                                                On::Food(location, amount),
+                                                On::Food(location, _amount),
                                             ));
                                         }
                                     }
@@ -443,7 +454,7 @@ impl LEWorld {
                                         On::Actor(organism.read().unwrap().actor()),
                                     ));
 
-                                    _errors.push(_e);
+                                    _errors.push(organism.read().unwrap().id);
                                 }
                             },
                             OrganismRequest::Reproduce => {
@@ -462,60 +473,39 @@ impl LEWorld {
                                             ),
                                             On::None,
                                         ));
-                                    } else {
-                                        match map
-                                            .deliver_child(&organism, self.settings.spawn_radius)
-                                        {
-                                            Ok(child) => {
-                                                #[cfg(feature = "log")]
-                                                events.push(Event::new(
-                                                    self.lifetime,
-                                                    organism.read().unwrap().actor(),
-                                                    EventType::Reproduced,
-                                                    On::Actor(child.read().unwrap().actor()),
-                                                ));
-                                                new_spawn.push(child);
-                                            }
-                                            Err(_e) => {
-                                                let _organism = organism.read().unwrap();
-                                                /*println!( "Error reproducing - Info:\norganism: {:#?}\n Error: {}",
-                                                organism,
-                                                e);
-                                                */
-                                                /*errors.push(anyhow!(
-                                                    "Error reproducing - Info:\norganism: {:#?}\n Error: {}",
-                                                    organism,
-                                                    e
-                                                ));
-                                                */
-                                                #[cfg(feature = "log")]
-                                                events.push(Event::new(
-                                                    self.lifetime,
-                                                    organism.read().unwrap().actor(),
-                                                    EventType::FailReproduced(_e.to_string()),
-                                                    On::None,
-                                                ));
-                                            }
-                                        }
+                                        continue;
                                     }
-                                } else {
-                                    match map.deliver_child(&organism, self.settings.spawn_radius) {
-                                        Ok(child) => {
-                                            new_spawn.push(child);
-                                        }
-                                        Err(_e) => {
-                                            let _organism = organism.read().unwrap();
-                                            /*println!( "Error reproducing - Info:\norganism: {:#?}\n Error: {}",
+                                }
+                                match map.deliver_child(&organism, self.settings.spawn_radius) {
+                                    Ok(child) => {
+                                        #[cfg(feature = "log")]
+                                        events.push(Event::new(
+                                            self.lifetime,
+                                            organism.read().unwrap().actor(),
+                                            EventType::Reproduced,
+                                            On::Actor(child.read().unwrap().actor()),
+                                        ));
+                                        new_spawn.push(child);
+                                    }
+                                    Err(_e) => {
+                                        let _organism = organism.read().unwrap();
+                                        /*println!( "Error reproducing - Info:\norganism: {:#?}\n Error: {}",
+                                        organism,
+                                        e);
+                                        */
+                                        /*errors.push(anyhow!(
+                                            "Error reproducing - Info:\norganism: {:#?}\n Error: {}",
                                             organism,
-                                            e);
-                                            */
-                                            /*errors.push(anyhow!(
-                                                "Error reproducing - Info:\norganism: {:#?}\n Error: {}",
-                                                organism,
-                                                e
-                                            ));
-                                            */
-                                        }
+                                            e
+                                        ));
+                                        */
+                                        #[cfg(feature = "log")]
+                                        events.push(Event::new(
+                                            self.lifetime,
+                                            organism.read().unwrap().actor(),
+                                            EventType::FailReproduced(_e.to_string()),
+                                            On::None,
+                                        ));
                                     }
                                 }
                             }
@@ -529,16 +519,19 @@ impl LEWorld {
         #[cfg(feature = "log")]
         self.events.append(&mut _events);
 
-        if !critical_errors.is_empty() {
+        //append new spawn first, so if they're killed in the same tick, they are removed
+        self.organisms.append(&mut new_spawn);
+
+        self.remove_dead(dead_list);
+        #[cfg(feature = "log")]
+        if !_critical_errors.is_empty() {
             let mut error_msg = "Critical error(s) encountered:\n".to_string();
-            for error in critical_errors {
+            for error in _critical_errors {
                 error_msg += &format!("{}\n", error);
+                self.log_id(error);
             }
             return Err(anyhow!("{}", error_msg));
         }
-        self.remove_dead(dead_list);
-
-        self.organisms.append(&mut new_spawn);
 
         Ok(())
     }
@@ -549,6 +542,12 @@ impl LEWorld {
                 .into_iter()
                 .map(|o| o.read().unwrap().id)
                 .collect::<Vec<_>>();
+
+            let mut organism_list = Vec::new();
+            for organism in self.organisms.iter() {
+                let organism = organism.read().unwrap();
+                organism_list.push(organism.id);
+            }
 
             let (mut dead_organisms, alive_organisms, mut _events) =
                 self.organisms.clone().into_iter().fold(

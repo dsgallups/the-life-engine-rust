@@ -29,7 +29,7 @@ use startup::StartupPlugin;
 pub fn begin_ticking(world: LEWorld) {
     App::new()
         .insert_resource(world)
-        .insert_resource(Time::<Fixed>::from_seconds(0.05))
+        .insert_resource(Time::<Fixed>::from_seconds(0.01))
         .add_plugins((DefaultPlugins, FrameTimeDiagnosticsPlugin, StartupPlugin))
         .add_systems(Update, (move_camera, frame_update, text_fps_system))
         .add_systems(FixedUpdate, fixed_update)

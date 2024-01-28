@@ -8,19 +8,23 @@ pub enum EventType {
     FailStarved(String),
     Starved,
     MovedToGraveyard,
+    NotMovedToGraveyard,
     FailAte(String),
     Ate,
     FailProduced(String),
     Moved,
+    Exists,
     FailMoved(String),
     Produced,
     Reproduced,
     FailReproduced(String),
+    DeadList,
 }
 
 #[derive(Debug)]
 pub enum On {
     Actor(Actor),
+    Actors(Vec<(Uuid, bool)>),
     Food(I64Vec2, u64),
     Around(I64Vec2),
     To(I64Vec2),

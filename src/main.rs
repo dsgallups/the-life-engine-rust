@@ -19,7 +19,12 @@ fn main() {
     let mut world = LEWorld::new();
     world.add_simple_producer((0, 0).into());
 
-    //world.add_simple_mover((5, 0, 0).into());
-
-    begin_ticking(world);
+    if cfg!(feature = "bevy") {
+        begin_ticking(world);
+    } else {
+        loop {
+            let _ = world.tick();
+            world.simple_log();
+        }
+    }
 }
