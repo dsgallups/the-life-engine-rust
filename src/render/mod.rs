@@ -1,5 +1,6 @@
 use crate::LEWorld;
 use bevy::app::AppExit;
+use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy::input::keyboard::KeyboardInput;
 use bevy::input::mouse::MouseButtonInput;
 use bevy::input::ButtonState;
@@ -29,8 +30,8 @@ pub fn begin_ticking(world: LEWorld) {
     App::new()
         .insert_resource(world)
         .insert_resource(Time::<Fixed>::from_seconds(0.05))
-        .add_plugins((DefaultPlugins, StartupPlugin))
-        .add_systems(Update, (move_camera, frame_update))
+        .add_plugins((DefaultPlugins, FrameTimeDiagnosticsPlugin, StartupPlugin))
+        .add_systems(Update, (move_camera, frame_update, text_fps_system))
         .add_systems(FixedUpdate, fixed_update)
         .run();
 }
@@ -84,6 +85,16 @@ fn move_camera(
     let mut text = mouse_pos_box.get_single_mut().unwrap();
 
     text.sections[0].value = format!("({}, {})", point.x as i64, point.y as i64);
+}
+
+fn text_fps_system(diagnostics: Res<DiagnosticsStore>, mut query: Query<&mut Text, With<FpsText>>) {
+    for mut text in &mut query {
+        if let Some(fps) = diagnostics.get(FrameTimeDiagnosticsPlugin::FPS) {
+            if let Some(value) = fps.smoothed() {
+                text.sections[1].value = format!("{value:.2}");
+            }
+        }
+    }
 }
 
 fn frame_update(mut last_time: Local<f32>, time: Res<Time>) {
@@ -185,3 +196,6 @@ fn fixed_update(
 
 #[derive(Component)]
 pub struct MousePosBox;
+
+#[derive(Component)]
+pub struct FpsText;
