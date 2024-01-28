@@ -10,6 +10,8 @@ use rustc_hash::FxHashMap;
 
 use crate::{Cell, Direction, OrganType, Organism, WorldSettings};
 
+use super::neighbors::NEIGHBORS;
+
 #[derive(Debug)]
 pub struct WorldMap {
     settings: Arc<WorldSettings>,
@@ -56,7 +58,7 @@ impl WorldMap {
     ) -> Result<u64, anyhow::Error> {
         let mut consumed = 0;
 
-        for adjustment in AroundSquare::new() {
+        for adjustment in NEIGHBORS.adjacent {
             let looking_at = location + adjustment;
 
             match self.squares.get(&looking_at) {
@@ -81,7 +83,7 @@ impl WorldMap {
     ) -> (Vec<Arc<RwLock<Organism>>>, Vec<anyhow::Error>) {
         let mut kill_list = Vec::new();
 
-        for adjustment in AroundSquare::new() {
+        for adjustment in NEIGHBORS.adjacent {
             let looking_at = killer_organ_location + adjustment;
             match self.squares.get(&looking_at) {
                 Some(Cell::Organism(organism, organ)) => {
@@ -284,7 +286,7 @@ impl WorldMap {
     }
 
     pub fn produce_food_around(&mut self, location: I64Vec2) -> Result<(), anyhow::Error> {
-        for adjustment in AroundSquare::new() {
+        for adjustment in NEIGHBORS.adjacent {
             let random_spot = location + adjustment;
             if self.get(&random_spot).is_none() {
                 self.insert(random_spot, Cell::Food);
@@ -487,54 +489,4 @@ pub enum BestMoveReason {
     Food(u64, Direction),
     Danger(u64, Direction),
     Wall(u64, Direction),
-}
-
-impl Default for AroundSquare {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-pub struct AroundSquare {
-    x_val: bool,
-    y_val: bool,
-    counter: u8,
-}
-impl AroundSquare {
-    pub fn new() -> Self {
-        let mut rng = rand::thread_rng();
-        let x_val = rng.gen::<bool>();
-        let y_val = rng.gen::<bool>();
-
-        Self {
-            x_val,
-            y_val,
-            counter: 0,
-        }
-    }
-}
-
-impl Iterator for AroundSquare {
-    type Item = I64Vec2;
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.counter == 3 {
-            return None;
-        }
-
-        self.counter += 1;
-        (self.x_val, self.y_val) = match (self.x_val, self.y_val) {
-            (true, true) => (true, false),
-            (true, false) => (false, false),
-            (false, false) => (false, true),
-            (false, true) => (true, true),
-        };
-
-        let (x, y) = match (self.x_val, self.y_val) {
-            (true, true) => (1, 0),
-            (true, false) => (0, 1),
-            (false, false) => (-1, 0),
-            (false, true) => (0, -1),
-        };
-        Some(I64Vec2::new(x, y))
-    }
 }

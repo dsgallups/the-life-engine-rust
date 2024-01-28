@@ -12,6 +12,7 @@ use bevy::{
     transform::components::Transform,
 };
 use rand::{seq::SliceRandom, Rng};
+mod neighbors;
 mod request;
 #[cfg(feature = "log")]
 use crate::Actor;
