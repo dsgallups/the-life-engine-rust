@@ -19,7 +19,6 @@ type_complexity = "allow"
 
 [features]
 log = []
-bevy = []
 
 
 [profile.dev]

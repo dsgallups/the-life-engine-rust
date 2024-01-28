@@ -5,7 +5,7 @@ use std::{
 
 use crate::{Cell, Drawable, Event, EventType, On, Organism};
 use bevy::{
-    ecs::system::Resource,
+    ecs::system::{Commands, Resource},
     math::{I64Vec2, Vec3},
     prelude::default,
     sprite::{Sprite, SpriteBundle},
@@ -89,11 +89,11 @@ impl LEWorld {
         self.events.push(Event::new(self.lifetime, actor, evt, on))
     }
 
-    pub fn add_simple_producer(&mut self, location: I64Vec2) {
-        self.add_organism(Organism::simple_producer(location));
+    pub fn add_simple_producer(&mut self, location: I64Vec2, commands: &mut Commands) {
+        self.add_organism(Organism::simple_producer(location, commands));
     }
-    pub fn add_simple_mover(&mut self, location: I64Vec2) {
-        self.add_organism(Organism::simple_mover(location));
+    pub fn add_simple_mover(&mut self, location: I64Vec2, commands: &mut Commands) {
+        self.add_organism(Organism::simple_mover(location, commands));
     }
     pub fn add_organism(&mut self, organism: Organism) {
         let organism = Arc::new(RwLock::new(organism));
@@ -122,7 +122,7 @@ impl LEWorld {
     pub fn reset(&mut self) {
         *self = LEWorld::new();
 
-        self.add_simple_producer((0, 0).into());
+        //self.add_simple_producer((0, 0).into());
     }
 
     pub fn decimate(&mut self) {
@@ -283,7 +283,7 @@ impl LEWorld {
         println!("Alive Organisms: {:?}", self.organisms);
     }
 
-    pub fn tick(&mut self) -> Result<(), anyhow::Error> {
+    pub fn tick(&mut self, mut commands: &mut Commands) -> Result<(), anyhow::Error> {
         if self.paused {
             return Ok(());
         }
@@ -463,7 +463,7 @@ impl LEWorld {
                                     if self.organisms.len() >= max_pop {
                                         let mut o = organism.write().unwrap();
                                         //it shouldn't hold onto the food it has
-                                        let _ = o.reproduce();
+                                        let _ = o.reproduce(commands);
 
                                         #[cfg(feature = "log")]
                                         events.push(Event::new(
@@ -700,12 +700,12 @@ impl Direction {
 fn create_world() {
     let mut world = LEWorld::new();
 
-    world.add_simple_producer((0, 0).into());
+    //world.add_simple_producer((0, 0).into());
 }
 
 #[test]
 fn create_world_panic() {
     let mut world = LEWorld::new();
-    world.add_simple_producer((0, 0).into());
-    world.add_simple_producer((0, 0).into());
+    //world.add_simple_producer((0, 0).into());
+    //world.add_simple_producer((0, 0).into());
 }

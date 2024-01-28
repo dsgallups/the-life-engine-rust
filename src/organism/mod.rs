@@ -1,6 +1,14 @@
 use crate::{Actor, Direction, Drawable, OrganType, OrganismRequest, WorldSettings};
 use anyhow::anyhow;
-use bevy::{math::I64Vec2, render::color::Color};
+use bevy::{
+    ecs::{entity::Entity, system::Commands},
+    hierarchy::BuildChildren,
+    math::{I64Vec2, Vec3},
+    render::color::Color,
+    sprite::{Sprite, SpriteBundle},
+    transform::components::Transform,
+    utils::default,
+};
 use rand::Rng;
 use std::{
     fmt::Debug,
@@ -10,11 +18,12 @@ use uuid::Uuid;
 
 use super::Producer;
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Organ {
     pub id: Uuid,
     pub r#type: OrganType,
     pub relative_location: I64Vec2,
+    pub entity: Entity,
 }
 
 /// The vectors in here are relatively positioned to the center of the organism
@@ -25,19 +34,55 @@ pub enum OrganEvent {
 }
 
 impl Organ {
-    pub fn new(r#type: OrganType, relative_location: I64Vec2) -> Organ {
+    pub fn new(
+        r#type: OrganType,
+        relative_location: I64Vec2,
+        mut commands: &mut Commands,
+    ) -> Organ {
+        let entity = commands
+            .spawn(SpriteBundle {
+                transform: Transform::from_xyz(
+                    relative_location.x as f32,
+                    relative_location.y as f32,
+                    0.,
+                ),
+                sprite: Sprite {
+                    color: r#type.color(),
+                    ..default()
+                },
+                ..default()
+            })
+            .id();
+
         Organ {
             id: Uuid::new_v4(),
             r#type,
             relative_location,
+            entity,
         }
     }
 
-    pub fn new_rand(relative_location: I64Vec2) -> Organ {
+    pub fn new_rand(relative_location: I64Vec2, mut commands: &mut Commands) -> Organ {
+        let r#type = OrganType::new_rand();
+        let entity = commands
+            .spawn(SpriteBundle {
+                transform: Transform::from_xyz(
+                    relative_location.x as f32,
+                    relative_location.y as f32,
+                    0.,
+                ),
+                sprite: Sprite {
+                    color: r#type.color(),
+                    ..default()
+                },
+                ..default()
+            })
+            .id();
         Organ {
             id: Uuid::new_v4(),
-            r#type: OrganType::new_rand(),
+            r#type,
             relative_location,
+            entity,
         }
     }
 
@@ -96,24 +141,26 @@ impl NewSpawn {
             facing,
         }
     }
-    pub fn into_organism(self, location: I64Vec2) -> Organism {
+    pub fn into_organism(self, location: I64Vec2, commands: &mut Commands) -> Organism {
         Organism::try_new(
             self.organs,
             location,
             self.mutation_rate,
             self.facing,
             self.belly,
+            commands,
         )
         .unwrap()
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 #[allow(dead_code)]
 pub struct Organism {
     pub id: Uuid,
     r#type: OrganismType,
     organs: Vec<Arc<RwLock<Organ>>>,
+    entity: Entity,
     pub location: I64Vec2,
     pub facing: Direction,
     reproduce_at: u64,
@@ -135,6 +182,7 @@ impl Organism {
         mutation_rate: f64,
         facing: Direction,
         belly: u64,
+        mut commands: &mut Commands,
     ) -> Result<Self, anyhow::Error> {
         let mut organism_type = OrganismType::None;
         for organ in organs.iter() {
@@ -151,6 +199,19 @@ impl Organism {
                 _ => {}
             }
         }
+        let parent = commands
+            .spawn(SpriteBundle {
+                transform: Transform::from_translation(Vec3::new(
+                    location.x as f32,
+                    location.y as f32,
+                    0.0,
+                )),
+                ..default()
+            })
+            .id();
+        for organ in organs {
+            commands.entity(parent).add_child(organ.entity);
+        }
 
         let reproduce_at = organs.len() * 3;
 
@@ -163,6 +224,7 @@ impl Organism {
             r#type: organism_type,
             reproduce_at: reproduce_at.try_into().unwrap(),
             location,
+            entity: parent,
             facing,
             time_alive: 0,
             time_since_consumption: 0,
@@ -173,23 +235,31 @@ impl Organism {
         })
     }
 
-    pub fn simple_producer(location: I64Vec2) -> Organism {
+    pub fn simple_producer(location: I64Vec2, commands: &mut Commands) -> Organism {
         let organs = vec![
-            Organ::new(OrganType::Producer(Producer::new()), (-1, 1).into()),
-            Organ::new(OrganType::Mouth, (0, 0).into()),
-            Organ::new(OrganType::Producer(Producer::new()), (1, -1).into()),
+            Organ::new(
+                OrganType::Producer(Producer::new()),
+                (-1, 1).into(),
+                commands,
+            ),
+            Organ::new(OrganType::Mouth, (0, 0).into(), commands),
+            Organ::new(
+                OrganType::Producer(Producer::new()),
+                (1, -1).into(),
+                commands,
+            ),
         ];
 
-        Organism::try_new(organs, location, 50., Direction::Right, 4).unwrap()
+        Organism::try_new(organs, location, 50., Direction::Right, 4, commands).unwrap()
     }
 
-    pub fn simple_mover(location: I64Vec2) -> Organism {
+    pub fn simple_mover(location: I64Vec2, commands: &mut Commands) -> Organism {
         let organs = vec![
-            Organ::new(OrganType::Mouth, (0, 0).into()),
-            Organ::new(OrganType::Mover, (1, -1).into()),
+            Organ::new(OrganType::Mouth, (0, 0).into(), commands),
+            Organ::new(OrganType::Mover, (1, -1).into(), commands),
         ];
 
-        Organism::try_new(organs, location, 50., Direction::Right, 4).unwrap()
+        Organism::try_new(organs, location, 50., Direction::Right, 4, commands).unwrap()
     }
 
     //only the map sould call this and update appropriately
@@ -383,7 +453,7 @@ impl Organism {
         requests
     }
 
-    pub fn reproduce(&mut self) -> Result<NewSpawn, anyhow::Error> {
+    pub fn reproduce(&mut self, mut commands: &mut Commands) -> Result<NewSpawn, anyhow::Error> {
         let mut rng = rand::thread_rng();
         self.belly /= 2;
 
@@ -485,7 +555,8 @@ impl Organism {
                             }
                             count += 1;
                         } else {
-                            new_organs.push(Organ::new_rand(attach_to + I64Vec2::new(x, y)));
+                            new_organs
+                                .push(Organ::new_rand(attach_to + I64Vec2::new(x, y), commands));
                             break;
                         }
                     }

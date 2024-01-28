@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::anyhow;
-use bevy::math::I64Vec2;
+use bevy::{ecs::system::Commands, math::I64Vec2};
 use rand::Rng;
 use rustc_hash::FxHashMap;
 
@@ -302,10 +302,11 @@ impl WorldMap {
         &mut self,
         parent: &Arc<RwLock<Organism>>,
         spawn_radius: u64,
+        commands: &mut Commands,
     ) -> Result<Arc<RwLock<Organism>>, anyhow::Error> {
         let mut parent = parent.write().unwrap();
 
-        let new_spawn = match parent.reproduce() {
+        let new_spawn = match parent.reproduce(commands) {
             Ok(spawn) => spawn,
             Err(e) => {
                 return Err(anyhow!("The parent failed to produce a new spawn: {}", e));

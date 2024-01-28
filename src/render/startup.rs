@@ -24,6 +24,10 @@ fn spawn_camera(mut commands: Commands) {
     commands.spawn(camera);
 }
 
+fn spawn_first_organism(mut commands: Commands, mut world: ResMut<LEWorld>) {
+    world.add_simple_producer((0, 0).into(), &mut commands);
+}
+
 fn spawn_text(mut commands: Commands, asset_server: Res<AssetServer>) {
     let font = asset_server.load("fonts/fira.ttf");
 

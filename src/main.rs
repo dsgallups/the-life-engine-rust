@@ -16,15 +16,5 @@ pub use organism::*;
 pub use world::*;
 
 fn main() {
-    let mut world = LEWorld::new();
-    world.add_simple_producer((0, 0).into());
-
-    if cfg!(feature = "bevy") {
-        begin_ticking(world);
-    } else {
-        loop {
-            let _ = world.tick();
-            world.simple_log();
-        }
-    }
+    begin_ticking();
 }

@@ -26,7 +26,8 @@ use bevy::{
 mod startup;
 use startup::StartupPlugin;
 
-pub fn begin_ticking(world: LEWorld) {
+pub fn begin_ticking() {
+    let world = LEWorld::new();
     App::new()
         .insert_resource(world)
         .insert_resource(Time::<Fixed>::from_seconds(0.01))
@@ -165,16 +166,12 @@ fn fixed_update(
         }
     }
 
-    if let Err(e) = world.tick() {
+    if let Err(e) = world.tick(&mut commands) {
         println!("Error ticking world:\n{}", e);
         world.pause();
     }
 
     let new_sprites = world.draw();
-
-    for (ent, _sprites) in &mut sprites_query {
-        commands.entity(ent).despawn();
-    }
 
     commands.spawn_batch(new_sprites);
     //let _ = world.tick();
