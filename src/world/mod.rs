@@ -442,6 +442,8 @@ impl LEWorld {
                                         EventType::FailStarved(_e.to_string()),
                                         On::Actor(organism.read().unwrap().actor()),
                                     ));
+
+                                    _errors.push(_e);
                                 }
                             },
                             OrganismRequest::Reproduce => {

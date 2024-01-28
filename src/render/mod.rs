@@ -40,6 +40,7 @@ fn move_camera(
     mouse_button: Res<Input<MouseButton>>,
     mut cursor_moved: EventReader<MouseMotion>,
     mut mouse_wheel: EventReader<MouseWheel>,
+    mut mouse_pos_box: Query<&mut Text, With<MousePosBox>>,
     windows: Query<&Window>,
     mut gizmos: Gizmos,
 ) {
@@ -78,6 +79,11 @@ fn move_camera(
     transform.scale.y += scroll * 0.01;
 
     gizmos.circle_2d(point, 1., Color::WHITE);
+
+    //print the mousie position
+    let mut text = mouse_pos_box.get_single_mut().unwrap();
+
+    text.sections[0].value = format!("({}, {})", point.x as i64, point.y as i64);
 }
 
 fn frame_update(mut last_time: Local<f32>, time: Res<Time>) {
@@ -176,3 +182,6 @@ fn fixed_update(
     );*/
     *last_time = time.elapsed_seconds();
 }
+
+#[derive(Component)]
+pub struct MousePosBox;
