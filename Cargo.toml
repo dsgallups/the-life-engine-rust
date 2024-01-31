@@ -18,9 +18,8 @@ too_many_arguments = "allow"
 type_complexity = "allow"
 
 [features]
-default = ["bevy", "log"]
+default = ["log"]
 log = []
-bevy = []
 
 
 [profile.dev]

@@ -1,7 +1,10 @@
-use crate::{Actor, Direction, Drawable, OrganType, OrganismRequest, WorldSettings};
+use crate::{world_settings::WorldSettings, Actor, Drawable, OrganType};
+mod request;
+use super::direction::Direction;
 use anyhow::anyhow;
-use bevy::{math::I64Vec2, render::color::Color};
+use bevy::{ecs::component::Component, math::I64Vec2, render::color::Color};
 use rand::Rng;
+pub use request::*;
 use std::{
     fmt::Debug,
     sync::{Arc, RwLock, RwLockReadGuard},
@@ -108,7 +111,7 @@ impl NewSpawn {
     }
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Component)]
 #[allow(dead_code)]
 pub struct Organism {
     pub id: Uuid,

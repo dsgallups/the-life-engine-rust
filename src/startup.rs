@@ -1,5 +1,5 @@
-use crate::LEWorld;
-use bevy::prelude::*;
+use crate::{map::WorldMap, world_settings::WorldSettings, Organism};
+use bevy::{math::I64Vec2, prelude::*};
 
 use super::{FpsText, MousePosBox};
 
@@ -7,8 +7,9 @@ pub struct StartupPlugin;
 
 impl Plugin for StartupPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<LEWorld>()
-            .add_systems(Startup, (spawn_camera, spawn_text));
+        app.init_resource::<WorldSettings>()
+            .init_resource::<WorldMap>()
+            .add_systems(Startup, (spawn_camera, spawn_text, spawn_first_organism));
     }
 }
 
@@ -22,6 +23,40 @@ fn spawn_camera(mut commands: Commands) {
     };
 
     commands.spawn(camera);
+}
+
+fn spawn_first_organism(mut commands: Commands) {
+    let organism = Organism::simple_producer(I64Vec2::new(0, 0));
+
+    let organ_sprites = organism
+        .organs()
+        .map(|(_abs_loc, organ)| SpriteBundle {
+            sprite: Sprite {
+                color: organ.color(),
+                ..default()
+            },
+            transform: Transform::from_translation(Vec3::new(
+                organ.relative_location.x as f32,
+                organ.relative_location.y as f32,
+                0.,
+            )),
+            ..default()
+        })
+        .collect::<Vec<_>>();
+
+    commands
+        .spawn((
+            SpriteBundle {
+                transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
+                ..default()
+            },
+            organism,
+        ))
+        .with_children(|parent| {
+            for sprite in organ_sprites {
+                parent.spawn(sprite);
+            }
+        });
 }
 
 fn spawn_text(mut commands: Commands, asset_server: Res<AssetServer>) {

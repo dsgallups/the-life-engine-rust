@@ -1,15 +1,15 @@
 use std::sync::{Arc, RwLock};
 
-use bevy::render::color::Color;
+use bevy::{ecs::component::Component, render::color::Color};
 use rand::Rng;
 
-use crate::{Direction, Organ, Organism};
+use crate::{direction::Direction, Organ, Organism};
 
 pub trait Drawable {
     fn color(&self) -> Color;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Component)]
 pub enum Cell {
     Food,
     Wall,
