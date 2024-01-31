@@ -275,7 +275,7 @@ impl WorldMap {
 
         let mut org_lock = organism.write().unwrap();
 
-        for (location, organ) in org_lock.arc_organs() {
+        for (location, organ) in org_lock.organs() {
             self.insert(location + move_by, Cell::organism(organism, organ));
 
             self.remove(location);

@@ -71,7 +71,7 @@ impl Organ {
     }
 }
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub enum OrganismType {
     Mover,
     #[default]
@@ -108,12 +108,12 @@ impl NewSpawn {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 #[allow(dead_code)]
 pub struct Organism {
     pub id: Uuid,
     r#type: OrganismType,
-    organs: Vec<Arc<RwLock<Organ>>>,
+    organs: Vec<Organ>,
     pub location: I64Vec2,
     pub facing: Direction,
     reproduce_at: u64,
@@ -156,10 +156,7 @@ impl Organism {
 
         Ok(Organism {
             id: Uuid::new_v4(),
-            organs: organs
-                .into_iter()
-                .map(|o| Arc::new(RwLock::new(o)))
-                .collect(),
+            organs,
             r#type: organism_type,
             reproduce_at: reproduce_at.try_into().unwrap(),
             location,
@@ -196,8 +193,7 @@ impl Organism {
     pub fn turn_to(&mut self, face: Direction) {
         let turn_amount = self.facing.turn(face);
         self.facing = face;
-        for organ in self.organs.iter() {
-            let mut organ = organ.write().unwrap();
+        for organ in self.organs.iter_mut() {
             let loc = &mut organ.relative_location;
             let og = *loc;
             match turn_amount {
@@ -230,8 +226,7 @@ impl Organism {
         let new_direction = self.facing;
 
         let turn_amount = original_direction.turn(new_direction);
-        for organ in self.organs.iter() {
-            let mut organ = organ.write().unwrap();
+        for organ in self.organs.iter_mut() {
             let loc = &mut organ.relative_location;
             let og = *loc;
             match turn_amount {
@@ -264,8 +259,7 @@ impl Organism {
         match self.facing {
             Direction::Down | Direction::Up => {
                 //reverse the locations across the y axis
-                for organ in self.organs.iter() {
-                    let mut organ = organ.write().unwrap();
+                for organ in self.organs.iter_mut() {
                     let loc = &mut organ.relative_location;
 
                     loc.y = -loc.y
@@ -273,8 +267,7 @@ impl Organism {
             }
             Direction::Left | Direction::Right => {
                 //reverse the locations across the x axis
-                for organ in self.organs.iter() {
-                    let mut organ = organ.write().unwrap();
+                for organ in self.organs.iter_mut() {
                     let loc = &mut organ.relative_location;
 
                     loc.x = -loc.x
@@ -283,24 +276,17 @@ impl Organism {
         }
     }
 
-    pub fn arc_organs(&self) -> impl Iterator<Item = (I64Vec2, &Arc<RwLock<Organ>>)> {
-        self.organs.iter().map(|organ| {
-            let organ_inner = organ.read().unwrap();
-            (self.location + organ_inner.relative_location, organ)
-        })
+    pub fn organs(&self) -> impl Iterator<Item = (I64Vec2, &Organ)> {
+        self.organs
+            .iter()
+            .map(|organ| (self.location + organ.relative_location, organ))
     }
 
-    pub fn organs(&self) -> impl Iterator<Item = (I64Vec2, RwLockReadGuard<'_, Organ>)> + '_ {
-        self.organs.iter().map(|organ| {
-            let organ_inner = organ.read().unwrap();
-            (self.location + organ_inner.relative_location, organ_inner)
-        })
-    }
     pub fn occupied_locations(&self) -> impl Iterator<Item = I64Vec2> + '_ {
         return self
             .organs
             .iter()
-            .map(|organ| self.location + organ.read().unwrap().relative_location);
+            .map(|organ| self.location + organ.relative_location);
     }
 
     pub fn facing(&self) -> Direction {
@@ -329,7 +315,6 @@ impl Organism {
 
         let mut eye_locations: Option<Vec<(I64Vec2, Direction)>> = None;
         for organ in self.organs.iter_mut() {
-            let mut organ = organ.write().unwrap();
             if let OrganType::Eye(direction) = organ.r#type {
                 if self.r#type == OrganismType::Mover {
                     match eye_locations {

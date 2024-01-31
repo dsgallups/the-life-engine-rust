@@ -18,6 +18,7 @@ too_many_arguments = "allow"
 type_complexity = "allow"
 
 [features]
+default = ["bevy", "log"]
 log = []
 bevy = []
 
