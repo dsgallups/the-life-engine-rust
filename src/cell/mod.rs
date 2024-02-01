@@ -7,5 +7,11 @@ pub trait Drawable {
 #[derive(Component)]
 pub struct Food;
 
+impl Drawable for Food {
+    fn color(&self) -> Color {
+        Color::BLUE
+    }
+}
+
 #[derive(Component)]
 pub struct Wall;

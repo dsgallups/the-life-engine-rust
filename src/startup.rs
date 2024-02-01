@@ -1,17 +1,21 @@
 use crate::{
-    world_settings::WorldSettings, CantMove, Mouth, OrganBundle, OrganismBundle, OrganismEvent,
-    Producer,
+    world_settings::WorldSettings, OrganBundle, OrganType, OrganismBundle, OrganismInfo,
+    OrganismType, Reproduce,
 };
 use bevy::prelude::*;
 
 use super::{FpsText, MousePosBox};
+
+#[derive(Event)]
+pub struct RemoveFood(pub Entity);
 
 pub struct StartupPlugin;
 
 impl Plugin for StartupPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<WorldSettings>()
-            .add_event::<OrganismEvent>()
+            .add_event::<Reproduce>()
+            .add_event::<RemoveFood>()
             .add_systems(Startup, (spawn_camera, spawn_text, spawn_first_organism));
     }
 }
@@ -30,45 +34,16 @@ fn spawn_camera(mut commands: Commands) {
 
 fn spawn_first_organism(mut commands: Commands) {
     commands
-        .spawn(OrganismBundle::new(CantMove, (0, 0), 3))
-        .with_children(|parent| {
-            parent.spawn(OrganBundle::new(Producer::new(), (1, 1)));
-            parent.spawn(OrganBundle::new(Mouth, (0, 0)));
-            parent.spawn(OrganBundle::new(Producer::new(), (-1, -1)));
-        });
-
-    /*let organism = Organism::simple_producer(I64Vec2::new(0, 0));
-
-    let organ_sprites = organism
-        .organs()
-        .map(|organ| (SpriteBundle {
-            sprite: Sprite {
-                color: organ.color(),
-                ..default()
-            },
-            transform: Transform::from_translation(Vec3::new(
-                organ.relative_location.x as f32,
-                organ.relative_location.y as f32,
-                0.,
-            )),
-            ..default()
-        })
-        .collect::<Vec<_>>();
-
-    commands
-        .spawn((
-            SpriteBundle {
-                transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
-                ..default()
-            },
-            WorldLocation::new(0, 0),
-            organism,
+        .spawn(OrganismBundle::new(
+            OrganismType::Producer,
+            (0, 0),
+            OrganismInfo::new(3),
         ))
         .with_children(|parent| {
-            for sprite in organ_sprites {
-                parent.spawn(sprite);
-            }
-        });*/
+            parent.spawn(OrganBundle::new(OrganType::Producer, (1, 1)));
+            parent.spawn(OrganBundle::new(OrganType::Mouth, (0, 0)));
+            parent.spawn(OrganBundle::new(OrganType::Producer, (-1, -1)));
+        });
 }
 
 fn spawn_text(mut commands: Commands, asset_server: Res<AssetServer>) {

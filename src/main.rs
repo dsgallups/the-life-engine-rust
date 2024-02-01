@@ -6,7 +6,7 @@ mod startup;
 use map::WorldLocation;
 use neighbors::NEIGHBORS;
 use rand::{thread_rng, Rng};
-use startup::StartupPlugin;
+use startup::{RemoveFood, StartupPlugin};
 mod direction;
 mod neighbors;
 
@@ -32,8 +32,17 @@ fn main() {
     App::new()
         .insert_resource(Time::<Fixed>::from_seconds(0.05))
         .add_plugins((DefaultPlugins, FrameTimeDiagnosticsPlugin, StartupPlugin))
-        .add_systems(Update, (move_camera, frame_update, text_fps_system))
-        .add_systems(FixedUpdate, (fixed_update, produce_system, eat_system))
+        .add_systems(
+            Update,
+            (
+                move_camera,
+                frame_update,
+                text_fps_system,
+                remove_food_system,
+                reproduce_system,
+            ),
+        )
+        .add_systems(FixedUpdate, (fixed_update, organ_system))
         .run();
 }
 fn move_camera(
@@ -199,175 +208,295 @@ fn tick_organisms(
     }
 }
 */
-fn eat_system(
+fn organ_system(
     mut commands: Commands,
+    world_settings: Res<WorldSettings>,
     food_query: Query<(Entity, &WorldLocation), With<Food>>,
-    mouth_query: Query<(&WorldLocation, &Parent), With<Mouth>>,
-    mut organism_query: Query<(&WorldLocation, &mut OrganismInfo)>,
+    map_query: Query<(Entity, &WorldLocation)>,
+    organ_query: Query<(&WorldLocation, &OrganType, &Parent)>,
+    mut organism_event: EventWriter<Reproduce>,
+    mut remove_food: EventWriter<RemoveFood>,
+    mut organism_query: Query<(Entity, &WorldLocation, &mut OrganismInfo, &Children)>,
 ) {
     let mut food: HashMap<WorldLocation, Entity> = HashMap::new();
+    let mut map: HashMap<WorldLocation, Entity> = HashMap::new();
+
+    map_query.iter().for_each(|(ent, location)| {
+        map.insert(*location, ent);
+    });
 
     for (ent, location) in food_query.iter() {
         food.insert(*location, ent);
     }
 
-    for (rel_location, parent) in mouth_query.iter() {
-        let (organism_loc, mut organism_info) = organism_query.get_mut(**parent).unwrap();
-        let absolute_location = *organism_loc + *rel_location;
-        for around in NEIGHBORS.adjacent {
-            let checking_loc = absolute_location + around;
-            if let Some(food_ent) = food.get(&checking_loc) {
-                organism_info.belly += 1;
-                commands.entity(*food_ent).despawn();
-            }
-        }
-    }
-}
+    for (rel_location, organ_type, parent) in organ_query.iter() {
+        let (org_ent, organism_loc, mut organism_info, children) =
+            organism_query.get_mut(**parent).unwrap();
 
-fn produce_system(
-    world_settings: Res<WorldSettings>,
-    mut commands: Commands,
-    map_query: Query<&WorldLocation>,
-    mut producer_query: Query<(Entity, &WorldLocation, &Parent), With<Producer>>,
-    organism_query: Query<(&WorldLocation), With<CantMove>>,
-) {
-    let mut map: HashSet<WorldLocation> = HashSet::new();
-
-    map_query.iter().for_each(|location| {
-        map.insert(*location);
-    });
-
-    for (ent, location, parent) in producer_query.iter_mut() {
-        let Ok(organism_loc) = organism_query.get(**parent) else {
+        if organism_info.belly == 0 {
+            commands.entity(org_ent).despawn_recursive();
             continue;
-        };
+        }
 
-        if thread_rng().gen_range(0..=100) <= world_settings.producer_probability {
-            for around in NEIGHBORS.adjacent {
-                let checking_loc = *organism_loc + *location + around;
-                if map.get(&checking_loc).is_none() {
-                    println!("producing at {:?}", checking_loc);
-                    commands.spawn((
-                        SpriteBundle {
-                            sprite: Sprite {
-                                color: Color::BLUE,
-                                ..default()
-                            },
-                            transform: Transform::from_translation(Vec3::new(
-                                checking_loc.x() as f32,
-                                checking_loc.y() as f32,
-                                0.,
-                            )),
-                            ..default()
-                        },
-                        checking_loc,
-                        Food,
-                    ));
-                    break;
+        let absolute_location = *organism_loc + *rel_location;
+
+        match organ_type {
+            OrganType::Mouth => {
+                for around in NEIGHBORS.adjacent {
+                    let checking_loc = absolute_location + around;
+                    if let Some(food_ent) = food.get(&checking_loc) {
+                        organism_info.belly += 1;
+
+                        remove_food.send(RemoveFood(*food_ent));
+
+                        if organism_info.belly > children.len() as u64 {
+                            organism_event.send(Reproduce(**parent));
+                        }
+                    }
                 }
             }
+            OrganType::Producer => {
+                if thread_rng().gen_range(0..=100) <= world_settings.producer_probability {
+                    for around in NEIGHBORS.adjacent {
+                        let checking_loc = absolute_location + around;
+                        if map.get(&checking_loc).is_none() {
+                            commands.spawn((
+                                SpriteBundle {
+                                    sprite: Sprite {
+                                        color: Food.color(),
+                                        ..default()
+                                    },
+                                    transform: Transform::from_translation(Vec3::new(
+                                        checking_loc.x() as f32,
+                                        checking_loc.y() as f32,
+                                        0.,
+                                    )),
+                                    ..default()
+                                },
+                                checking_loc,
+                                Food,
+                            ));
+                            break;
+                        }
+                    }
+                }
+            }
+            _ => {}
         }
     }
 }
 
 fn reproduce_system(
     mut commands: Commands,
+    world_settings: Res<WorldSettings>,
     mut requests: EventReader<Reproduce>,
     map_query: Query<&WorldLocation>,
-    mut organism_query: Query<(&mut OrganismInfo, &Children)>,
+    mut organism_query: Query<(&WorldLocation, &mut OrganismInfo, &Children)>,
     organ_query: Query<(&WorldLocation, &OrganType)>,
 ) {
     let mut map: HashSet<WorldLocation> = HashSet::new();
 
+    let mut rng = rand::thread_rng();
+
     map_query.iter().for_each(|location| {
         map.insert(*location);
     });
 
-    for request in requests.read() {
-        let (mut organism_info, children) = organism_query.get_mut(request.0).unwrap();
+    'request: for request in requests.read() {
+        let (organism_location, mut organism_info, children) =
+            organism_query.get_mut(request.0).unwrap();
 
-        if organism_info.belly >= children.len() as u64 {
-            //commands.spawn(OrganismBundle::new(OrganismType::CantMove, request.1, 3, 3));
+        let new_organism_stats = organism_info.gen_child_stats();
+        let mutation_actions = MutationAction::rand_list(new_organism_stats.mutation_rate);
+
+        let mut new_organs = children
+            .iter()
+            .map(|child| {
+                let (relative_location, organ) = organ_query.get(*child).unwrap();
+                (*relative_location, organ.clone())
+            })
+            .collect::<Vec<_>>();
+
+        let turn_amount = organism_info.facing.turn(new_organism_stats.facing);
+
+        for organ in new_organs.iter_mut() {
+            let loc = &mut organ.0;
+            let og = *loc;
+            match turn_amount {
+                -1 => {
+                    //counter-clockwise
+                    loc.set_x(-og.y());
+                    loc.set_y(og.x());
+                }
+                1 => {
+                    //clockwise
+                    loc.set_x(og.y());
+                    loc.set_y(-og.x());
+                }
+                2 => {
+                    //opposite
+                    loc.set_x(-og.x());
+                    loc.set_y(-og.y());
+                }
+                0 => {
+                    //none
+                }
+                _ => unreachable!(),
+            }
         }
-    }
-}
 
-/*
-fn process_requests(
-    mut commands: Commands,
-    mut requests: EventReader<OrganismEvent>,
-    map_query: Query<&WorldLocation>,
-    mut organism_query: Query<(&mut OrganismType)>,
-) {
-    let mut map: HashSet<WorldLocation> = HashSet::new();
-
-    map_query.iter().for_each(|location| {
-        map.insert(*location);
-    });
-
-    for request in requests.read() {
-        println!("request: {:?}", request);
-        let _organism = organism_query.get_mut(request.0).unwrap();
-
-        match request.1 {
-            OrganismRequest::ProduceFoodAround(location) => {
-                for around in NEIGHBORS.adjacent {
-                    //find an empty space to put the food
-                    //let value_in_cur_loc = map_query.
-
-                    let checking_loc = location + around;
-
-                    if map.get(&checking_loc).is_none() {
-                        //success
-                        commands.spawn((
-                            SpriteBundle {
-                                sprite: Sprite {
-                                    color: Color::BLUE,
-                                    ..default()
-                                },
-                                transform: Transform::from_translation(Vec3::new(
-                                    checking_loc.x() as f32,
-                                    checking_loc.y() as f32,
-                                    0.,
-                                )),
-                                ..default()
-                            },
-                            checking_loc,
-                            Food,
-                        ));
-                        break;
+        for mutation in mutation_actions {
+            match mutation {
+                MutationAction::Delete => {
+                    if new_organs.is_empty() {
+                        continue 'request;
                     }
+                    let index = rng.gen_range(0..new_organs.len());
+                    new_organs.swap_remove(index);
                 }
 
-                //the organism will have depleted the food production for whichever of its cells produced
-                /*if let Some((food_location, cell)) = map.insert_food_around(location) {
-                    commands.spawn((
-                        SpriteBundle {
-                            sprite: Sprite {
-                                color: cell.color(),
-                                ..default()
-                            },
-                            transform: Transform::from_translation(Vec3::new(
-                                food_location.x as f32,
-                                food_location.y as f32,
-                                0.,
-                            )),
-                            ..default()
-                        },
-                        cell,
-                    ));
-                }*/
-                //check map
+                MutationAction::New => {
+                    let occupied_locations = new_organs.iter().map(|o| o.0).collect::<Vec<_>>();
+
+                    let attach_to = if occupied_locations.is_empty() {
+                        WorldLocation::new(0, 0)
+                    } else {
+                        //pick a random location in the list
+                        *occupied_locations
+                            .get(rng.gen_range(0..occupied_locations.len()))
+                            .unwrap()
+                    };
+
+                    //pick a random place to start
+                    let mut x = rng.gen_range(-1..=1);
+                    let mut y = rng.gen_range(-1..=1);
+                    if x == 0 && y == 0 {
+                        if rng.gen::<bool>() {
+                            x = if rng.gen::<bool>() { 1 } else { -1 };
+                        } else {
+                            y = if rng.gen::<bool>() { 1 } else { -1 };
+                        }
+                    }
+
+                    let mut count = 0;
+                    loop {
+                        if count > 11 {
+                            continue 'request;
+                        }
+                        if occupied_locations.contains(&(attach_to + WorldLocation::new(x, y))) {
+                            if x == 1 {
+                                if y == -1 {
+                                    y = 0
+                                } else if y == 0 {
+                                    y = 1
+                                } else if y == 1 {
+                                    x = 0
+                                }
+                            } else if x == 0 {
+                                if y == -1 {
+                                    x = 1
+                                } else if y == 1 {
+                                    x = -1
+                                }
+                            } else if x == -1 {
+                                if y == -1 {
+                                    x = 0;
+                                } else if y == 0 {
+                                    y = -1;
+                                } else if y == 1 {
+                                    y = 0;
+                                }
+                            }
+                            count += 1;
+                        } else {
+                            new_organs.push((WorldLocation::new(x, y), OrganType::new_rand()));
+                            break;
+                        }
+                    }
+                }
+                MutationAction::MutateOrgan => {
+                    let new_organs_len = new_organs.len();
+                    let organ_to_mutate = new_organs
+                        .get_mut(rng.gen_range(0..new_organs_len))
+                        .unwrap();
+                    organ_to_mutate.1.mutate();
+                }
             }
-            OrganismRequest::Starve => {
-                commands.entity(request.0).despawn_recursive();
-            }
-            OrganismRequest::EatFoodAround(location) => {}
-            _ => {}
         }
+
+        //now try to spawn the organism by finding an empty location for all of its organs
+        let basis = *organism_location;
+        let mut attempt_count = 0;
+        let baby_location: WorldLocation = loop {
+            let x = rng.gen_range(
+                -(world_settings.spawn_radius as i64)..=world_settings.spawn_radius as i64,
+            );
+            let y = rng.gen_range(
+                -(world_settings.spawn_radius as i64)..=world_settings.spawn_radius as i64,
+            );
+            let new_basis = basis + WorldLocation::new(x, y);
+            //there could be an instance where it's on the edge and this doesn't work, so then the insert organism code should prevent the other case.
+            if let Some(wall_half) = world_settings.wall_length_half {
+                if new_basis.x() <= -wall_half
+                    || new_basis.x() >= wall_half
+                    || new_basis.y() <= -wall_half
+                    || new_basis.y() >= wall_half
+                {
+                    continue;
+                }
+            }
+
+            let mut valid_basis = true;
+
+            for (rel, _organ) in new_organs.iter() {
+                match map.get(&(new_basis + *rel)) {
+                    None => {}
+                    _ => {
+                        valid_basis = false;
+                    }
+                }
+            }
+            if valid_basis {
+                break new_basis;
+            }
+            attempt_count += 1;
+            if attempt_count == 10 {
+                continue 'request;
+            }
+        };
+
+        let new_organism_type = if new_organs.iter().any(|(_, o)| o == &OrganType::Mover) {
+            OrganismType::Mover
+        } else {
+            OrganismType::Producer
+        };
+
+        println!(
+            "spawned new organism at {:?} with {} organs",
+            baby_location,
+            new_organs.len()
+        );
+
+        commands
+            .spawn(OrganismBundle::new(
+                new_organism_type,
+                baby_location,
+                new_organism_stats,
+            ))
+            .with_children(|parent| {
+                for (rel, organ) in new_organs {
+                    println!("rel: {:?}, organ: {:?}", rel, organ);
+                    parent.spawn(OrganBundle::new(organ, rel));
+                }
+            });
     }
 }
-*/
+
+fn remove_food_system(mut commands: Commands, mut remove_food: EventReader<RemoveFood>) {
+    for remove in remove_food.read() {
+        commands.entity(remove.0).despawn();
+    }
+}
 
 #[allow(dead_code)]
 #[allow(unused_variables)]

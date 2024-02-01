@@ -3,25 +3,23 @@ mod request;
 use super::direction::Direction;
 use bevy::{
     ecs::{bundle::Bundle, component::Component, entity::Entity, event::Event},
+    math::Vec3,
     sprite::SpriteBundle,
+    transform::components::Transform,
 };
+use rand::Rng;
 pub use request::*;
+use std::fmt::Debug;
 mod organ;
 pub use organ::*;
 
-/*#[derive(Default, Debug, Clone, PartialEq, Component)]
+#[derive(Default, Debug, Clone, PartialEq, Component)]
 pub enum OrganismType {
     Mover,
     #[default]
     Producer,
     None,
-}*/
-
-#[derive(Component)]
-pub struct CanMove;
-
-#[derive(Component)]
-pub struct CantMove;
+}
 
 #[derive(Event)]
 pub struct Reproduce(pub Entity);
@@ -57,30 +55,33 @@ impl NewSpawn {
 */
 
 #[derive(Default, Clone, Bundle)]
-pub struct OrganismBundle<T: Component> {
+pub struct OrganismBundle {
     pub sprite: SpriteBundle,
     pub location: WorldLocation,
-    pub organism_type: T,
-    pub facing: Direction,
+    pub organism_type: OrganismType,
     pub organism_info: OrganismInfo,
 }
 
-impl<T: Component> OrganismBundle<T> {
-    pub fn new(organism_type: T, location: impl Into<WorldLocation>, initial_food: u64) -> Self {
+impl OrganismBundle {
+    pub fn new(
+        organism_type: OrganismType,
+        location: impl Into<WorldLocation>,
+        organism_info: OrganismInfo,
+    ) -> Self {
+        let location: WorldLocation = location.into();
         Self {
             sprite: SpriteBundle {
-                transform: Default::default(),
+                transform: Transform::from_translation(Vec3::new(
+                    location.x() as f32,
+                    location.y() as f32,
+                    0.,
+                )),
                 ..Default::default()
             },
-            location: location.into(),
+            location,
             organism_type,
-            facing: Direction::Right,
-            organism_info: OrganismInfo::new(initial_food),
+            organism_info,
         }
-    }
-
-    pub fn reproduce() {
-        todo!();
     }
 }
 
@@ -91,6 +92,7 @@ pub struct OrganismInfo {
     pub belly: u64,
     pub mutation_rate: f64,
     pub food_collected: u64,
+    pub facing: Direction,
 }
 
 impl OrganismInfo {
@@ -99,6 +101,30 @@ impl OrganismInfo {
             belly: initial_food,
             ..Default::default()
         }
+    }
+
+    pub fn gen_child_stats(&mut self) -> Self {
+        let mut rng = rand::thread_rng();
+
+        self.belly /= 2;
+
+        let mut new_stats = self.clone();
+
+        if rng.gen::<bool>() {
+            new_stats.mutation_rate += 1.
+        } else {
+            new_stats.mutation_rate -= 1.
+        };
+
+        new_stats.facing = match rng.gen_range(0..=3) {
+            0 => Direction::Up,
+            1 => Direction::Right,
+            2 => Direction::Down,
+            3 => Direction::Left,
+            _ => panic!(),
+        };
+
+        new_stats
     }
 }
 /*
@@ -400,7 +426,10 @@ impl Organism {
     }
 }
 
-enum MutationAction {
+
+*/
+
+pub enum MutationAction {
     Delete,
     New,
     MutateOrgan,
@@ -416,5 +445,18 @@ impl MutationAction {
             _ => panic!(),
         }
     }
+
+    pub fn rand_list(mutation_rate: f64) -> Vec<Self> {
+        let mut rng = rand::thread_rng();
+        let mut list = Vec::new();
+        loop {
+            let rng_val = rng.gen_range(0..=100);
+            if rng_val as f64 <= mutation_rate {
+                list.push(MutationAction::rand());
+            } else {
+                break;
+            }
+        }
+        list
+    }
 }
-*/
