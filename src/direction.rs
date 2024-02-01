@@ -27,7 +27,7 @@ impl Direction {
             Direction::Right => *self = Direction::Right,
         }
     }
-    pub fn to_reversed(&self) -> Direction {
+    pub fn to_reversed(self) -> Direction {
         match self {
             Direction::Up => Direction::Down,
             Direction::Down => Direction::Up,

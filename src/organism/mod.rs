@@ -61,13 +61,20 @@ pub struct OrganismBundle {
 }
 
 impl OrganismBundle {
-    pub fn new(organism_type: OrganismType, location: impl Into<WorldLocation>) -> Self {
+    pub fn new(
+        organism_type: OrganismType,
+        location: impl Into<WorldLocation>,
+        initial_food: u64,
+    ) -> Self {
         Self {
-            sprite: SpriteBundle::default(),
+            sprite: SpriteBundle {
+                transform: Default::default(),
+                ..Default::default()
+            },
             location: location.into(),
             organism_type,
             facing: Direction::Right,
-            organism_info: OrganismInfo::default(),
+            organism_info: OrganismInfo::new(initial_food),
         }
     }
 }
@@ -79,6 +86,15 @@ pub struct OrganismInfo {
     pub belly: u64,
     pub mutation_rate: f64,
     pub food_collected: u64,
+}
+
+impl OrganismInfo {
+    pub fn new(initial_food: u64) -> Self {
+        Self {
+            belly: initial_food,
+            ..Default::default()
+        }
+    }
 }
 
 #[derive(Default, Debug, Clone, Component)]

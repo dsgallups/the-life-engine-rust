@@ -6,11 +6,11 @@ use bevy::{
 };
 use rustc_hash::FxHashMap;
 
-#[derive(Debug, PartialEq, Default, Clone, Component, Copy)]
+#[derive(Eq, Hash, Debug, PartialEq, Default, Clone, Component, Copy)]
 pub struct WorldLocation(I64Vec2);
 
 impl WorldLocation {
-    pub fn new(x: i64, y: i64) -> Self {
+    pub const fn new(x: i64, y: i64) -> Self {
         Self(I64Vec2::new(x, y))
     }
     pub fn set_x(&mut self, x: i64) {

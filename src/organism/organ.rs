@@ -1,7 +1,10 @@
 use bevy::{
     ecs::{bundle::Bundle, component::Component},
-    math::I64Vec2,
+    math::{I64Vec2, Vec3},
     render::color::Color,
+    sprite::{Sprite, SpriteBundle},
+    transform::components::Transform,
+    utils::default,
 };
 use rand::Rng;
 use uuid::Uuid;
@@ -73,15 +76,29 @@ impl Drawable for OrganType {
 
 #[derive(Clone, Bundle)]
 pub struct OrganBundle {
+    pub sprite: SpriteBundle,
     pub organ_type: OrganType,
     pub relative_location: WorldLocation,
 }
 
 impl OrganBundle {
     pub fn new(organ_type: OrganType, relative_location: impl Into<WorldLocation>) -> Self {
+        let relative_location: WorldLocation = relative_location.into();
         OrganBundle {
+            sprite: SpriteBundle {
+                transform: Transform::from_translation(Vec3::new(
+                    relative_location.x() as f32,
+                    relative_location.y() as f32,
+                    0.,
+                )),
+                sprite: Sprite {
+                    color: organ_type.color(),
+                    ..default()
+                },
+                ..default()
+            },
             organ_type,
-            relative_location: relative_location.into(),
+            relative_location,
         }
     }
 }

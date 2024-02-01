@@ -30,7 +30,7 @@ fn spawn_camera(mut commands: Commands) {
 
 fn spawn_first_organism(mut commands: Commands) {
     commands
-        .spawn(OrganismBundle::new(OrganismType::Producer, (0, 0)))
+        .spawn(OrganismBundle::new(OrganismType::Producer, (0, 0), 3))
         .with_children(|parent| {
             parent.spawn(OrganBundle::new(OrganType::new_producer(), (1, 1)));
             parent.spawn(OrganBundle::new(OrganType::Mouth, (0, 0)));

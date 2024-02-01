@@ -4,6 +4,8 @@ mod map;
 pub mod organism;
 mod startup;
 use map::WorldLocation;
+use neighbors::NEIGHBORS;
+use rand::{thread_rng, Rng};
 use startup::StartupPlugin;
 mod direction;
 mod neighbors;
@@ -19,6 +21,7 @@ use bevy::{
         mouse::{MouseButtonInput, MouseMotion, MouseWheel},
     },
     prelude::*,
+    utils::HashSet,
 };
 
 pub use cell::*;
@@ -32,7 +35,10 @@ fn main() {
         .insert_resource(Time::<Fixed>::from_seconds(0.05))
         .add_plugins((DefaultPlugins, FrameTimeDiagnosticsPlugin, StartupPlugin))
         .add_systems(Update, (move_camera, frame_update, text_fps_system))
-        .add_systems(FixedUpdate, (tick_organisms, fixed_update))
+        .add_systems(
+            FixedUpdate,
+            (tick_organisms, fixed_update, process_requests),
+        )
         .run();
 }
 fn move_camera(
@@ -126,6 +132,7 @@ fn tick_organisms(
         organism_info.time_since_consumption += 1;
 
         if organism_info.belly == 0 {
+            println!("im going to starve: {:?}", org_ent);
             ev_organism.send(OrganismEvent(org_ent, OrganismRequest::Starve));
         } else if organism_info.time_since_consumption % world_settings.hunger_tick == 0 {
             organism_info.belly -= 1;
@@ -145,7 +152,7 @@ fn tick_organisms(
                     if *organism_type == OrganismType::Mover {
                         continue;
                     }
-                    if 50 >= world_settings.producer_probability {
+                    if thread_rng().gen_range(0..=100) <= world_settings.producer_probability {
                         ev_organism.send(OrganismEvent(
                             org_ent,
                             OrganismRequest::ProduceFoodAround(*location + *relative_location),
@@ -197,17 +204,60 @@ fn tick_organisms(
     }
 }
 
+fn eat_system(
+    mut commands: Commands,
+    mut food_query: Query<(Entity, &WorldLocation), With<Food>>,
+    mut organ_query: Query<(Entity, &WorldLocation), With<OrganType>>,
+    mut organism_query: Query<(&WorldLocation, &mut OrganismInfo)>,
+) {
+}
+
 fn process_requests(
     mut commands: Commands,
     mut requests: EventReader<OrganismEvent>,
-    mut map_query: Query<&mut Transform, With<Cell>>,
-    mut organism_query: Query<(Entity, &mut Organism)>,
+    map_query: Query<&WorldLocation>,
+    mut organism_query: Query<(&mut OrganismType)>,
 ) {
+    let mut map: HashSet<WorldLocation> = HashSet::new();
+
+    map_query.iter().for_each(|location| {
+        map.insert(*location);
+    });
+
     for request in requests.read() {
-        let organism = organism_query.get_mut(request.0).unwrap();
+        println!("request: {:?}", request);
+        let _organism = organism_query.get_mut(request.0).unwrap();
 
         match request.1 {
             OrganismRequest::ProduceFoodAround(location) => {
+                for around in NEIGHBORS.adjacent {
+                    //find an empty space to put the food
+                    //let value_in_cur_loc = map_query.
+
+                    let checking_loc = location + around;
+
+                    if map.get(&checking_loc).is_none() {
+                        //success
+                        commands.spawn((
+                            SpriteBundle {
+                                sprite: Sprite {
+                                    color: Color::BLUE,
+                                    ..default()
+                                },
+                                transform: Transform::from_translation(Vec3::new(
+                                    checking_loc.x() as f32,
+                                    checking_loc.y() as f32,
+                                    0.,
+                                )),
+                                ..default()
+                            },
+                            checking_loc,
+                            Food,
+                        ));
+                        break;
+                    }
+                }
+
                 //the organism will have depleted the food production for whichever of its cells produced
                 /*if let Some((food_location, cell)) = map.insert_food_around(location) {
                     commands.spawn((
@@ -228,11 +278,18 @@ fn process_requests(
                 }*/
                 //check map
             }
+            OrganismRequest::Starve => {
+                commands.entity(request.0).despawn_recursive();
+            }
+            OrganismRequest::EatFoodAround(location) => {}
             _ => {}
         }
     }
 }
 
+#[allow(dead_code)]
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 fn fixed_update(
     mut commands: Commands,
     camera_query: Query<(&Camera, &GlobalTransform)>,
