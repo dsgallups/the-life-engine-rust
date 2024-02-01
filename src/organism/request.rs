@@ -3,17 +3,17 @@ use bevy::{
     math::I64Vec2,
 };
 
-use crate::direction::Direction;
+use crate::{direction::Direction, map::WorldLocation};
 
 #[derive(Debug, PartialEq, Event)]
 /// The vector provided in all of these enums are absolutely positioned
 pub enum OrganismRequest {
     /// Asks to move up by this amount
-    MoveBy(I64Vec2),
-    IntelligentMove(Vec<(I64Vec2, Direction)>),
-    ProduceFoodAround(I64Vec2),
-    KillAround(I64Vec2),
-    EatFoodAround(I64Vec2),
+    MoveBy(WorldLocation),
+    IntelligentMove(Vec<(WorldLocation, Direction)>),
+    ProduceFoodAround(WorldLocation),
+    KillAround(WorldLocation),
+    EatFoodAround(WorldLocation),
     Reproduce,
     Starve,
 }

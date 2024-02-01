@@ -1,5 +1,8 @@
-use crate::{map::WorldMap, world_settings::WorldSettings, Organism};
-use bevy::{math::I64Vec2, prelude::*};
+use crate::{
+    world_settings::WorldSettings, OrganBundle, OrganType, OrganismBundle, OrganismEvent,
+    OrganismType,
+};
+use bevy::prelude::*;
 
 use super::{FpsText, MousePosBox};
 
@@ -8,7 +11,7 @@ pub struct StartupPlugin;
 impl Plugin for StartupPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<WorldSettings>()
-            .init_resource::<WorldMap>()
+            .add_event::<OrganismEvent>()
             .add_systems(Startup, (spawn_camera, spawn_text, spawn_first_organism));
     }
 }
@@ -26,11 +29,19 @@ fn spawn_camera(mut commands: Commands) {
 }
 
 fn spawn_first_organism(mut commands: Commands) {
-    let organism = Organism::simple_producer(I64Vec2::new(0, 0));
+    commands
+        .spawn(OrganismBundle::new(OrganismType::Producer, (0, 0)))
+        .with_children(|parent| {
+            parent.spawn(OrganBundle::new(OrganType::new_producer(), (1, 1)));
+            parent.spawn(OrganBundle::new(OrganType::Mouth, (0, 0)));
+            parent.spawn(OrganBundle::new(OrganType::new_producer(), (-1, -1)));
+        });
+
+    /*let organism = Organism::simple_producer(I64Vec2::new(0, 0));
 
     let organ_sprites = organism
         .organs()
-        .map(|(_abs_loc, organ)| SpriteBundle {
+        .map(|organ| (SpriteBundle {
             sprite: Sprite {
                 color: organ.color(),
                 ..default()
@@ -50,13 +61,14 @@ fn spawn_first_organism(mut commands: Commands) {
                 transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
                 ..default()
             },
+            WorldLocation::new(0, 0),
             organism,
         ))
         .with_children(|parent| {
             for sprite in organ_sprites {
                 parent.spawn(sprite);
             }
-        });
+        });*/
 }
 
 fn spawn_text(mut commands: Commands, asset_server: Res<AssetServer>) {

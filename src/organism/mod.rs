@@ -1,80 +1,20 @@
-use crate::{world_settings::WorldSettings, Actor, Drawable, OrganType};
+use crate::{map::WorldLocation, world_settings::WorldSettings};
 mod request;
 use super::direction::Direction;
 use anyhow::anyhow;
-use bevy::{ecs::component::Component, math::I64Vec2, render::color::Color};
+use bevy::{
+    ecs::{bundle::Bundle, component::Component},
+    math::I64Vec2,
+    sprite::SpriteBundle,
+};
 use rand::Rng;
 pub use request::*;
-use std::{
-    fmt::Debug,
-    sync::{Arc, RwLock, RwLockReadGuard},
-};
+use std::fmt::Debug;
 use uuid::Uuid;
+mod organ;
+pub use organ::*;
 
-use super::Producer;
-
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct Organ {
-    pub id: Uuid,
-    pub r#type: OrganType,
-    pub relative_location: I64Vec2,
-}
-
-/// The vectors in here are relatively positioned to the center of the organism
-pub enum OrganEvent {
-    MakeFoodAround(I64Vec2),
-    EatFoodAround(I64Vec2),
-    KillAround(I64Vec2),
-}
-
-impl Organ {
-    pub fn new(r#type: OrganType, relative_location: I64Vec2) -> Organ {
-        Organ {
-            id: Uuid::new_v4(),
-            r#type,
-            relative_location,
-        }
-    }
-
-    pub fn new_rand(relative_location: I64Vec2) -> Organ {
-        Organ {
-            id: Uuid::new_v4(),
-            r#type: OrganType::new_rand(),
-            relative_location,
-        }
-    }
-
-    pub fn mutate(&mut self) {
-        self.r#type = OrganType::new_rand();
-    }
-
-    pub fn organ_type(&self) -> &OrganType {
-        &self.r#type
-    }
-    pub fn color(&self) -> Color {
-        self.r#type.color()
-    }
-
-    pub fn tick(&mut self, world_settings: &WorldSettings) -> Option<OrganEvent> {
-        let mut rng = rand::thread_rng();
-        match self.r#type {
-            OrganType::Producer(ref mut producer) => {
-                if rng.gen_range(0..=100) < world_settings.producer_probability {
-                    producer.counter += 1;
-                    return Some(OrganEvent::MakeFoodAround(self.relative_location));
-                }
-
-                None
-            }
-            OrganType::Mouth => Some(OrganEvent::EatFoodAround(self.relative_location)),
-
-            OrganType::Killer => Some(OrganEvent::KillAround(self.relative_location)),
-            _ => None,
-        }
-    }
-}
-
-#[derive(Default, Debug, Clone, PartialEq)]
+#[derive(Default, Debug, Clone, PartialEq, Component)]
 pub enum OrganismType {
     Mover,
     #[default]
@@ -111,13 +51,42 @@ impl NewSpawn {
     }
 }
 
+#[derive(Default, Clone, Bundle)]
+pub struct OrganismBundle {
+    pub sprite: SpriteBundle,
+    pub location: WorldLocation,
+    pub organism_type: OrganismType,
+    pub facing: Direction,
+    pub organism_info: OrganismInfo,
+}
+
+impl OrganismBundle {
+    pub fn new(organism_type: OrganismType, location: impl Into<WorldLocation>) -> Self {
+        Self {
+            sprite: SpriteBundle::default(),
+            location: location.into(),
+            organism_type,
+            facing: Direction::Right,
+            organism_info: OrganismInfo::default(),
+        }
+    }
+}
+
+#[derive(Default, Clone, Component)]
+pub struct OrganismInfo {
+    pub time_alive: u64,
+    pub time_since_consumption: u64,
+    pub belly: u64,
+    pub mutation_rate: f64,
+    pub food_collected: u64,
+}
+
 #[derive(Default, Debug, Clone, Component)]
 #[allow(dead_code)]
 pub struct Organism {
     pub id: Uuid,
     r#type: OrganismType,
     organs: Vec<Organ>,
-    pub location: I64Vec2,
     pub facing: Direction,
     reproduce_at: u64,
     time_alive: u64,
@@ -129,9 +98,6 @@ pub struct Organism {
 }
 
 impl Organism {
-    pub fn actor(&self) -> Actor {
-        Actor::Organism(self.id, self.location)
-    }
     pub fn try_new(
         organs: Vec<Organ>,
         location: I64Vec2,
@@ -162,7 +128,6 @@ impl Organism {
             organs,
             r#type: organism_type,
             reproduce_at: reproduce_at.try_into().unwrap(),
-            location,
             facing,
             time_alive: 0,
             time_since_consumption: 0,
@@ -279,106 +244,19 @@ impl Organism {
         }
     }
 
-    pub fn organs(&self) -> impl Iterator<Item = (I64Vec2, &Organ)> {
-        self.organs
-            .iter()
-            .map(|organ| (self.location + organ.relative_location, organ))
-    }
-
-    pub fn occupied_locations(&self) -> impl Iterator<Item = I64Vec2> + '_ {
-        return self
-            .organs
-            .iter()
-            .map(|organ| self.location + organ.relative_location);
+    pub fn organs(&self) -> impl Iterator<Item = &Organ> {
+        self.organs.iter()
     }
 
     pub fn facing(&self) -> Direction {
         self.facing
     }
 
-    pub fn tick(&mut self, world_settings: &WorldSettings) -> Vec<OrganismRequest> {
-        self.time_alive += 1;
-        self.time_since_consumption += 1;
-
-        if self.belly == 0 {
-            return vec![OrganismRequest::Starve];
-        }
-
-        if self.time_alive % world_settings.hunger_tick == 0 {
-            self.belly -= 1;
-            if self.r#type == OrganismType::Mover && self.time_since_consumption > 20 {
-                self.facing.randomize();
-            }
-        }
-
-        let mut requests = Vec::new();
-        if self.belly >= self.reproduce_at {
-            requests.push(OrganismRequest::Reproduce);
-        }
-
-        let mut eye_locations: Option<Vec<(I64Vec2, Direction)>> = None;
-        for organ in self.organs.iter_mut() {
-            if let OrganType::Eye(direction) = organ.r#type {
-                if self.r#type == OrganismType::Mover {
-                    match eye_locations {
-                        Some(ref mut v) => {
-                            v.push((self.location + organ.relative_location, direction))
-                        }
-                        None => {
-                            eye_locations =
-                                Some(vec![(self.location + organ.relative_location, direction)])
-                        }
-                    }
-                }
-
-                continue;
-            }
-
-            let Some(event) = organ.tick(world_settings) else {
-                continue;
-            };
-            match event {
-                OrganEvent::MakeFoodAround(relative_location) => {
-                    if self.r#type == OrganismType::Mover {
-                        continue;
-                    }
-
-                    requests.push(OrganismRequest::ProduceFoodAround(
-                        relative_location + self.location,
-                    ))
-                }
-                OrganEvent::EatFoodAround(relative_location) => {
-                    requests.push(OrganismRequest::EatFoodAround(
-                        self.location + relative_location,
-                    ));
-                }
-                //this isn't right. Kill lgoic should not be done here.
-                OrganEvent::KillAround(relative_location) => {
-                    requests.push(OrganismRequest::KillAround(
-                        self.location + relative_location,
-                    ));
-                }
-            }
-        }
-
-        if self.r#type == OrganismType::Mover {
-            if let Some(eye_locations) = eye_locations {
-                requests.push(OrganismRequest::IntelligentMove(eye_locations))
-            } else {
-                requests.push(OrganismRequest::MoveBy(self.facing.delta()));
-            }
-        }
-        requests
-    }
-
     pub fn reproduce(&mut self) -> Result<NewSpawn, anyhow::Error> {
         let mut rng = rand::thread_rng();
         self.belly /= 2;
 
-        let mut new_organs = self
-            .organs()
-            .map(|(_l, organ)| organ.clone())
-            .collect::<Vec<_>>();
+        let mut new_organs = self.organs().map(|organ| organ.clone()).collect::<Vec<_>>();
 
         let new_organism_mutability = if rng.gen::<bool>() {
             self.mutation_rate + 1.
@@ -494,20 +372,6 @@ impl Organism {
             self.belly,
             organism_direction,
         ))
-    }
-
-    pub fn get_color_for_cell(&self, location: &I64Vec2) -> Result<Color, anyhow::Error> {
-        let relative_location = *location - self.location;
-        for (_, organ) in self.organs() {
-            if organ.relative_location == relative_location {
-                return Ok(organ.color());
-            }
-        }
-        Err(anyhow!("Organ not found!"))
-    }
-
-    pub fn move_by(&mut self, move_by: I64Vec2) {
-        self.location += move_by;
     }
 
     pub fn feed(&mut self, amount: u64) {

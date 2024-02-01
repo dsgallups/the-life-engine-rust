@@ -1,30 +1,47 @@
-use bevy::{ecs::system::Resource, math::I64Vec2};
+use std::ops::Add;
+
+use bevy::{
+    ecs::{bundle::Bundle, component::Component, system::Resource},
+    math::I64Vec2,
+};
 use rustc_hash::FxHashMap;
 
-use crate::{neighbors::NEIGHBORS, Cell, Organism};
+#[derive(Debug, PartialEq, Default, Clone, Component, Copy)]
+pub struct WorldLocation(I64Vec2);
 
-#[derive(Resource, Default)]
-pub struct WorldMap(FxHashMap<I64Vec2, Cell>);
-
-impl WorldMap {
-    pub fn new() -> Self {
-        Self(FxHashMap::default())
+impl WorldLocation {
+    pub fn new(x: i64, y: i64) -> Self {
+        Self(I64Vec2::new(x, y))
+    }
+    pub fn set_x(&mut self, x: i64) {
+        self.0.x = x;
+    }
+    pub fn set_y(&mut self, y: i64) {
+        self.0.y = y;
     }
 
-    pub fn insert_organism(&mut self, organism: Organism) {
-        todo!();
+    pub fn x(&self) -> i64 {
+        self.0.x
     }
 
-    pub fn insert_food_around(&self, location: I64Vec2) -> Option<(I64Vec2, Cell)> {
-        for neighbor in NEIGHBORS.adjacent {
-            let new_location = location + neighbor;
+    pub fn y(&self) -> i64 {
+        self.0.y
+    }
+}
 
-            if !self.0.contains_key(&new_location) {
-                self.0.insert(new_location, Cell::Food);
-                return Some((new_location, Cell::Food));
-            }
-        }
+impl<T> From<T> for WorldLocation
+where
+    T: Into<I64Vec2>,
+{
+    fn from(location: T) -> Self {
+        Self(location.into())
+    }
+}
 
-        None
+impl Add for WorldLocation {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(self.0 + rhs.0)
     }
 }

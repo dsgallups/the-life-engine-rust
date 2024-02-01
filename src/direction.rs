@@ -1,7 +1,7 @@
-use bevy::math::I64Vec2;
+use bevy::{ecs::component::Component, math::I64Vec2};
 use rand::Rng;
 
-#[derive(Debug, PartialEq, Default, Copy, Clone)]
+#[derive(Debug, PartialEq, Default, Copy, Clone, Component)]
 pub enum Direction {
     Up,
     Down,
