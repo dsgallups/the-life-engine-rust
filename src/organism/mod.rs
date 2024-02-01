@@ -99,6 +99,7 @@ impl OrganismInfo {
     pub fn new(initial_food: u64) -> Self {
         Self {
             belly: initial_food,
+            mutation_rate: 50.,
             ..Default::default()
         }
     }
