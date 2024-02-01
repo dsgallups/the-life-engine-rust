@@ -1,10 +1,6 @@
 use std::ops::Add;
 
-use bevy::{
-    ecs::{bundle::Bundle, component::Component, system::Resource},
-    math::I64Vec2,
-};
-use rustc_hash::FxHashMap;
+use bevy::{ecs::component::Component, math::I64Vec2};
 
 #[derive(Eq, Hash, Debug, PartialEq, Default, Clone, Component, Copy)]
 pub struct WorldLocation(I64Vec2);

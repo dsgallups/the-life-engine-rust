@@ -1,17 +1,15 @@
 use bevy::{
     ecs::{bundle::Bundle, component::Component},
-    math::{I64Vec2, Vec3},
+    math::Vec3,
     render::color::Color,
     sprite::{Sprite, SpriteBundle},
     transform::components::Transform,
     utils::default,
 };
-use rand::Rng;
-use uuid::Uuid;
 
-use crate::{direction::Direction, map::WorldLocation, world_settings::WorldSettings, Drawable};
+use crate::{direction::Direction, map::WorldLocation, Drawable};
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Component, Debug, Default, PartialEq)]
 pub struct Producer {
     pub food_produced: u8,
     pub counter: u8,
@@ -26,63 +24,66 @@ impl Producer {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Component)]
-pub enum OrganType {
-    Mouth,
-    Producer(Producer),
-    Mover,
-    Killer,
-    Armor,
-    Eye(Direction),
-}
+#[derive(Component)]
+pub struct Mouth;
 
-impl OrganType {
-    pub fn new_rand() -> Self {
-        let mut rng = rand::thread_rng();
-        match rng.gen_range(0..=5) {
-            0 => Self::Mouth,
-            1 => Self::Producer(Producer::default()),
-            2 => Self::Mover,
-            3 => Self::Killer,
-            4 => Self::Armor,
-            5 => Self::Eye(Direction::rand()),
-            _ => panic!(),
-        }
-    }
+#[derive(Component)]
+pub struct Mover;
 
-    pub fn new_producer() -> Self {
-        Self::Producer(Producer::default())
-    }
-}
+#[derive(Component)]
+pub struct Killer;
 
-impl Default for OrganType {
-    fn default() -> Self {
-        OrganType::Producer(Producer::default())
-    }
-}
+#[derive(Component)]
+pub struct Armor;
 
-impl Drawable for OrganType {
+#[derive(Component)]
+pub struct Eye(Direction);
+
+impl Drawable for Producer {
     fn color(&self) -> Color {
-        match self {
-            OrganType::Producer(_) => Color::GREEN,
-            OrganType::Mouth => Color::ORANGE,
-            OrganType::Mover => Color::AQUAMARINE,
-            OrganType::Killer => Color::RED,
-            OrganType::Armor => Color::PURPLE,
-            OrganType::Eye(_) => Color::SALMON,
-        }
+        Color::GREEN
+    }
+}
+
+impl Drawable for Mouth {
+    fn color(&self) -> Color {
+        Color::ORANGE
+    }
+}
+
+impl Drawable for Mover {
+    fn color(&self) -> Color {
+        Color::AQUAMARINE
+    }
+}
+
+impl Drawable for Killer {
+    fn color(&self) -> Color {
+        Color::RED
+    }
+}
+
+impl Drawable for Armor {
+    fn color(&self) -> Color {
+        Color::PURPLE
+    }
+}
+
+impl Drawable for Eye {
+    fn color(&self) -> Color {
+        Color::SALMON
     }
 }
 
 #[derive(Clone, Bundle)]
-pub struct OrganBundle {
+pub struct OrganBundle<T: Component> {
     pub sprite: SpriteBundle,
-    pub organ_type: OrganType,
+    pub organ_type: T,
     pub relative_location: WorldLocation,
 }
 
-impl OrganBundle {
-    pub fn new(organ_type: OrganType, relative_location: impl Into<WorldLocation>) -> Self {
+impl<T: Component + Drawable> OrganBundle<T> {
+    pub fn new(organ_type: T, relative_location: impl Into<WorldLocation>) -> Self {
         let relative_location: WorldLocation = relative_location.into();
         OrganBundle {
             sprite: SpriteBundle {
@@ -99,67 +100,6 @@ impl OrganBundle {
             },
             organ_type,
             relative_location,
-        }
-    }
-}
-
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct Organ {
-    pub id: Uuid,
-    pub r#type: OrganType,
-    pub relative_location: I64Vec2,
-}
-
-/// The vectors in here are relatively positioned to the center of the organism
-pub enum OrganEvent {
-    MakeFoodAround(I64Vec2),
-    EatFoodAround(I64Vec2),
-    KillAround(I64Vec2),
-}
-
-impl Organ {
-    pub fn new(r#type: OrganType, relative_location: I64Vec2) -> Organ {
-        Organ {
-            id: Uuid::new_v4(),
-            r#type,
-            relative_location,
-        }
-    }
-
-    pub fn new_rand(relative_location: I64Vec2) -> Organ {
-        Organ {
-            id: Uuid::new_v4(),
-            r#type: OrganType::new_rand(),
-            relative_location,
-        }
-    }
-
-    pub fn mutate(&mut self) {
-        self.r#type = OrganType::new_rand();
-    }
-
-    pub fn organ_type(&self) -> &OrganType {
-        &self.r#type
-    }
-    pub fn color(&self) -> Color {
-        self.r#type.color()
-    }
-
-    pub fn tick(&mut self, world_settings: &WorldSettings) -> Option<OrganEvent> {
-        let mut rng = rand::thread_rng();
-        match self.r#type {
-            OrganType::Producer(ref mut producer) => {
-                if rng.gen_range(0..=100) < world_settings.producer_probability {
-                    producer.counter += 1;
-                    return Some(OrganEvent::MakeFoodAround(self.relative_location));
-                }
-
-                None
-            }
-            OrganType::Mouth => Some(OrganEvent::EatFoodAround(self.relative_location)),
-
-            OrganType::Killer => Some(OrganEvent::KillAround(self.relative_location)),
-            _ => None,
         }
     }
 }

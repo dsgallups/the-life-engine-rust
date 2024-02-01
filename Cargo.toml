@@ -6,11 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.79"
 bevy = "0.12"
 rand = "0.8"
-rustc-hash = "1.1.0"
-uuid = "1.7.0"
 
 
 [lints.clippy]

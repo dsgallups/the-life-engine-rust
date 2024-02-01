@@ -1,28 +1,32 @@
-use crate::{map::WorldLocation, world_settings::WorldSettings};
+use crate::map::WorldLocation;
 mod request;
 use super::direction::Direction;
-use anyhow::anyhow;
 use bevy::{
-    ecs::{bundle::Bundle, component::Component},
-    math::I64Vec2,
+    ecs::{bundle::Bundle, component::Component, entity::Entity, event::Event},
     sprite::SpriteBundle,
 };
-use rand::Rng;
 pub use request::*;
-use std::fmt::Debug;
-use uuid::Uuid;
 mod organ;
 pub use organ::*;
 
-#[derive(Default, Debug, Clone, PartialEq, Component)]
+/*#[derive(Default, Debug, Clone, PartialEq, Component)]
 pub enum OrganismType {
     Mover,
     #[default]
     Producer,
     None,
-}
+}*/
 
-#[derive(Debug)]
+#[derive(Component)]
+pub struct CanMove;
+
+#[derive(Component)]
+pub struct CantMove;
+
+#[derive(Event)]
+pub struct Reproduce(pub Entity);
+
+/*#[derive(Debug)]
 pub struct NewSpawn {
     pub organs: Vec<Organ>,
     mutation_rate: f64,
@@ -50,22 +54,19 @@ impl NewSpawn {
         .unwrap()
     }
 }
+*/
 
 #[derive(Default, Clone, Bundle)]
-pub struct OrganismBundle {
+pub struct OrganismBundle<T: Component> {
     pub sprite: SpriteBundle,
     pub location: WorldLocation,
-    pub organism_type: OrganismType,
+    pub organism_type: T,
     pub facing: Direction,
     pub organism_info: OrganismInfo,
 }
 
-impl OrganismBundle {
-    pub fn new(
-        organism_type: OrganismType,
-        location: impl Into<WorldLocation>,
-        initial_food: u64,
-    ) -> Self {
+impl<T: Component> OrganismBundle<T> {
+    pub fn new(organism_type: T, location: impl Into<WorldLocation>, initial_food: u64) -> Self {
         Self {
             sprite: SpriteBundle {
                 transform: Default::default(),
@@ -76,6 +77,10 @@ impl OrganismBundle {
             facing: Direction::Right,
             organism_info: OrganismInfo::new(initial_food),
         }
+    }
+
+    pub fn reproduce() {
+        todo!();
     }
 }
 
@@ -96,7 +101,7 @@ impl OrganismInfo {
         }
     }
 }
-
+/*
 #[derive(Default, Debug, Clone, Component)]
 #[allow(dead_code)]
 pub struct Organism {
@@ -412,3 +417,4 @@ impl MutationAction {
         }
     }
 }
+*/

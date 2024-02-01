@@ -1,6 +1,6 @@
 use crate::{
-    world_settings::WorldSettings, OrganBundle, OrganType, OrganismBundle, OrganismEvent,
-    OrganismType,
+    world_settings::WorldSettings, CantMove, Mouth, OrganBundle, OrganismBundle, OrganismEvent,
+    Producer,
 };
 use bevy::prelude::*;
 
@@ -30,11 +30,11 @@ fn spawn_camera(mut commands: Commands) {
 
 fn spawn_first_organism(mut commands: Commands) {
     commands
-        .spawn(OrganismBundle::new(OrganismType::Producer, (0, 0), 3))
+        .spawn(OrganismBundle::new(CantMove, (0, 0), 3))
         .with_children(|parent| {
-            parent.spawn(OrganBundle::new(OrganType::new_producer(), (1, 1)));
-            parent.spawn(OrganBundle::new(OrganType::Mouth, (0, 0)));
-            parent.spawn(OrganBundle::new(OrganType::new_producer(), (-1, -1)));
+            parent.spawn(OrganBundle::new(Producer::new(), (1, 1)));
+            parent.spawn(OrganBundle::new(Mouth, (0, 0)));
+            parent.spawn(OrganBundle::new(Producer::new(), (-1, -1)));
         });
 
     /*let organism = Organism::simple_producer(I64Vec2::new(0, 0));

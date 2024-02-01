@@ -1,7 +1,4 @@
-use bevy::{
-    ecs::{entity::Entity, event::Event, system::Resource},
-    math::I64Vec2,
-};
+use bevy::ecs::{entity::Entity, event::Event, system::Resource};
 
 use crate::{direction::Direction, map::WorldLocation};
 

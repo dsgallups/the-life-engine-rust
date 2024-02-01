@@ -10,7 +10,6 @@ use startup::StartupPlugin;
 mod direction;
 mod neighbors;
 
-mod event;
 mod world_settings;
 
 use bevy::{
@@ -21,12 +20,11 @@ use bevy::{
         mouse::{MouseButtonInput, MouseMotion, MouseWheel},
     },
     prelude::*,
-    utils::HashSet,
+    utils::{HashMap, HashSet},
 };
 
 pub use cell::*;
 //pub use messages::*;
-pub use event::*;
 pub use organism::*;
 use world_settings::WorldSettings;
 
@@ -35,10 +33,7 @@ fn main() {
         .insert_resource(Time::<Fixed>::from_seconds(0.05))
         .add_plugins((DefaultPlugins, FrameTimeDiagnosticsPlugin, StartupPlugin))
         .add_systems(Update, (move_camera, frame_update, text_fps_system))
-        .add_systems(
-            FixedUpdate,
-            (tick_organisms, fixed_update, process_requests),
-        )
+        .add_systems(FixedUpdate, (fixed_update, produce_system, eat_system))
         .run();
 }
 fn move_camera(
@@ -110,7 +105,7 @@ fn frame_update(mut last_time: Local<f32>, time: Res<Time>) {
     );*/
     *last_time = time.elapsed_seconds();
 }
-
+/*
 fn tick_organisms(
     mut ev_organism: EventWriter<OrganismEvent>,
     world_settings: Res<WorldSettings>,
@@ -203,15 +198,101 @@ fn tick_organisms(
         }
     }
 }
-
+*/
 fn eat_system(
     mut commands: Commands,
-    mut food_query: Query<(Entity, &WorldLocation), With<Food>>,
-    mut organ_query: Query<(Entity, &WorldLocation), With<OrganType>>,
+    food_query: Query<(Entity, &WorldLocation), With<Food>>,
+    mouth_query: Query<(&WorldLocation, &Parent), With<Mouth>>,
     mut organism_query: Query<(&WorldLocation, &mut OrganismInfo)>,
 ) {
+    let mut food: HashMap<WorldLocation, Entity> = HashMap::new();
+
+    for (ent, location) in food_query.iter() {
+        food.insert(*location, ent);
+    }
+
+    for (rel_location, parent) in mouth_query.iter() {
+        let (organism_loc, mut organism_info) = organism_query.get_mut(**parent).unwrap();
+        let absolute_location = *organism_loc + *rel_location;
+        for around in NEIGHBORS.adjacent {
+            let checking_loc = absolute_location + around;
+            if let Some(food_ent) = food.get(&checking_loc) {
+                organism_info.belly += 1;
+                commands.entity(*food_ent).despawn();
+            }
+        }
+    }
 }
 
+fn produce_system(
+    world_settings: Res<WorldSettings>,
+    mut commands: Commands,
+    map_query: Query<&WorldLocation>,
+    mut producer_query: Query<(Entity, &WorldLocation, &Parent), With<Producer>>,
+    organism_query: Query<(&WorldLocation), With<CantMove>>,
+) {
+    let mut map: HashSet<WorldLocation> = HashSet::new();
+
+    map_query.iter().for_each(|location| {
+        map.insert(*location);
+    });
+
+    for (ent, location, parent) in producer_query.iter_mut() {
+        let Ok(organism_loc) = organism_query.get(**parent) else {
+            continue;
+        };
+
+        if thread_rng().gen_range(0..=100) <= world_settings.producer_probability {
+            for around in NEIGHBORS.adjacent {
+                let checking_loc = *organism_loc + *location + around;
+                if map.get(&checking_loc).is_none() {
+                    println!("producing at {:?}", checking_loc);
+                    commands.spawn((
+                        SpriteBundle {
+                            sprite: Sprite {
+                                color: Color::BLUE,
+                                ..default()
+                            },
+                            transform: Transform::from_translation(Vec3::new(
+                                checking_loc.x() as f32,
+                                checking_loc.y() as f32,
+                                0.,
+                            )),
+                            ..default()
+                        },
+                        checking_loc,
+                        Food,
+                    ));
+                    break;
+                }
+            }
+        }
+    }
+}
+
+fn reproduce_system(
+    mut commands: Commands,
+    mut requests: EventReader<Reproduce>,
+    map_query: Query<&WorldLocation>,
+    mut organism_query: Query<(&mut OrganismInfo, &Children)>,
+    organ_query: Query<(&WorldLocation, &OrganType)>,
+) {
+    let mut map: HashSet<WorldLocation> = HashSet::new();
+
+    map_query.iter().for_each(|location| {
+        map.insert(*location);
+    });
+
+    for request in requests.read() {
+        let (mut organism_info, children) = organism_query.get_mut(request.0).unwrap();
+
+        if organism_info.belly >= children.len() as u64 {
+            //commands.spawn(OrganismBundle::new(OrganismType::CantMove, request.1, 3, 3));
+        }
+    }
+}
+
+/*
 fn process_requests(
     mut commands: Commands,
     mut requests: EventReader<OrganismEvent>,
@@ -286,6 +367,7 @@ fn process_requests(
         }
     }
 }
+*/
 
 #[allow(dead_code)]
 #[allow(unused_variables)]

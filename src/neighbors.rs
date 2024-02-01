@@ -1,5 +1,3 @@
-use bevy::math::I64Vec2;
-
 use crate::map::WorldLocation;
 
 pub const NEIGHBORS: Neighbors = Neighbors {
