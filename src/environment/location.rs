@@ -101,6 +101,7 @@ impl OccupiedLocations {
     pub fn cell_type_at(&self, location: &GlobalCellLocation) -> Option<CellType> {
         self.0.get(location).map(|val| val.1)
     }
+    #[allow(dead_code)]
     pub fn entity_at(&self, location: &GlobalCellLocation) -> Option<Entity> {
         self.0.get(location).map(|val| val.0)
     }

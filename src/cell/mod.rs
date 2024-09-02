@@ -14,6 +14,7 @@ mod producer;
 pub use producer::*;
 
 mod wall;
+#[allow(unused_imports)]
 pub use wall::*;
 
 mod mouth;

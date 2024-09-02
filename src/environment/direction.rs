@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use rand::{rngs::ThreadRng, Rng as _};
 
 use crate::organism::genome::CellLocation;

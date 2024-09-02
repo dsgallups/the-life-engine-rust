@@ -38,6 +38,8 @@ impl Organism {
     pub fn num_cells(&self) -> usize {
         self.genome.num_cells()
     }
+
+    #[allow(dead_code)]
     pub fn has_brain(&self) -> bool {
         self.has_brain
     }

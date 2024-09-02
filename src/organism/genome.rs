@@ -120,10 +120,6 @@ impl Genome {
         }
     }
 
-    pub fn add(&mut self, new_cell: OrganismCell) {
-        self.cells.push(new_cell);
-    }
-
     pub fn types(&self) -> impl Iterator<Item = OrganismCellType> + '_ {
         self.cells.iter().map(|c| c.cell_type)
     }

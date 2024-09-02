@@ -47,6 +47,9 @@ pub fn move_organism(
             "Direction to move: {:?}\nnew_parent_location: {:?}",
             direction_to_move, new_parent_location
         );
+
+        // the check to ensure that the organism isn't going to move into an occupied space
+        // assumes that the occupied_locations is truly up to date
         for location in organism.occupying_locations() {
             if occupied_locations
                 .get(&(new_parent_location + location))
@@ -70,8 +73,16 @@ pub fn move_organism(
         // iteration of the loop
         for location in organism.occupying_locations() {
             let current_location = *global_location + location;
-            if let Some((_e, _cell_type)) = occupied_locations.remove(&current_location) {
-                //they sometimes don't match up
+            // this is to prove that the occupied locations is not in sync with the entities stored in the ECS
+            match occupied_locations.remove(&current_location) {
+                Some((e, cell_type)) => {
+                    if e != organism_entity && cell_type != CellType::food() {
+                        panic!("Entity is not that of the orgnism entity")
+                    }
+                }
+                None => {
+                    panic!("Cell of entity did not previously exist in the occupied locations.")
+                }
             }
         }
         for cell in organism.cells() {
