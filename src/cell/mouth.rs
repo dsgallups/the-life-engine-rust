@@ -36,10 +36,13 @@ fn consume_food(
 
         for entity in translation.get_surrounding_entities(&locations) {
             if food.get(entity).is_ok() {
-                //eat the food
-                commands.entity(entity).despawn();
-
-                food_eaten += 1;
+                //eat the food. may be gone by the time we get here
+                // if we get the entity and it despawns, just gotta hand it to the organism for winning
+                // the race condition
+                if let Some(mut entity) = commands.get_entity(entity) {
+                    entity.despawn();
+                    food_eaten += 1;
+                }
             }
         }
 

@@ -1,6 +1,6 @@
 use std::{io::Cursor, time::Duration};
 
-use bevy::{prelude::*, window::PrimaryWindow, winit::WinitWindows};
+use bevy::{log::LogPlugin, prelude::*, window::PrimaryWindow, winit::WinitWindows};
 use bevy_spatial::{kdtree::KDTree2, AutomaticUpdate, SpatialStructure, TransformMode};
 use camera::{spawn_camera, update_camera};
 use cell::CellType;
@@ -46,6 +46,7 @@ pub fn plugin(app: &mut App) {
                 .with_frequency(Duration::from_millis(20))
                 .with_transform(TransformMode::GlobalTransform),
         )
+        .add_plugins(LogPlugin::default())
         .add_plugins(GamePlugin)
         .add_systems(Startup, (set_window_icon, spawn_camera))
         .add_systems(Update, update_camera);

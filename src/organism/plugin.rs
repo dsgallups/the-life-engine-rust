@@ -56,7 +56,7 @@ fn starve_organism(
         if organism.belly() == 0 {
             //before the organism dies, we need to turn the children
             //into food :D
-
+            // because it could be killed in the meantime or whatnot, we should just lay down the food here
             for child in children.iter() {
                 let location = locations.get(*child).unwrap();
                 commands.spawn(FoodBundle::at(location.translation()));
@@ -103,7 +103,9 @@ fn reproduce_organism(
                     if let Some(e) = e {
                         match food.get(e) {
                             Ok(_) => {
-                                commands.entity(e).despawn();
+                                if let Some(mut entity) = commands.get_entity(e) {
+                                    entity.despawn()
+                                }
                             }
                             Err(_) => {
                                 chance += 1;
