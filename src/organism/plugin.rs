@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    cell::{CellType, EnvironmentCellType, FoodBundle, ProducerPlugin},
+    cell::{CellType, EnvironmentCellType, FoodBundle, MouthPlugin, ProducerPlugin},
     environment::{EnvironmentSettings, Ticker},
     game::GameState,
 };
@@ -21,7 +21,7 @@ impl Plugin for OrganismPlugin {
                         reproduce_organism.run_if(in_state(GameState::Playing)),
                     ),
             );*/
-        app.add_plugins(ProducerPlugin);
+        app.add_plugins((ProducerPlugin, MouthPlugin));
     }
 }
 /*

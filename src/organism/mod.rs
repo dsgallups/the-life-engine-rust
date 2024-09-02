@@ -119,9 +119,9 @@ impl Organism {
             offspring: 0,
         }
     }
-    pub fn ate_food(&mut self) {
-        self.belly += 1;
-        //info!("Organism ate food. belly is at {}", self.belly)
+    pub fn ate_food(&mut self, amt: u64) {
+        self.belly += amt;
+        info!("Organism ate food. belly is at {}", self.belly)
     }
 
     pub fn lost_food(&mut self, amt: u64) {

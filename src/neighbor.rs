@@ -14,6 +14,11 @@ pub trait VecExt: Sized {
         self.as_vec2().get_free_space(tree)
     }
 
+    /// Returns an iterator of surrounding entities
+    fn get_surrounding_entities(self, tree: &impl KDTreeExt) -> impl Iterator<Item = Entity> {
+        self.as_vec2().get_surrounding_entities(tree)
+    }
+
     fn around(self) -> [Vec2; 4] {
         self.as_vec2().around()
     }
@@ -37,6 +42,19 @@ impl VecExt for Vec2 {
     }
     fn as_vec2(self) -> Vec2 {
         self
+    }
+
+    fn get_surrounding_entities(self, tree: &impl KDTreeExt) -> impl Iterator<Item = Entity> {
+        let around = self.around_nosfht();
+
+        tree.closest_neighbors(self)
+            .filter_map(move |(loc, entity)| {
+                if entity.is_none() || !around.contains(&loc) {
+                    None
+                } else {
+                    entity
+                }
+            })
     }
 
     fn get_free_space(self, tree: &impl KDTreeExt) -> Option<Vec2> {
