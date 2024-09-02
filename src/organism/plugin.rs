@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_spatial::SpatialAccess;
 
 use crate::{
-    cell::{Food, FoodBundle, KillerPlugin, MouthPlugin, MoverPlugin, ProducerPlugin},
+    cell::{FoodBundle, KillerPlugin, MouthPlugin, MoverPlugin, ProducerPlugin},
     environment::{EnvironmentSettings, Ticker},
     game::GameState,
     neighbor::VecExt as _,
@@ -74,7 +74,6 @@ fn reproduce_organism(
     timer: Res<Ticker>,
     tree: Res<CellTree>,
     mut organisms: Query<(&GlobalTransform, &mut Organism)>,
-    food: Query<&Food>,
 ) {
     if !timer.just_finished()
         || settings
@@ -97,13 +96,13 @@ fn reproduce_organism(
             //otherwise, it dies.
             let mut chance = 0;
             let new_organism_location = 'find: loop {
-                if chance > 2 {
+                if chance > 3 {
                     break None;
                 }
                 let random_location = organism_location.rand_around(settings.spawn_radius);
 
                 for (_, e) in tree.within_distance(random_location, organism.radius() as f32) {
-                    // children can spawn over food
+                    /*// children can spawn over food
                     // this will clean up food anyway
                     if let Some(e) = e {
                         match food.get(e) {
@@ -117,6 +116,11 @@ fn reproduce_organism(
                                 continue 'find;
                             }
                         }
+                    }*/
+                    // actually, children cannot spawn over food
+                    if e.is_some() {
+                        chance += 1;
+                        continue 'find;
                     }
                 }
 

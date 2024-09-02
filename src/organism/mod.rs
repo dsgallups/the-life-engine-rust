@@ -12,7 +12,7 @@ pub use plugin::*;
 mod reproduction;
 use reproduction::*;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum BrainType {
     Predator,
     Prey,
@@ -71,6 +71,11 @@ impl Organism {
     pub fn ready_to_reproduce(&self) -> bool {
         let can_reproduce_at = self.genome.num_cells() * 3;
         self.belly >= can_reproduce_at as u64
+    }
+
+    /// returns the number of cells this organism takes up based on its genome
+    pub fn size(&self) -> usize {
+        self.genome.num_cells()
     }
 
     /// returns the radius of self given its children

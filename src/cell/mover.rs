@@ -1,3 +1,5 @@
+use std::ops::Neg as _;
+
 use bevy::prelude::*;
 use bevy_spatial::SpatialAccess;
 
@@ -5,11 +7,11 @@ use crate::{
     environment::{Dir, Ticker},
     game::GameState,
     neighbor::VecExt as _,
-    organism::Organism,
+    organism::{BrainType, Organism},
     CellTree,
 };
 
-use super::{CellType, Food};
+use super::{CellType, Food, KillerCell};
 
 #[derive(Component)]
 pub struct MoverCell;
@@ -30,6 +32,7 @@ pub fn move_organism(
     cells: Query<&Parent, With<CellType>>,
     transforms: Query<&GlobalTransform, Without<Organism>>,
     food: Query<&Food>,
+    killers: Query<&KillerCell>,
 ) {
     if !timer.just_finished() {
         return;
@@ -41,7 +44,36 @@ pub fn move_organism(
         if !organism.can_move() {
             continue;
         }
-        let direction_to_move = Dir::rand(&mut rand::thread_rng()).delta();
+        let og_trns = organism_transform.translation.as_vec2();
+        let direction_to_move = match organism.brain() {
+            Some(brain_type) => {
+                let cells = organism.size();
+                // assumes that this organism's cells are always closest to the origin.
+                // but this is not true.
+                let nearest_neighbors = tree.k_nearest_neighbour(og_trns, cells + 1);
+                //todo: some logic that grabs the parent of the neighbor and stuff, like filters out
+                let (neighbor, neighbor_entity) = nearest_neighbors.last().unwrap();
+
+                let diff_x = neighbor.x - og_trns.x;
+                let diff_y = neighbor.y - og_trns.y;
+
+                let mut movement_direction = if diff_x < diff_y {
+                    Vec2::new(diff_x / diff_x.abs(), 0.)
+                } else {
+                    Vec2::new(0., diff_y / diff_y.abs())
+                };
+
+                //predators will run towards anything. Prey will run away from killer cells and towards food
+                //todo
+                if brain_type == BrainType::Prey && killers.get(neighbor_entity.unwrap()).is_ok() {
+                    movement_direction.x = movement_direction.x.neg();
+                    movement_direction.y = movement_direction.y.neg();
+                }
+
+                movement_direction
+            }
+            None => Dir::rand(&mut rand::thread_rng()).delta(),
+        };
 
         let mut food_to_despawn = Vec::new();
         for child in organism_children {
