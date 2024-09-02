@@ -11,9 +11,9 @@ to check its neighbors very quickly.
 
 Unfortunately, this hashmap quickly moves out of sync with the ECS, and I'm unsure why.
 
-See src/environment/locations for the [`OccupiedLocations`] newtype hashmap
+See `src/environment/locations` for the [`OccupiedLocations`] newtype hashmap
 
-and src/cell/mover.rs:74 for the area of panic
+and `src/cell/mover.rs:74` for the area of panic and proof of non-sync
 
 ### Questions
 
