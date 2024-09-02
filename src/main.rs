@@ -1,25 +1,5 @@
-pub mod cell;
-//pub mod messages;
-pub mod organism;
-pub mod world;
+use bevy::prelude::*;
 
-mod event;
-
-mod render;
-
-use render::begin_ticking;
-
-pub use cell::*;
-//pub use messages::*;
-pub use event::*;
-pub use organism::*;
-pub use world::*;
-
-fn main() {
-    let mut world = LEWorld::new_walled(2000, 200);
-    world.add_simple_producer((0, 0).into());
-
-    //world.add_simple_mover((5, 0, 0).into());
-
-    begin_ticking(world);
+fn main() -> AppExit {
+    App::new().add_plugins(life_engine_rs::plugin).run()
 }

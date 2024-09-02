@@ -1,0 +1,13 @@
+[tasks.run]
+command = "cargo"
+args = ["run", "--features", "bevy/dynamic_linking"]
+
+
+[tasks.release]
+command = "cargo"
+args = ["run", "--release"]
+
+
+[tasks.build]
+command = "cargo"
+args = ["build", "--release"]
