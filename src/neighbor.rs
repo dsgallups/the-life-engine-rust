@@ -2,7 +2,7 @@
 #![allow(dead_code)]
 use bevy::prelude::*;
 use bevy_spatial::SpatialAccess;
-use rand::{seq::SliceRandom as _, thread_rng};
+use rand::{seq::SliceRandom as _, thread_rng, Rng as _};
 use std::ops::Deref;
 
 use crate::{CellTree, ORGANISM_LAYER};
@@ -35,6 +35,16 @@ pub trait VecExt: Sized {
 
     fn add_y(self, add: f32) -> Vec2 {
         self.as_vec2().add_y(add)
+    }
+
+    /// returns a random location in ths radius
+    fn rand_in(radius: u16) -> Vec2 {
+        Vec2::rand_in(radius)
+    }
+
+    /// returns a random location within the radius (translated) (actually it's a square rn cuz im lazy)
+    fn rand_around(self, around: u16) -> Vec2 {
+        self.as_vec2().rand_around(around)
     }
 }
 
@@ -97,6 +107,30 @@ impl VecExt for Vec2 {
         Vec2 {
             x: self.x,
             y: (self.y + add).round(),
+        }
+    }
+
+    fn rand_in(radius: u16) -> Vec2 {
+        let mut rng = rand::thread_rng();
+
+        let x = rng.gen_range(-(radius as i32)..=(radius as i32));
+        let y = rng.gen_range(-(radius as i32)..=(radius as i32));
+
+        Self {
+            x: x as f32,
+            y: y as f32,
+        }
+    }
+
+    fn rand_around(self, radius: u16) -> Vec2 {
+        let mut rng = rand::thread_rng();
+
+        let x = rng.gen_range(-(radius as i32)..=(radius as i32));
+        let y = rng.gen_range(-(radius as i32)..=(radius as i32));
+
+        Self {
+            x: (self.x + x as f32).round(),
+            y: (self.y + y as f32).round(),
         }
     }
 

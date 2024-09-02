@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use genome::{CellLocation, Genome, OrganismCell};
 use rand::Rng as _;
 
-use crate::{cell::CellType, ORGANISM_LAYER};
+use crate::neighbor::VecExt;
 
 use super::cell::OrganismCellType;
 pub mod genome;
@@ -34,6 +34,14 @@ impl Organism {
 
     pub fn num_cells(&self) -> usize {
         self.genome.num_cells()
+    }
+
+    /// returns the radius of self given its children
+    pub fn radius(&self) -> u32 {
+        self.genome.cells().fold(0, |acc, child| {
+            acc.max(child.location().x.unsigned_abs())
+                .max(child.location().y.unsigned_abs())
+        })
     }
 
     #[allow(dead_code)]
@@ -121,7 +129,6 @@ impl Organism {
     }
     pub fn ate_food(&mut self, amt: u64) {
         self.belly += amt;
-        info!("Organism ate food. belly is at {}", self.belly)
     }
 
     pub fn lost_food(&mut self, amt: u64) {
@@ -146,7 +153,7 @@ impl Organism {
     }
 
     /// Uses both the ECS and the global positioning hashmap to insert itself.
-    pub fn insert_at(self, commands: &mut Commands, x: f32, y: f32) {
+    pub fn insert_at(self, commands: &mut Commands, location: impl VecExt) {
         /*info!(
             "\nInserting Organism into the world:\nLocation: {:?}\nto insert:{:#?}",
             global_location, self
@@ -157,7 +164,7 @@ impl Organism {
         commands
             .spawn((
                 SpriteBundle {
-                    transform: Transform::from_translation(Vec3::new(x, y, ORGANISM_LAYER)),
+                    transform: Transform::from_translation(location.as_vec3()),
                     ..Default::default()
                 },
                 self,
