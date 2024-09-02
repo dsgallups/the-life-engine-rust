@@ -55,6 +55,10 @@ impl OrganismCell {
         }
     }
 
+    pub fn cell_type(&self) -> OrganismCellType {
+        self.cell_type
+    }
+
     pub fn as_bundle(&self) -> OrganismCellBundle {
         OrganismCellBundle {
             sprite: SpriteBundle {
@@ -105,17 +109,19 @@ pub struct Genome {
 }
 
 impl Genome {
+    fn new(cells: Vec<OrganismCell>) -> Self {
+        Self { cells }
+    }
+
     pub fn num_cells(&self) -> usize {
         self.cells.len()
     }
     pub fn first_organism() -> Self {
-        Self {
-            cells: vec![
-                OrganismCell::new(OrganismCellType::Producer, CellLocation::new(-1, -1)),
-                OrganismCell::new(OrganismCellType::Mouth, CellLocation::new(0, 0)),
-                OrganismCell::new(OrganismCellType::Producer, CellLocation::new(1, 1)),
-            ],
-        }
+        Self::new(vec![
+            OrganismCell::new(OrganismCellType::Producer, CellLocation::new(-1, -1)),
+            OrganismCell::new(OrganismCellType::Mouth, CellLocation::new(0, 0)),
+            OrganismCell::new(OrganismCellType::Producer, CellLocation::new(1, 1)),
+        ])
     }
 
     pub fn types(&self) -> impl Iterator<Item = OrganismCellType> + '_ {

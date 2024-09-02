@@ -27,7 +27,7 @@ impl Default for EnvironmentSettings {
             hunger_tick: 14,
             spawn_radius: 15,
             age_rate: 50,
-            max_organisms: Some(10),
+            max_organisms: Some(2000),
         }
     }
 }

@@ -13,12 +13,16 @@ pub use plugin::*;
 mod reproduction;
 use reproduction::*;
 
+#[derive(Copy, Clone, Debug)]
+pub enum BrainType {
+    Predator,
+    Prey,
+}
+
 #[derive(Component, Clone, Debug)]
 pub struct Organism {
     genome: Genome,
-    ///precomputed
-    has_brain: bool,
-    ///precomputed
+    brain: Option<BrainType>,
     can_move: bool,
     belly: u64,
     tick_born: u64,
@@ -27,6 +31,46 @@ pub struct Organism {
 }
 
 impl Organism {
+    fn new(genome: Genome, belly: u64, tick_born: u64, mutation_rate: f64) -> Self {
+        let mut has_producer = false;
+        let mut has_eye = false;
+        let mut has_mover = false;
+        let mut has_killer = false;
+
+        for cell in genome.cells() {
+            use OrganismCellType::*;
+            match cell.cell_type() {
+                Producer => has_producer = true,
+                Eye => has_eye = true,
+                Mover => has_mover = true,
+                Killer => has_killer = true,
+                _ => {}
+            }
+            if has_producer && has_eye && has_mover && has_killer {
+                break;
+            }
+        }
+
+        let brain_type = if has_eye && has_mover {
+            if has_killer {
+                Some(BrainType::Predator)
+            } else {
+                Some(BrainType::Prey)
+            }
+        } else {
+            None
+        };
+
+        Self {
+            genome,
+            brain: brain_type,
+            can_move: has_mover && !has_producer,
+            belly,
+            tick_born,
+            mutation_rate,
+            offspring: 0,
+        }
+    }
     pub fn ready_to_reproduce(&self) -> bool {
         let can_reproduce_at = self.genome.num_cells() * 3;
         self.belly >= can_reproduce_at as u64
@@ -45,8 +89,8 @@ impl Organism {
     }
 
     #[allow(dead_code)]
-    pub fn has_brain(&self) -> bool {
-        self.has_brain
+    pub fn brain(&self) -> Option<BrainType> {
+        self.brain
     }
 
     pub fn can_move(&self) -> bool {
@@ -109,23 +153,13 @@ impl Organism {
                 break;
             }
         }
-        child.has_brain = has_mover && has_eye;
-        child.can_move = has_mover && !has_producer;
 
         child.tick_born = current_tick;
         Some(child)
     }
 
     pub fn first_organism() -> Self {
-        Self {
-            genome: Genome::first_organism(),
-            has_brain: false,
-            can_move: false,
-            belly: 3,
-            tick_born: 0,
-            mutation_rate: 50.,
-            offspring: 0,
-        }
+        Self::new(Genome::first_organism(), 3, 0, 50.)
     }
     pub fn ate_food(&mut self, amt: u64) {
         self.belly += amt;
