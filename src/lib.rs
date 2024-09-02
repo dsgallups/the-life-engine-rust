@@ -46,7 +46,6 @@ pub fn plugin(app: &mut App) {
                 .with_frequency(Duration::from_millis(20))
                 .with_transform(TransformMode::GlobalTransform),
         )
-        .add_plugins(LogPlugin::default())
         .add_plugins(GamePlugin)
         .add_systems(Startup, (set_window_icon, spawn_camera))
         .add_systems(Update, update_camera);

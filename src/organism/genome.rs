@@ -3,7 +3,7 @@ use std::ops::Add;
 use bevy::prelude::*;
 use rand::{rngs::ThreadRng, Rng as _};
 
-use crate::{cell::*, ORGANISM_LAYER};
+use crate::{cell::*, neighbor::VecExt};
 
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CellLocation {
@@ -11,9 +11,9 @@ pub struct CellLocation {
     pub y: i32,
 }
 
-impl CellLocation {
-    pub fn as_vec3(&self) -> Vec3 {
-        Vec3::new(self.x as f32, self.y as f32, ORGANISM_LAYER)
+impl VecExt for CellLocation {
+    fn as_vec2(self) -> Vec2 {
+        Vec2::new(self.x as f32, self.y as f32)
     }
 }
 

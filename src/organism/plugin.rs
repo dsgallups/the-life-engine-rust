@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_spatial::SpatialAccess;
 
 use crate::{
-    cell::{Food, FoodBundle, MouthPlugin, ProducerPlugin},
+    cell::{Food, FoodBundle, MouthPlugin, MoverPlugin, ProducerPlugin},
     environment::{EnvironmentSettings, Ticker},
     game::GameState,
     neighbor::VecExt as _,
@@ -24,13 +24,14 @@ impl Plugin for OrganismPlugin {
                         reproduce_organism.run_if(in_state(GameState::Playing)),
                     ),
             );*/
-        app.add_plugins((ProducerPlugin, MouthPlugin)).add_systems(
-            Update,
-            (
-                starve_organism.run_if(in_state(GameState::Playing)),
-                reproduce_organism.run_if(in_state(GameState::Playing)),
-            ),
-        );
+        app.add_plugins((ProducerPlugin, MouthPlugin, MoverPlugin))
+            .add_systems(
+                Update,
+                (
+                    starve_organism.run_if(in_state(GameState::Playing)),
+                    reproduce_organism.run_if(in_state(GameState::Playing)),
+                ),
+            );
     }
 }
 

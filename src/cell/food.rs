@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{neighbor::VecExt, ORGANISM_LAYER};
+use crate::neighbor::VecExt;
 
 use super::{CellType, EnvironmentCellType};
 

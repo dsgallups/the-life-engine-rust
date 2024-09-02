@@ -7,7 +7,9 @@ use std::ops::Deref;
 
 use crate::{CellTree, ORGANISM_LAYER};
 pub trait VecExt: Sized {
-    fn as_vec3(self) -> Vec3;
+    fn as_vec3(self) -> Vec3 {
+        self.as_vec2().as_vec3()
+    }
 
     fn as_vec2(self) -> Vec2;
 
