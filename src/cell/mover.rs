@@ -1,15 +1,15 @@
 use bevy::prelude::*;
+use bevy_spatial::SpatialAccess;
 
 use crate::{
-    environment::{
-        location::{GlobalCellLocation, OccupiedLocations},
-        Dir, Ticker,
-    },
+    environment::{Dir, Ticker},
     game::GameState,
+    neighbor::VecExt as _,
     organism::Organism,
+    CellTree,
 };
 
-use super::CellType;
+use super::{CellType, Food};
 
 #[derive(Component)]
 pub struct MoverCell;
@@ -25,83 +25,60 @@ impl Plugin for MoverPlugin {
 pub fn move_organism(
     mut commands: Commands,
     timer: Res<Ticker>,
-    mut occupied_locations: ResMut<OccupiedLocations>,
-    mut organisms: Query<(Entity, &mut Transform, &mut GlobalCellLocation, &Organism)>,
+    tree: Res<CellTree>,
+    mut organisms: Query<(Entity, &Children, &mut Transform, &Organism)>,
+    cells: Query<&Parent, With<CellType>>,
+    transforms: Query<&GlobalTransform, Without<Organism>>,
+    food: Query<&Food>,
 ) {
     if !timer.just_finished() {
         return;
     }
 
-    'mover: for (organism_entity, mut organism_transform, mut global_location, organism) in
+    'movement: for (organism_entity, organism_children, mut organism_transform, organism) in
         &mut organisms
     {
         if !organism.can_move() {
             continue;
         }
-
-        //move in a random direction
         let direction_to_move = Dir::rand(&mut rand::thread_rng()).delta();
-        let new_parent_location = *global_location + direction_to_move;
 
-        info!(
-            "Direction to move: {:?}\nnew_parent_location: {:?}",
-            direction_to_move, new_parent_location
-        );
+        let mut food_to_despawn = Vec::new();
+        for child in organism_children {
+            let new_child_transform = (transforms.get(*child).unwrap().translation().as_vec2()
+                + direction_to_move)
+                .round();
+            let (closest, closest_entity) = tree.nearest_neighbour(new_child_transform).unwrap();
+            let closest_entity = closest_entity.unwrap();
 
-        // the check to ensure that the organism isn't going to move into an occupied space
-        // assumes that the occupied_locations is truly up to date
-        for location in organism.occupying_locations() {
-            if occupied_locations
-                .get(&(new_parent_location + location))
-                .is_some_and(|(e, t)| e != organism_entity && t != CellType::food())
-            {
-                continue 'mover;
-            }
-        }
-        /*
-            the direction is free to be moved into.
-            the following things need to happen:
-            1. the occupied_locations need to be updated
-            2. the organism's transform and global cell location need to be updated
-
-            the children do not have a global cell location to care about.
-        */
-
-        // update occupied_locations.
-        // this needs to happen in two loops since
-        // we could potentially be deleting locations in the previous
-        // iteration of the loop
-        for location in organism.occupying_locations() {
-            let current_location = *global_location + location;
-            // this is to prove that the occupied locations is not in sync with the entities stored in the ECS
-            match occupied_locations.remove(&current_location) {
-                Some((e, cell_type)) => {
-                    if e != organism_entity && cell_type != CellType::food() {
-                        panic!("Entity is not that of the orgnism entity")
+            //something is here already. It could be a cell that is part of this component or food or another cell
+            if new_child_transform == closest {
+                match (food.get(closest_entity), cells.get(closest_entity)) {
+                    (Err(_), Ok(cell_parent)) => {
+                        if cell_parent.get() != organism_entity {
+                            //someone, but not us, is in the way
+                            continue 'movement;
+                        }
                     }
-                }
-                None => {
-                    panic!("Cell of entity did not previously exist in the occupied locations.")
-                }
-            }
-        }
-        for cell in organism.cells() {
-            let new_location = new_parent_location + cell.location();
-
-            if let Some((e, cell)) =
-                occupied_locations.insert(new_location, organism_entity, cell.cell_type())
-            {
-                if cell == CellType::food() {
-                    if let Some(mut e) = commands.get_entity(e) {
-                        e.remove_parent();
-                        e.despawn_recursive();
+                    (Ok(_), _) => {
+                        //despawn this food. This could be bad though
+                        // if a mouth is right next to some food and the mouthplugin hasn't run yet. hmmm
+                        // maybe we run this after feed_organism
+                        food_to_despawn.push(closest_entity)
                     }
+                    (Err(_), Err(e)) => panic!("Not sure how we got here: {}", e),
                 }
             }
         }
 
-        //now update the organism's components
-        *global_location = new_parent_location;
-        organism_transform.translation = new_parent_location.as_vec3();
+        // at this point, we are free to move. despawn the food
+        for food_entity in food_to_despawn {
+            if let Some(mut ec) = commands.get_entity(food_entity) {
+                ec.despawn();
+            }
+        }
+
+        organism_transform.translation =
+            (organism_transform.translation + direction_to_move.as_vec3()).round()
     }
 }

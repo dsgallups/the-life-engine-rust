@@ -1,13 +1,10 @@
 use bevy::prelude::*;
-use genome::{CellLocation, Genome, OrganismCell};
+use genome::Genome;
 use rand::Rng as _;
 
-use crate::cell::CellType;
+use crate::neighbor::VecExt;
 
-use super::{
-    cell::OrganismCellType,
-    environment::location::{GlobalCellLocation, OccupiedLocations},
-};
+use super::cell::OrganismCellType;
 pub mod genome;
 
 mod plugin;
@@ -37,6 +34,14 @@ impl Organism {
 
     pub fn num_cells(&self) -> usize {
         self.genome.num_cells()
+    }
+
+    /// returns the radius of self given its children
+    pub fn radius(&self) -> u32 {
+        self.genome.cells().fold(0, |acc, child| {
+            acc.max(child.location().x.unsigned_abs())
+                .max(child.location().y.unsigned_abs())
+        })
     }
 
     #[allow(dead_code)]
@@ -122,9 +127,8 @@ impl Organism {
             offspring: 0,
         }
     }
-    pub fn ate_food(&mut self) {
-        self.belly += 1;
-        //info!("Organism ate food. belly is at {}", self.belly)
+    pub fn ate_food(&mut self, amt: u64) {
+        self.belly += amt;
     }
 
     pub fn lost_food(&mut self, amt: u64) {
@@ -140,59 +144,25 @@ impl Organism {
         self.belly
     }
 
-    pub fn occupying_locations(&self) -> impl Iterator<Item = CellLocation> + '_ {
-        self.genome.locations()
-    }
-
-    pub fn cells(&self) -> impl Iterator<Item = &OrganismCell> {
-        self.genome.cells()
-    }
-
     /// Uses both the ECS and the global positioning hashmap to insert itself.
-    pub fn insert_at(
-        self,
-        commands: &mut Commands,
-        positions: &mut ResMut<OccupiedLocations>,
-        global_location: GlobalCellLocation,
-    ) {
+    pub fn insert_at(self, commands: &mut Commands, location: impl VecExt) {
         /*info!(
             "\nInserting Organism into the world:\nLocation: {:?}\nto insert:{:#?}",
             global_location, self
         );*/
         //need to clone since we move self into the system
-        //the genome cannot describe itself in the context of the world
-        //without self being inserted into the ECS.
         let genome = self.genome.clone();
 
-        let mut res = commands.spawn((
-            SpriteBundle {
-                transform: Transform::from_translation(global_location.as_vec3()),
-                ..Default::default()
-            },
-            self,
-            global_location,
-        ));
-
-        let organism_id = res.id();
-
-        let mut entities_to_remove = Vec::new();
-
-        res.with_children(|children_builder| {
-            genome.spawn_cells(children_builder, |cell_type, cell_location| {
-                if let Some((replacing_cell, replacing_cell_type)) =
-                    positions.insert(global_location + cell_location, organism_id, cell_type)
-                {
-                    if replacing_cell_type != CellType::food() {
-                        panic!("the child is replacing something that isn't food. quitting.");
-                    }
-
-                    entities_to_remove.push(replacing_cell);
-                };
+        commands
+            .spawn((
+                SpriteBundle {
+                    transform: Transform::from_translation(location.as_vec3()),
+                    ..Default::default()
+                },
+                self,
+            ))
+            .with_children(|child_builder| {
+                genome.spawn_cells(child_builder);
             });
-        });
-
-        entities_to_remove.into_iter().for_each(|e| {
-            commands.entity(e).despawn();
-        });
     }
 }

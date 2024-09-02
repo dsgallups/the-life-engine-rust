@@ -3,7 +3,7 @@ use std::ops::Add;
 use bevy::prelude::*;
 use rand::{rngs::ThreadRng, Rng as _};
 
-use crate::{cell::*, ORGANISM_LAYER};
+use crate::{cell::*, neighbor::VecExt};
 
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CellLocation {
@@ -11,9 +11,9 @@ pub struct CellLocation {
     pub y: i32,
 }
 
-impl CellLocation {
-    pub fn as_vec3(&self) -> Vec3 {
-        Vec3::new(self.x as f32, self.y as f32, ORGANISM_LAYER)
+impl VecExt for CellLocation {
+    fn as_vec2(self) -> Vec2 {
+        Vec2::new(self.x as f32, self.y as f32)
     }
 }
 
@@ -40,6 +40,13 @@ pub struct OrganismCell {
     location: CellLocation,
 }
 
+#[derive(Bundle)]
+pub struct OrganismCellBundle {
+    sprite: SpriteBundle,
+    local_location: CellLocation,
+    cell_type: CellType,
+}
+
 impl OrganismCell {
     pub fn new(cell_type: OrganismCellType, location: CellLocation) -> Self {
         Self {
@@ -47,15 +54,20 @@ impl OrganismCell {
             location,
         }
     }
-    pub fn as_sprite_bundle(&self) -> SpriteBundle {
-        SpriteBundle {
-            transform: Transform::from_translation(self.location.as_vec3()),
-            sprite: Sprite {
-                color: self.cell_type.color(),
-                custom_size: Some(Vec2::new(1., 1.)),
+
+    pub fn as_bundle(&self) -> OrganismCellBundle {
+        OrganismCellBundle {
+            sprite: SpriteBundle {
+                transform: Transform::from_translation(self.location.as_vec3()),
+                sprite: Sprite {
+                    color: self.cell_type.color(),
+                    custom_size: Some(Vec2::new(1., 1.)),
+                    ..Default::default()
+                },
                 ..Default::default()
             },
-            ..Default::default()
+            local_location: self.location,
+            cell_type: self.cell_type.into(),
         }
     }
 
@@ -74,26 +86,16 @@ impl OrganismCell {
         self.location
     }
 
-    pub fn cell_type(&self) -> OrganismCellType {
-        self.cell_type
-    }
-
-    pub fn spawn(
-        &self,
-        child_builder: &mut ChildBuilder,
-        mut position_fn: impl FnMut(OrganismCellType, CellLocation),
-    ) {
+    pub fn spawn(&self, child_builder: &mut ChildBuilder) {
         use OrganismCellType::*;
-        let bundle = self.as_sprite_bundle();
         match self.cell_type {
-            Armor => child_builder.spawn((bundle, self.location, ArmorCell)),
-            Eye => child_builder.spawn((bundle, self.location, EyeCell)),
-            Killer => child_builder.spawn((bundle, self.location, KillerCell)),
-            Mover => child_builder.spawn((bundle, self.location, MoverCell)),
-            Producer => child_builder.spawn((bundle, self.location, ProducerCell::default())),
-            Mouth => child_builder.spawn((bundle, self.location, MouthCell)),
+            Armor => child_builder.spawn((self.as_bundle(), ArmorCell)),
+            Eye => child_builder.spawn((self.as_bundle(), EyeCell)),
+            Killer => child_builder.spawn((self.as_bundle(), KillerCell)),
+            Mover => child_builder.spawn((self.as_bundle(), MoverCell)),
+            Producer => child_builder.spawn((self.as_bundle(), ProducerCell::default())),
+            Mouth => child_builder.spawn((self.as_bundle(), MouthCell)),
         };
-        position_fn(self.cell_type, self.location);
     }
 }
 
@@ -120,18 +122,10 @@ impl Genome {
         self.cells.iter().map(|c| c.cell_type)
     }
 
-    pub fn spawn_cells(
-        &self,
-        child_builder: &mut ChildBuilder,
-        mut position_fn: impl FnMut(OrganismCellType, CellLocation),
-    ) {
+    pub fn spawn_cells(&self, child_builder: &mut ChildBuilder) {
         for cell in self.cells.iter() {
-            cell.spawn(child_builder, &mut position_fn);
+            cell.spawn(child_builder);
         }
-    }
-
-    pub fn locations(&self) -> impl Iterator<Item = CellLocation> + '_ {
-        self.cells.iter().map(|cell| cell.location)
     }
 
     pub fn cells(&self) -> impl Iterator<Item = &OrganismCell> {

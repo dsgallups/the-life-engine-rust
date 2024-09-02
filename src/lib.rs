@@ -1,7 +1,9 @@
-use std::io::Cursor;
+use std::{io::Cursor, time::Duration};
 
 use bevy::{prelude::*, window::PrimaryWindow, winit::WinitWindows};
+use bevy_spatial::{kdtree::KDTree2, AutomaticUpdate, SpatialStructure, TransformMode};
 use camera::{spawn_camera, update_camera};
+use cell::CellType;
 use game::GamePlugin;
 use winit::window::Icon;
 
@@ -13,7 +15,10 @@ pub(crate) mod environment;
 pub(crate) mod game;
 pub(crate) mod load;
 pub(crate) mod menu;
+pub(crate) mod neighbor;
 pub(crate) mod organism;
+
+pub type CellTree = KDTree2<CellType>;
 
 /// Entry point for the bin
 ///
@@ -34,6 +39,12 @@ pub fn plugin(app: &mut App) {
                     ..Default::default()
                 })
                 .set(ImagePlugin::default_nearest()),
+        )
+        .add_plugins(
+            AutomaticUpdate::<CellType>::new()
+                .with_spatial_ds(SpatialStructure::KDTree2)
+                .with_frequency(Duration::from_millis(20))
+                .with_transform(TransformMode::GlobalTransform),
         )
         .add_plugins(GamePlugin)
         .add_systems(Startup, (set_window_icon, spawn_camera))

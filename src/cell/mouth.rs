@@ -1,15 +1,10 @@
 use bevy::prelude::*;
 
 use crate::{
-    environment::{
-        location::{GlobalCellLocation, OccupiedLocations},
-        Ticker,
-    },
-    game::GameState,
-    organism::{genome::CellLocation, Organism},
+    environment::Ticker, game::GameState, neighbor::VecExt as _, organism::Organism, CellTree,
 };
 
-use super::{CellType, EnvironmentCellType};
+use super::Food;
 
 #[derive(Component)]
 pub struct MouthCell;
@@ -25,32 +20,37 @@ impl Plugin for MouthPlugin {
 fn consume_food(
     mut commands: Commands,
     timer: Res<Ticker>,
-    mut occupied_locations: ResMut<OccupiedLocations>,
-    mouths: Query<(&CellLocation, &Parent), With<MouthCell>>,
-    mut organisms: Query<(&mut Organism, &GlobalCellLocation)>,
+    locations: Res<CellTree>,
+    mouths: Query<(&GlobalTransform, &Parent), With<MouthCell>>,
+    mut organisms: Query<&mut Organism>,
+    food: Query<&Food>,
 ) {
     if !timer.just_finished() {
         return;
     }
-    for (local_mouth_location, parent) in &mouths {
-        let Ok((mut organism, organism_location)) = organisms.get_mut(parent.get()) else {
-            panic!("Orphan cell found for mouth!");
-        };
 
-        let mouth_location = *organism_location + *local_mouth_location;
+    for (mouth, mouth_parent) in &mouths {
+        let translation = mouth.translation();
 
-        for location in mouth_location.around() {
-            if let Some(CellType::Environment(EnvironmentCellType::Food)) =
-                occupied_locations.cell_type_at(&location)
-            {
-                //eat food
-                let Some((entity, _)) = occupied_locations.remove(&location) else {
-                    panic!("something weird just happened")
-                };
-                commands.entity(entity).despawn_recursive();
-                organism.ate_food();
-                break;
+        let mut food_eaten = 0;
+
+        for entity in translation.get_surrounding_entities(&locations) {
+            if food.get(entity).is_ok() {
+                //eat the food. may be gone by the time we get here
+                // if we get the entity and it despawns, just gotta hand it to the organism for winning
+                // the race condition
+                if let Some(mut entity) = commands.get_entity(entity) {
+                    entity.despawn();
+                    food_eaten += 1;
+                }
             }
+        }
+
+        if food_eaten > 0 {
+            organisms
+                .get_mut(mouth_parent.get())
+                .unwrap()
+                .ate_food(food_eaten);
         }
     }
 }

@@ -16,6 +16,7 @@ webbrowser = { version = "1", features = ["hardened"] }
 # keep the following in sync with Bevy's dependencies
 winit = { version = "0.30", default-features = false }
 image = { version = "0.25", default-features = false }
+bevy_spatial = "0.9.0"
 
 
 [dependencies.bevy]

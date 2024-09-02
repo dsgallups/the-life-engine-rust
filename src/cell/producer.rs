@@ -1,15 +1,13 @@
 use bevy::prelude::*;
 
 use crate::{
-    environment::{
-        location::{GlobalCellLocation, OccupiedLocations},
-        EnvironmentSettings, Ticker,
-    },
+    environment::{EnvironmentSettings, Ticker},
     game::GameState,
-    organism::{genome::CellLocation, Organism},
+    neighbor::VecExt,
+    CellTree,
 };
 
-use super::{EnvironmentCellType, FoodBundle};
+use super::FoodBundle;
 
 #[derive(Component, Default)]
 pub struct ProducerCell {
@@ -27,31 +25,21 @@ impl Plugin for ProducerPlugin {
 pub fn produce_food(
     mut commands: Commands,
     timer: Res<Ticker>,
+    locations: Res<CellTree>,
     settings: Res<EnvironmentSettings>,
-    mut occupied_locations: ResMut<OccupiedLocations>,
-    mut producers: Query<(&mut ProducerCell, &CellLocation, &Parent)>,
-    organisms: Query<&GlobalCellLocation, With<Organism>>,
+    mut producers: Query<(&mut ProducerCell, &GlobalTransform)>,
 ) {
     if !timer.just_finished() {
         return;
     }
-    for (mut producer, local_location, producer_parent) in &mut producers {
-        let Ok(organism_location) = organisms.get(producer_parent.get()) else {
-            panic!("Orphan cell found!");
-        };
+    for (mut producer, global_location) in &mut producers {
         producer.counter += 1;
-
-        let global_location_of_producer = *organism_location + *local_location;
-
+        let translation = global_location.translation();
         if producer.counter >= settings.producer_threshold {
-            for location in global_location_of_producer.around() {
-                if !occupied_locations.occupied(&location) {
-                    //make food at an unoccupied location
-                    let new_food = commands.spawn(FoodBundle::at(location)).id();
-                    occupied_locations.insert(location, new_food, EnvironmentCellType::Food);
-                    break;
-                }
+            if let Some(free_space) = translation.get_free_space(&locations) {
+                commands.spawn(FoodBundle::at(free_space));
             }
+
             producer.counter = 0;
         }
     }

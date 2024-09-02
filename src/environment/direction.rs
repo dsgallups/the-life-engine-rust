@@ -1,7 +1,6 @@
 #![allow(dead_code)]
+use bevy::math::Vec2;
 use rand::{rngs::ThreadRng, Rng as _};
-
-use crate::organism::genome::CellLocation;
 
 #[derive(Debug, PartialEq, Default, Copy, Clone)]
 pub enum Dir {
@@ -13,12 +12,12 @@ pub enum Dir {
 }
 
 impl Dir {
-    pub fn delta(&self) -> CellLocation {
+    pub fn delta(&self) -> Vec2 {
         match self {
-            Dir::Up => CellLocation::new(0, 1),
-            Dir::Down => CellLocation::new(0, -1),
-            Dir::Left => CellLocation::new(-1, 0),
-            Dir::Right => CellLocation::new(1, 0),
+            Dir::Up => Vec2::new(0., 1.),
+            Dir::Down => Vec2::new(0., -1.),
+            Dir::Left => Vec2::new(-1., 0.),
+            Dir::Right => Vec2::new(1., 0.),
         }
     }
     pub fn reverse(&mut self) {

@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
-use crate::environment::location::GlobalCellLocation;
+use crate::neighbor::VecExt;
 
-use super::EnvironmentCellType;
+use super::{CellType, EnvironmentCellType};
 
 #[derive(Component)]
 pub struct Food;
@@ -10,12 +10,12 @@ pub struct Food;
 #[derive(Bundle)]
 pub struct FoodBundle {
     sprite: SpriteBundle,
-    location: GlobalCellLocation,
     entity: Food,
+    cell_type: CellType,
 }
 
 impl FoodBundle {
-    pub fn at(location: GlobalCellLocation) -> Self {
+    pub fn at(location: impl VecExt) -> Self {
         Self {
             sprite: SpriteBundle {
                 transform: Transform::from_translation(location.as_vec3()),
@@ -26,8 +26,8 @@ impl FoodBundle {
                 },
                 ..Default::default()
             },
-            location,
             entity: Food,
+            cell_type: CellType::food(),
         }
     }
 }
