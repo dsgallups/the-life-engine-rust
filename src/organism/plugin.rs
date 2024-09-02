@@ -21,23 +21,23 @@ impl Plugin for OrganismPlugin {
                         reproduce_organism.run_if(in_state(GameState::Playing)),
                     ),
             );*/
-        app.add_plugins((ProducerPlugin, MouthPlugin));
+        app.add_plugins((ProducerPlugin, MouthPlugin))
+            .add_systems(Update, starve_organism.run_if(in_state(GameState::Playing)));
     }
 }
-/*
+
 fn starve_organism(
     mut commands: Commands,
-    mut occupied_locations: ResMut<OccupiedLocations>,
     settings: Res<EnvironmentSettings>,
     timer: Res<Ticker>,
-    mut organisms: Query<(Entity, &mut Organism, &GlobalCellLocation)>,
-    cells: Query<(&Parent, &CellLocation)>,
+    mut organisms: Query<(Entity, &Children, &mut Organism)>,
+    locations: Query<&GlobalTransform>,
 ) {
     if !timer.just_finished() {
         return;
     }
 
-    for (organism_entity, mut organism, organism_location) in &mut organisms {
+    for (organism_entity, children, mut organism) in &mut organisms {
         let ticks_alive = timer.current_tick() - organism.tick_born();
         if ticks_alive % settings.hunger_tick == 0 {
             // based on the age of the organism, we out how much food it should lose
@@ -48,24 +48,17 @@ fn starve_organism(
         if organism.belly() == 0 {
             //before the organism dies, we need to turn the children
             //into food :D
-            for (cell_parent, cell_location) in &cells {
-                if organism_entity == cell_parent.get() {
-                    //make food here
-                    let global_cell_location = *organism_location + *cell_location;
-                    let new_food = commands.spawn(FoodBundle::at(global_cell_location)).id();
-                    occupied_locations.insert(
-                        global_cell_location,
-                        new_food,
-                        EnvironmentCellType::Food,
-                    );
-                }
+
+            for child in children.iter() {
+                let location = locations.get(*child).unwrap();
+                commands.spawn(FoodBundle::at(location.translation()));
             }
 
             commands.entity(organism_entity).despawn_recursive();
         }
     }
 }
-
+/*
 fn reproduce_organism(
     mut commands: Commands,
     mut occupied_locations: ResMut<OccupiedLocations>,

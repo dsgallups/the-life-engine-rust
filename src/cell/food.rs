@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::ORGANISM_LAYER;
+use crate::{neighbor::VecExt, ORGANISM_LAYER};
 
 use super::{CellType, EnvironmentCellType};
 
@@ -15,14 +15,10 @@ pub struct FoodBundle {
 }
 
 impl FoodBundle {
-    pub fn at(location: Vec2) -> Self {
+    pub fn at(location: impl VecExt) -> Self {
         Self {
             sprite: SpriteBundle {
-                transform: Transform::from_translation(Vec3::new(
-                    location.x,
-                    location.y,
-                    ORGANISM_LAYER,
-                )),
+                transform: Transform::from_translation(location.as_vec3()),
                 sprite: Sprite {
                     color: EnvironmentCellType::Food.color(),
                     custom_size: Some(Vec2::new(1., 1.)),

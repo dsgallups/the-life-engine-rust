@@ -1,3 +1,5 @@
+#![allow(clippy::wrong_self_convention)]
+#![allow(dead_code)]
 use bevy::prelude::*;
 use bevy_spatial::SpatialAccess;
 use rand::{seq::SliceRandom as _, thread_rng};
