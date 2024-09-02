@@ -3,7 +3,7 @@ use std::ops::Add;
 use bevy::{prelude::*, utils::HashMap};
 use rand::{seq::SliceRandom as _, thread_rng, Rng as _};
 
-use crate::{cell::CellType, organism::genome::CellLocation, CELL_MULT, ORGANISM_LAYER};
+use crate::{cell::CellType, organism::genome::CellLocation, ORGANISM_LAYER};
 
 #[derive(Component, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct GlobalCellLocation {
@@ -49,11 +49,7 @@ impl GlobalCellLocation {
     }
 
     pub fn as_vec3(&self) -> Vec3 {
-        Vec3::new(
-            self.x as f32 * CELL_MULT,
-            self.y as f32 * CELL_MULT,
-            ORGANISM_LAYER,
-        )
+        Vec3::new(self.x as f32, self.y as f32, ORGANISM_LAYER)
     }
 }
 

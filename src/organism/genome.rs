@@ -3,7 +3,7 @@ use std::ops::Add;
 use bevy::prelude::*;
 use rand::{rngs::ThreadRng, Rng as _};
 
-use crate::{cell::*, CELL_MULT, ORGANISM_LAYER};
+use crate::{cell::*, ORGANISM_LAYER};
 
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CellLocation {
@@ -13,11 +13,7 @@ pub struct CellLocation {
 
 impl CellLocation {
     pub fn as_vec3(&self) -> Vec3 {
-        Vec3::new(
-            self.x as f32 * CELL_MULT,
-            self.y as f32 * CELL_MULT,
-            ORGANISM_LAYER,
-        )
+        Vec3::new(self.x as f32, self.y as f32, ORGANISM_LAYER)
     }
 }
 
@@ -56,7 +52,7 @@ impl OrganismCell {
             transform: Transform::from_translation(self.location.as_vec3()),
             sprite: Sprite {
                 color: self.cell_type.color(),
-                custom_size: Some(Vec2::new(CELL_MULT, CELL_MULT)),
+                custom_size: Some(Vec2::new(1., 1.)),
                 ..Default::default()
             },
             ..Default::default()

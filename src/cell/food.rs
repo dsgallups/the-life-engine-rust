@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{environment::location::GlobalCellLocation, CELL_MULT};
+use crate::environment::location::GlobalCellLocation;
 
 use super::EnvironmentCellType;
 
@@ -21,7 +21,7 @@ impl FoodBundle {
                 transform: Transform::from_translation(location.as_vec3()),
                 sprite: Sprite {
                     color: EnvironmentCellType::Food.color(),
-                    custom_size: Some(Vec2::new(CELL_MULT, CELL_MULT)),
+                    custom_size: Some(Vec2::new(1., 1.)),
                     ..Default::default()
                 },
                 ..Default::default()

@@ -37,7 +37,6 @@ fn setup_menu(
     audio_assets: Res<AudioAssets>,
     textures: Res<TextureAssets>,
 ) {
-    commands.spawn(Camera2dBundle::default());
     commands
         .spawn((
             NodeBundle {

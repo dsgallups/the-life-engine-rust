@@ -1,12 +1,13 @@
 use std::io::Cursor;
 
 use bevy::{prelude::*, window::PrimaryWindow, winit::WinitWindows};
+use camera::{spawn_camera, update_camera};
 use game::GamePlugin;
 use winit::window::Icon;
 
 pub const ORGANISM_LAYER: f32 = 1.0;
-pub const CELL_MULT: f32 = 10.;
 
+pub(crate) mod camera;
 pub(crate) mod cell;
 pub(crate) mod environment;
 pub(crate) mod game;
@@ -31,7 +32,8 @@ pub fn plugin(app: &mut App) {
             ..Default::default()
         }))
         .add_plugins(GamePlugin)
-        .add_systems(Startup, set_window_icon);
+        .add_systems(Startup, (set_window_icon, spawn_camera))
+        .add_systems(Update, update_camera);
 }
 
 // Sets the icon on windows and X11. Borrowed from the bevy game template
