@@ -76,7 +76,11 @@ fn reproduce_organism(
     mut organisms: Query<(&GlobalTransform, &mut Organism)>,
     food: Query<&Food>,
 ) {
-    if !timer.just_finished() {
+    if !timer.just_finished()
+        || settings
+            .max_organisms
+            .is_some_and(|max| organisms.iter().count() >= max)
+    {
         return;
     }
 
