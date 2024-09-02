@@ -100,5 +100,5 @@ fn clear_background(mut color: ResMut<ClearColor>) {
 /// Creates the first organism. [`Organism::insert_at`] is used to unify spawning of the organism in the ECS
 /// as well as placing itself in the [`OccupiedLocations`] hashmap.
 fn spawn_first_organism(mut commands: Commands) {
-    Organism::first_organism().insert_at(&mut commands, 0., 0.);
+    Organism::first_organism().insert_at(&mut commands, 10., 10.);
 }

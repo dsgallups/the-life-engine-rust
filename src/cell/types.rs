@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use rand::{rngs::ThreadRng, Rng as _};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum OrganismCellType {
     Armor,
     Eye,
@@ -39,7 +39,7 @@ impl OrganismCellType {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
 #[allow(dead_code)]
 pub enum EnvironmentCellType {
     Food,
@@ -56,7 +56,7 @@ impl EnvironmentCellType {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CellType {
     Organism(OrganismCellType),
     Environment(EnvironmentCellType),

@@ -154,7 +154,7 @@ impl Organism {
         //need to clone since we move self into the system
         let genome = self.genome.clone();
 
-        let res = commands
+        commands
             .spawn((
                 SpriteBundle {
                     transform: Transform::from_translation(Vec3::new(x, y, ORGANISM_LAYER)),

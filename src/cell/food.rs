@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::ORGANISM_LAYER;
 
-use super::EnvironmentCellType;
+use super::{CellType, EnvironmentCellType};
 
 #[derive(Component)]
 pub struct Food;
@@ -11,6 +11,7 @@ pub struct Food;
 pub struct FoodBundle {
     sprite: SpriteBundle,
     entity: Food,
+    cell_type: CellType,
 }
 
 impl FoodBundle {
@@ -26,6 +27,7 @@ impl FoodBundle {
                 ..Default::default()
             },
             entity: Food,
+            cell_type: CellType::food(),
         }
     }
 }

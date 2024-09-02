@@ -44,6 +44,7 @@ pub struct OrganismCell {
 pub struct OrganismCellBundle {
     sprite: SpriteBundle,
     local_location: CellLocation,
+    cell_type: CellType,
 }
 
 impl OrganismCell {
@@ -66,6 +67,7 @@ impl OrganismCell {
                 ..Default::default()
             },
             local_location: self.location,
+            cell_type: self.cell_type.into(),
         }
     }
 
