@@ -14,7 +14,11 @@ pub(crate) mod load;
 pub(crate) mod menu;
 pub(crate) mod organism;
 
+/// Entry point for the bin
+///
+/// See [`GamePlugin`] for detailed information about how the systems work
 pub fn plugin(app: &mut App) {
+    // borrowed mostly from the bevy game template
     app.insert_resource(Msaa::Off)
         .insert_resource(ClearColor(Color::linear_rgb(0.4, 0.4, 0.4)))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
@@ -30,7 +34,7 @@ pub fn plugin(app: &mut App) {
         .add_systems(Startup, set_window_icon);
 }
 
-// Sets the icon on windows and X11
+// Sets the icon on windows and X11. Borrowed from the bevy game template
 fn set_window_icon(
     windows: NonSend<WinitWindows>,
     primary_window: Query<Entity, With<PrimaryWindow>>,

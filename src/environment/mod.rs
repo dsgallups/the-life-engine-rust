@@ -34,6 +34,19 @@ impl Default for EnvironmentSettings {
     }
 }
 
+/// The main plugin for the game. This sets up several resources and systems
+///
+///
+/// These are
+/// - [`EnvironmentSettings`]: Provides some configuration about the behavior of organisms
+/// - [`OccupiedLocations`]: a quick access hashmap for cells of organisms to interact with the environment.
+///     This also allows organisms to know where they can spawn their genetic children and where they can move
+///     (if they can move).
+/// - [`Ticker`]: Determines when the organisms can "make a move". This is independent of framerate and ideally
+///     should be configurable in [`EnvironmentSettings`].
+/// - [`OrganismPlugin`] creates the update systems for all organisms in the environment.
+///
+/// The game starts with the first organism as laid out in [`spawn_first_organism`].
 pub struct EnvironmentPlugin;
 
 impl Plugin for EnvironmentPlugin {
@@ -87,6 +100,8 @@ fn clear_background(mut color: ResMut<ClearColor>) {
     color.0 = Color::BLACK
 }
 
+/// Creates the first organism. [`Organism::insert_at`] is used to unify spawning of the organism in the ECS
+/// as well as placing itself in the [`OccupiedLocations`] hashmap.
 fn spawn_first_organism(mut commands: Commands, mut global_positions: ResMut<OccupiedLocations>) {
     Organism::first_organism().insert_at(
         &mut commands,

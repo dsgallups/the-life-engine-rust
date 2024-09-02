@@ -5,6 +5,7 @@ use super::game::GameState;
 
 pub struct LoadingPlugin;
 
+/// Loads initial assets for the game. Most of these assets are only in the Menu.
 impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut App) {
         //note: that this is from an extension of App by bevy_asset_loader

@@ -15,7 +15,12 @@ mod systems;
 
 pub struct MenuPlugin;
 
-/// The main menu
+/// # The main menu
+///
+/// Sets up the ui elements for the main menu and cleans itself when the [`GameState::Menu`] is
+/// exited.
+///
+/// Additionally, it spawns a camera in [`setup_menu`].
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Menu), setup_menu)

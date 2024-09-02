@@ -16,6 +16,16 @@ pub enum GameState {
     Menu,
 }
 
+/// # The primary Plugin for the life engine
+///
+/// This inserts three different plugins:
+/// - [`LoadingPlugin`] is used for inserting initial resources, like sound and textures for
+///     the main menu
+/// - [`MenuPlugin`] is used for rendering and controlling actions on the main menu. This
+///     plugin essentially "kicks in" after the [`GameState::Loading`] has transitioned to [`GameState::Menu`].
+///     This also spawns a camera.
+///
+/// - [`EnvironmentPlugin`] is the meat of the game, which loads in systems for organisms and replicating behavior.
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {

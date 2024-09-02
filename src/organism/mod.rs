@@ -148,8 +148,7 @@ impl Organism {
         self.genome.cells()
     }
 
-    /// The position_fn will provide you with the global cell location
-    /// of a particular cell type
+    /// Uses both the ECS and the global positioning hashmap to insert itself.
     pub fn insert_at(
         self,
         commands: &mut Commands,
@@ -162,7 +161,7 @@ impl Organism {
         );*/
         //need to clone since we move self into the system
         //the genome cannot describe itself in the context of the world
-        //without self having components
+        //without self being inserted into the ECS.
         let genome = self.genome.clone();
 
         let mut res = commands.spawn((

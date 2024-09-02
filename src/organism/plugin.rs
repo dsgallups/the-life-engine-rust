@@ -11,6 +11,7 @@ use crate::{
 
 use super::{genome::CellLocation, Organism};
 
+/// Combines the systems of cells and organism actions
 pub struct OrganismPlugin;
 
 impl Plugin for OrganismPlugin {
