@@ -1,7 +1,8 @@
 use std::time::Duration;
 
 pub use bevy::prelude::*;
-use location::{GlobalCellLocation, OccupiedLocations};
+
+use crate::occupied_locations::{GlobalCellLocation, OccupiedLocations};
 
 use super::{
     game::GameState,
@@ -10,7 +11,6 @@ use super::{
 
 pub mod direction;
 pub use direction::*;
-pub mod location;
 
 #[allow(dead_code)]
 #[derive(Resource, Debug)]

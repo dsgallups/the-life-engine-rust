@@ -12,6 +12,7 @@ pub(crate) mod environment;
 pub(crate) mod game;
 pub(crate) mod load;
 pub(crate) mod menu;
+pub(crate) mod occupied_locations;
 pub(crate) mod organism;
 
 /// Entry point for the bin

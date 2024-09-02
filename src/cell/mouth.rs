@@ -1,11 +1,9 @@
 use bevy::prelude::*;
 
 use crate::{
-    environment::{
-        location::{GlobalCellLocation, OccupiedLocations},
-        Ticker,
-    },
+    environment::Ticker,
     game::GameState,
+    occupied_locations::{GlobalCellLocation, OccupiedLocations},
     organism::{genome::CellLocation, Organism},
 };
 

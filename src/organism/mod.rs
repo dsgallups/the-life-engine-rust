@@ -6,7 +6,7 @@ use crate::cell::CellType;
 
 use super::{
     cell::OrganismCellType,
-    environment::location::{GlobalCellLocation, OccupiedLocations},
+    occupied_locations::{GlobalCellLocation, OccupiedLocations},
 };
 pub mod genome;
 

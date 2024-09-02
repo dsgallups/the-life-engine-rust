@@ -2,11 +2,9 @@ use bevy::prelude::*;
 
 use crate::{
     cell::{CellType, EnvironmentCellType, FoodBundle, MouthPlugin, MoverPlugin, ProducerPlugin},
-    environment::{
-        location::{GlobalCellLocation, OccupiedLocations},
-        EnvironmentSettings, Ticker,
-    },
+    environment::{EnvironmentSettings, Ticker},
     game::GameState,
+    occupied_locations::{GlobalCellLocation, OccupiedLocations},
 };
 
 use super::{genome::CellLocation, Organism};

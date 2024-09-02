@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{environment::location::GlobalCellLocation, CELL_MULT};
+use crate::{occupied_locations::GlobalCellLocation, CELL_MULT};
 
 use super::EnvironmentCellType;
 
