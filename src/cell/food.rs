@@ -15,10 +15,14 @@ pub struct FoodBundle {
 }
 
 impl FoodBundle {
-    pub fn at(x: f32, y: f32) -> Self {
+    pub fn at(location: Vec2) -> Self {
         Self {
             sprite: SpriteBundle {
-                transform: Transform::from_translation(Vec3::new(x, y, ORGANISM_LAYER)),
+                transform: Transform::from_translation(Vec3::new(
+                    location.x,
+                    location.y,
+                    ORGANISM_LAYER,
+                )),
                 sprite: Sprite {
                     color: EnvironmentCellType::Food.color(),
                     custom_size: Some(Vec2::new(1., 1.)),

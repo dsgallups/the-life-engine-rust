@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_spatial::SpatialAccess;
 use rand::{seq::SliceRandom as _, thread_rng};
+use std::ops::Deref;
 
 use crate::{CellTree, ORGANISM_LAYER};
 pub trait VecExt: Sized {
@@ -111,7 +112,10 @@ pub trait KDTreeExt {
     ) -> impl Iterator<Item = (Vec2, Option<Entity>)>;
 }
 
-impl KDTreeExt for CellTree {
+impl<T> KDTreeExt for T
+where
+    T: Deref<Target = CellTree>,
+{
     fn closest_neighbors(
         &self,
         global_transform: impl VecExt,
