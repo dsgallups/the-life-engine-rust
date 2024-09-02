@@ -86,10 +86,6 @@ impl OrganismCell {
         self.location
     }
 
-    pub fn cell_type(&self) -> OrganismCellType {
-        self.cell_type
-    }
-
     pub fn spawn(&self, child_builder: &mut ChildBuilder) {
         use OrganismCellType::*;
         match self.cell_type {
@@ -130,10 +126,6 @@ impl Genome {
         for cell in self.cells.iter() {
             cell.spawn(child_builder);
         }
-    }
-
-    pub fn locations(&self) -> impl Iterator<Item = CellLocation> + '_ {
-        self.cells.iter().map(|cell| cell.location)
     }
 
     pub fn cells(&self) -> impl Iterator<Item = &OrganismCell> {

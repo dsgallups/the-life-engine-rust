@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use genome::{CellLocation, Genome, OrganismCell};
+use genome::Genome;
 use rand::Rng as _;
 
 use crate::neighbor::VecExt;
@@ -142,14 +142,6 @@ impl Organism {
 
     pub fn belly(&self) -> u64 {
         self.belly
-    }
-
-    pub fn occupying_locations(&self) -> impl Iterator<Item = CellLocation> + '_ {
-        self.genome.locations()
-    }
-
-    pub fn cells(&self) -> impl Iterator<Item = &OrganismCell> {
-        self.genome.cells()
     }
 
     /// Uses both the ECS and the global positioning hashmap to insert itself.

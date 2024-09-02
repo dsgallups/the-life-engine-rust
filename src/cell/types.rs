@@ -63,7 +63,6 @@ pub enum CellType {
 }
 
 impl CellType {
-    #[allow(dead_code)]
     pub fn color(&self) -> Color {
         use CellType::*;
         match self {

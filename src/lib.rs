@@ -1,6 +1,6 @@
 use std::{io::Cursor, time::Duration};
 
-use bevy::{log::LogPlugin, prelude::*, window::PrimaryWindow, winit::WinitWindows};
+use bevy::{prelude::*, window::PrimaryWindow, winit::WinitWindows};
 use bevy_spatial::{kdtree::KDTree2, AutomaticUpdate, SpatialStructure, TransformMode};
 use camera::{spawn_camera, update_camera};
 use cell::CellType;
