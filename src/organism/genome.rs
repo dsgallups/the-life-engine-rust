@@ -5,6 +5,8 @@ use rand::{rngs::ThreadRng, Rng as _};
 
 use crate::{cell::*, neighbor::VecExt};
 
+use super::MutationAction;
+
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CellLocation {
     pub x: i32,
@@ -55,6 +57,10 @@ impl OrganismCell {
         }
     }
 
+    pub fn cell_type(&self) -> OrganismCellType {
+        self.cell_type
+    }
+
     pub fn as_bundle(&self) -> OrganismCellBundle {
         OrganismCellBundle {
             sprite: SpriteBundle {
@@ -102,24 +108,29 @@ impl OrganismCell {
 #[derive(Clone, Debug)]
 pub struct Genome {
     cells: Vec<OrganismCell>,
+    mutation_rate: f64,
 }
 
 impl Genome {
+    fn new(cells: Vec<OrganismCell>, mutation_rate: f64) -> Self {
+        Self {
+            cells,
+            mutation_rate,
+        }
+    }
+
     pub fn num_cells(&self) -> usize {
         self.cells.len()
     }
     pub fn first_organism() -> Self {
-        Self {
-            cells: vec![
+        Self::new(
+            vec![
                 OrganismCell::new(OrganismCellType::Producer, CellLocation::new(-1, -1)),
                 OrganismCell::new(OrganismCellType::Mouth, CellLocation::new(0, 0)),
                 OrganismCell::new(OrganismCellType::Producer, CellLocation::new(1, 1)),
             ],
-        }
-    }
-
-    pub fn types(&self) -> impl Iterator<Item = OrganismCellType> + '_ {
-        self.cells.iter().map(|c| c.cell_type)
+            50.,
+        )
     }
 
     pub fn spawn_cells(&self, child_builder: &mut ChildBuilder) {
@@ -132,7 +143,7 @@ impl Genome {
         self.cells.iter()
     }
 
-    pub fn add_random_cell(&mut self, rng: &mut ThreadRng) {
+    fn add_random_cell(&mut self, rng: &mut ThreadRng) {
         let attach_to = if self.cells.is_empty() {
             CellLocation::new(0, 0)
         } else {
@@ -199,7 +210,7 @@ impl Genome {
         }
     }
 
-    pub fn mutate_random_cell(&mut self, rng: &mut ThreadRng) {
+    fn mutate_random_cell(&mut self, rng: &mut ThreadRng) {
         if self.cells.is_empty() {
             return;
         };
@@ -211,10 +222,42 @@ impl Genome {
         organ_to_mutate.mutate(rng);
     }
 
-    pub fn delete_random_cell(&mut self, rng: &mut ThreadRng) -> Option<OrganismCell> {
+    fn delete_random_cell(&mut self, rng: &mut ThreadRng) -> Option<OrganismCell> {
         if self.cells.is_empty() {
             return None;
         }
         Some(self.cells.swap_remove(rng.gen_range(0..self.cells.len())))
+    }
+
+    pub fn reproduce(&self) -> Genome {
+        let mut rng = rand::thread_rng();
+
+        let mut child = self.clone();
+        if rng.gen::<bool>() {
+            child.mutation_rate += 1.
+        } else {
+            child.mutation_rate -= 1.
+        };
+
+        let mut mutation_list: Vec<MutationAction> = Vec::new();
+        loop {
+            let rng_val = rng.gen_range(0..=100);
+            if rng_val as f64 <= child.mutation_rate {
+                mutation_list.push(MutationAction::rand(&mut rng));
+            } else {
+                break;
+            }
+        }
+
+        for mutation in mutation_list {
+            match mutation {
+                MutationAction::New => child.add_random_cell(&mut rng),
+                MutationAction::MutateOrgan => child.mutate_random_cell(&mut rng),
+                MutationAction::Delete => {
+                    child.delete_random_cell(&mut rng);
+                }
+            }
+        }
+        child
     }
 }

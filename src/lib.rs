@@ -1,6 +1,11 @@
 use std::{io::Cursor, time::Duration};
 
-use bevy::{prelude::*, window::PrimaryWindow, winit::WinitWindows};
+use bevy::{
+    log::{Level, LogPlugin},
+    prelude::*,
+    window::PrimaryWindow,
+    winit::WinitWindows,
+};
 use bevy_spatial::{kdtree::KDTree2, AutomaticUpdate, SpatialStructure, TransformMode};
 use camera::{spawn_camera, update_camera};
 use cell::CellType;
@@ -38,7 +43,11 @@ pub fn plugin(app: &mut App) {
                     }),
                     ..Default::default()
                 })
-                .set(ImagePlugin::default_nearest()),
+                .set(ImagePlugin::default_nearest())
+                .set(LogPlugin {
+                    level: Level::ERROR,
+                    ..Default::default()
+                }),
         )
         .add_plugins(
             AutomaticUpdate::<CellType>::new()
