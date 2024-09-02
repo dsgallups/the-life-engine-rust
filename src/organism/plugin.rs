@@ -1,11 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    cell::{CellType, EnvironmentCellType, FoodBundle, MouthPlugin, MoverPlugin, ProducerPlugin},
-    environment::{
-        location::{GlobalCellLocation, OccupiedLocations},
-        EnvironmentSettings, Ticker,
-    },
+    cell::{CellType, EnvironmentCellType, FoodBundle, ProducerPlugin},
+    environment::{EnvironmentSettings, Ticker},
     game::GameState,
 };
 
@@ -16,17 +13,18 @@ pub struct OrganismPlugin;
 
 impl Plugin for OrganismPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((ProducerPlugin, MouthPlugin, MoverPlugin))
-            .add_systems(
-                Update,
-                (
-                    starve_organism.run_if(in_state(GameState::Playing)),
-                    reproduce_organism.run_if(in_state(GameState::Playing)),
-                ),
-            );
+        /*app.add_plugins((ProducerPlugin, MouthPlugin, MoverPlugin))
+        .add_systems(
+                    Update,
+                    (
+                        starve_organism.run_if(in_state(GameState::Playing)),
+                        reproduce_organism.run_if(in_state(GameState::Playing)),
+                    ),
+            );*/
+        app.add_plugins(ProducerPlugin);
     }
 }
-
+/*
 fn starve_organism(
     mut commands: Commands,
     mut occupied_locations: ResMut<OccupiedLocations>,
@@ -120,3 +118,4 @@ fn reproduce_organism(
         }
     }
 }
+*/

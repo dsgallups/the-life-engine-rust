@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 pub use bevy::prelude::*;
-use location::{GlobalCellLocation, OccupiedLocations};
 
 use super::{
     game::GameState,
@@ -10,7 +9,6 @@ use super::{
 
 pub mod direction;
 pub use direction::*;
-pub mod location;
 
 #[allow(dead_code)]
 #[derive(Resource, Debug)]
@@ -52,7 +50,6 @@ pub struct EnvironmentPlugin;
 impl Plugin for EnvironmentPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(EnvironmentSettings::default())
-            .insert_resource(OccupiedLocations::default())
             .insert_resource(Ticker::new(Duration::from_millis(80)))
             .add_systems(
                 OnEnter(GameState::Playing),
@@ -102,10 +99,6 @@ fn clear_background(mut color: ResMut<ClearColor>) {
 
 /// Creates the first organism. [`Organism::insert_at`] is used to unify spawning of the organism in the ECS
 /// as well as placing itself in the [`OccupiedLocations`] hashmap.
-fn spawn_first_organism(mut commands: Commands, mut global_positions: ResMut<OccupiedLocations>) {
-    Organism::first_organism().insert_at(
-        &mut commands,
-        &mut global_positions,
-        GlobalCellLocation::new(0, 0),
-    );
+fn spawn_first_organism(mut commands: Commands) {
+    Organism::first_organism().insert_at(&mut commands, 0., 0.);
 }

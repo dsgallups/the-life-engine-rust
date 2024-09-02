@@ -1,10 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    environment::{
-        location::{GlobalCellLocation, OccupiedLocations},
-        Ticker,
-    },
+    environment::Ticker,
     game::GameState,
     organism::{genome::CellLocation, Organism},
 };
@@ -13,7 +10,7 @@ use super::{CellType, EnvironmentCellType};
 
 #[derive(Component)]
 pub struct MouthCell;
-
+/*
 pub struct MouthPlugin;
 
 impl Plugin for MouthPlugin {
@@ -54,3 +51,4 @@ fn consume_food(
         }
     }
 }
+*/

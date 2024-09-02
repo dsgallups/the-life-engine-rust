@@ -1,10 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    environment::{
-        location::{GlobalCellLocation, OccupiedLocations},
-        Dir, Ticker,
-    },
+    environment::{Dir, Ticker},
     game::GameState,
     organism::Organism,
 };
@@ -13,7 +10,7 @@ use super::CellType;
 
 #[derive(Component)]
 pub struct MoverCell;
-
+/*
 pub struct MoverPlugin;
 
 impl Plugin for MoverPlugin {
@@ -105,3 +102,4 @@ pub fn move_organism(
         organism_transform.translation = new_parent_location.as_vec3();
     }
 }
+*/

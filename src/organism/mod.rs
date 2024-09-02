@@ -2,12 +2,9 @@ use bevy::prelude::*;
 use genome::{CellLocation, Genome, OrganismCell};
 use rand::Rng as _;
 
-use crate::cell::CellType;
+use crate::{cell::CellType, ORGANISM_LAYER};
 
-use super::{
-    cell::OrganismCellType,
-    environment::location::{GlobalCellLocation, OccupiedLocations},
-};
+use super::cell::OrganismCellType;
 pub mod genome;
 
 mod plugin;
@@ -149,50 +146,24 @@ impl Organism {
     }
 
     /// Uses both the ECS and the global positioning hashmap to insert itself.
-    pub fn insert_at(
-        self,
-        commands: &mut Commands,
-        positions: &mut ResMut<OccupiedLocations>,
-        global_location: GlobalCellLocation,
-    ) {
+    pub fn insert_at(self, commands: &mut Commands, x: f32, y: f32) {
         /*info!(
             "\nInserting Organism into the world:\nLocation: {:?}\nto insert:{:#?}",
             global_location, self
         );*/
         //need to clone since we move self into the system
-        //the genome cannot describe itself in the context of the world
-        //without self being inserted into the ECS.
         let genome = self.genome.clone();
 
-        let mut res = commands.spawn((
-            SpriteBundle {
-                transform: Transform::from_translation(global_location.as_vec3()),
-                ..Default::default()
-            },
-            self,
-            global_location,
-        ));
-
-        let organism_id = res.id();
-
-        let mut entities_to_remove = Vec::new();
-
-        res.with_children(|children_builder| {
-            genome.spawn_cells(children_builder, |cell_type, cell_location| {
-                if let Some((replacing_cell, replacing_cell_type)) =
-                    positions.insert(global_location + cell_location, organism_id, cell_type)
-                {
-                    if replacing_cell_type != CellType::food() {
-                        panic!("the child is replacing something that isn't food. quitting.");
-                    }
-
-                    entities_to_remove.push(replacing_cell);
-                };
+        let res = commands
+            .spawn((
+                SpriteBundle {
+                    transform: Transform::from_translation(Vec3::new(x, y, ORGANISM_LAYER)),
+                    ..Default::default()
+                },
+                self,
+            ))
+            .with_children(|child_builder| {
+                genome.spawn_cells(child_builder);
             });
-        });
-
-        entities_to_remove.into_iter().for_each(|e| {
-            commands.entity(e).despawn();
-        });
     }
 }

@@ -1,10 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    environment::{
-        location::{GlobalCellLocation, OccupiedLocations},
-        EnvironmentSettings, Ticker,
-    },
+    environment::{EnvironmentSettings, Ticker},
     game::GameState,
     organism::{genome::CellLocation, Organism},
 };
@@ -20,17 +17,17 @@ pub struct ProducerPlugin;
 
 impl Plugin for ProducerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, produce_food.run_if(in_state(GameState::Playing)));
+        //app.add_systems(Update, produce_food.run_if(in_state(GameState::Playing)));
+        todo!();
     }
 }
-
+/*
 pub fn produce_food(
     mut commands: Commands,
     timer: Res<Ticker>,
     settings: Res<EnvironmentSettings>,
-    mut occupied_locations: ResMut<OccupiedLocations>,
     mut producers: Query<(&mut ProducerCell, &CellLocation, &Parent)>,
-    organisms: Query<&GlobalCellLocation, With<Organism>>,
+    organisms: Query<&Transform, With<Organism>>,
 ) {
     if !timer.just_finished() {
         return;
@@ -56,3 +53,4 @@ pub fn produce_food(
         }
     }
 }
+*/
