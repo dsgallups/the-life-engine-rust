@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_spatial::SpatialAccess;
 
 use crate::{
-    cell::{Food, FoodBundle, MouthPlugin, MoverPlugin, ProducerPlugin},
+    cell::{Food, FoodBundle, KillerPlugin, MouthPlugin, MoverPlugin, ProducerPlugin},
     environment::{EnvironmentSettings, Ticker},
     game::GameState,
     neighbor::VecExt as _,
@@ -24,7 +24,7 @@ impl Plugin for OrganismPlugin {
                         reproduce_organism.run_if(in_state(GameState::Playing)),
                     ),
             );*/
-        app.add_plugins((ProducerPlugin, MouthPlugin, MoverPlugin))
+        app.add_plugins((ProducerPlugin, MouthPlugin, MoverPlugin, KillerPlugin))
             .add_systems(
                 Update,
                 (
@@ -125,7 +125,6 @@ fn reproduce_organism(
 
             let Some(final_child_location) = new_organism_location else {
                 //tough
-                info!("The child did not survive birth");
                 continue;
             };
 

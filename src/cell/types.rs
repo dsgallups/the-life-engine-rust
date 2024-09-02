@@ -73,6 +73,9 @@ impl CellType {
     pub fn food() -> Self {
         Self::Environment(EnvironmentCellType::Food)
     }
+    pub fn armor() -> Self {
+        Self::Organism(OrganismCellType::Armor)
+    }
 }
 
 impl From<EnvironmentCellType> for CellType {

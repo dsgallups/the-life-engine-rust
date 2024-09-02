@@ -66,7 +66,11 @@ pub fn move_organism(
                         // maybe we run this after feed_organism
                         food_to_despawn.push(closest_entity)
                     }
-                    (Err(_), Err(e)) => panic!("Not sure how we got here: {}", e),
+                    (Err(_), Err(_)) => {
+                        // this happens in some cases where, from finding something at this location
+                        // up to now, it has been despawned. Best to just not move.
+                        continue 'movement;
+                    }
                 }
             }
         }
