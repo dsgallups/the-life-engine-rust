@@ -22,15 +22,19 @@ pub fn plugin(app: &mut App) {
     // borrowed mostly from the bevy game template
     app.insert_resource(Msaa::Off)
         .insert_resource(ClearColor(Color::linear_rgb(0.4, 0.4, 0.4)))
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "The Life Engine".to_string(),
-                fit_canvas_to_parent: true,
-                prevent_default_event_handling: false,
-                ..Default::default()
-            }),
-            ..Default::default()
-        }))
+        .add_plugins(
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "The Life Engine".to_string(),
+                        fit_canvas_to_parent: true,
+                        prevent_default_event_handling: false,
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+                .set(ImagePlugin::default_nearest()),
+        )
         .add_plugins(GamePlugin)
         .add_systems(Startup, (set_window_icon, spawn_camera))
         .add_systems(Update, update_camera);
