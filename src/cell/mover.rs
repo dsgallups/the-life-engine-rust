@@ -11,7 +11,7 @@ use crate::{
     CellTree,
 };
 
-use super::{CellType, Food, KillerCell};
+use super::{CellType, Food};
 
 #[derive(Component)]
 pub struct MoverCell;
@@ -31,7 +31,7 @@ pub fn move_organism(
     cells: Query<&Parent, With<CellType>>,
     transforms: Query<&GlobalTransform, Without<Organism>>,
     food: Query<&Food>,
-    killers: Query<&KillerCell>,
+    //killers: Query<&KillerCell>,
 ) {
     'movement: for (organism_entity, organism_children, mut organism_transform, organism) in
         &mut organisms
@@ -42,29 +42,42 @@ pub fn move_organism(
         let og_trns = organism_transform.translation.as_vec2();
         let direction_to_move = match organism.brain() {
             Some(brain_type) => {
-                let cells = organism.size();
+                let cell_count = organism.size();
                 // assumes that this organism's cells are always closest to the origin.
                 // but this is not true.
-                let nearest_neighbors = tree.k_nearest_neighbour(og_trns, cells + 1);
+                let nearest_neighbors = tree.k_nearest_neighbour(og_trns, cell_count + 2);
                 //todo: some logic that grabs the parent of the neighbor and stuff, like filters out
-                let (neighbor, neighbor_entity) = nearest_neighbors.last().unwrap();
 
-                let diff_x = neighbor.x - og_trns.x;
-                let diff_y = neighbor.y - og_trns.y;
+                let mut movement_direction = Dir::rand(&mut rand::thread_rng()).delta();
 
-                let mut movement_direction = if diff_x < diff_y {
-                    Vec2::new(diff_x / diff_x.abs(), 0.)
-                } else {
-                    Vec2::new(0., diff_y / diff_y.abs())
-                };
-
-                //predators will run towards anything. Prey will run away from killer cells and towards food
-                //todo
-                if brain_type == BrainType::Prey && killers.get(neighbor_entity.unwrap()).is_ok() {
-                    movement_direction.x = movement_direction.x.neg();
-                    movement_direction.y = movement_direction.y.neg();
+                for (neighbor_loc, neighbor) in nearest_neighbors {
+                    let neighbor = neighbor.unwrap();
+                    if food.get(neighbor).is_ok() {
+                        let diff_x = neighbor_loc.x - og_trns.x;
+                        let diff_y = neighbor_loc.y - og_trns.y;
+                        movement_direction = if diff_x < diff_y {
+                            Vec2::new(diff_x / diff_x.abs(), 0.)
+                        } else {
+                            Vec2::new(0., diff_y / diff_y.abs())
+                        };
+                        break;
+                    } else if let Ok(neighbor_parent) = cells.get(neighbor) {
+                        if neighbor_parent.get() != organism_entity {
+                            let diff_x = neighbor_loc.x - og_trns.x;
+                            let diff_y = neighbor_loc.y - og_trns.y;
+                            movement_direction = if diff_x < diff_y {
+                                Vec2::new(diff_x / diff_x.abs(), 0.)
+                            } else {
+                                Vec2::new(0., diff_y / diff_y.abs())
+                            };
+                            if brain_type == BrainType::Prey {
+                                movement_direction.x = movement_direction.x.neg();
+                                movement_direction.y = movement_direction.y.neg();
+                            }
+                            break;
+                        }
+                    }
                 }
-
                 movement_direction
             }
             None => Dir::rand(&mut rand::thread_rng()).delta(),
