@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_spatial::SpatialAccess;
 
 use crate::{
-    environment::{Dir, Ticker},
+    environment::Dir,
     game::GameState,
     neighbor::VecExt as _,
     organism::{BrainType, Organism},
@@ -26,7 +26,6 @@ impl Plugin for MoverPlugin {
 
 pub fn move_organism(
     mut commands: Commands,
-    timer: Res<Ticker>,
     tree: Res<CellTree>,
     mut organisms: Query<(Entity, &Children, &mut Transform, &Organism)>,
     cells: Query<&Parent, With<CellType>>,
@@ -34,10 +33,6 @@ pub fn move_organism(
     food: Query<&Food>,
     killers: Query<&KillerCell>,
 ) {
-    if !timer.just_finished() {
-        return;
-    }
-
     'movement: for (organism_entity, organism_children, mut organism_transform, organism) in
         &mut organisms
     {

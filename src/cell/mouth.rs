@@ -1,8 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{
-    environment::Ticker, game::GameState, neighbor::VecExt as _, organism::Organism, CellTree,
-};
+use crate::{game::GameState, neighbor::VecExt as _, organism::Organism, CellTree};
 
 use super::Food;
 
@@ -19,16 +17,11 @@ impl Plugin for MouthPlugin {
 
 fn consume_food(
     mut commands: Commands,
-    timer: Res<Ticker>,
     locations: Res<CellTree>,
     mouths: Query<(&GlobalTransform, &Parent), With<MouthCell>>,
     mut organisms: Query<&mut Organism>,
     food: Query<&Food>,
 ) {
-    if !timer.just_finished() {
-        return;
-    }
-
     for (mouth, mouth_parent) in &mouths {
         let translation = mouth.translation();
 

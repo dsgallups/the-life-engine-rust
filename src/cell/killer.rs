@@ -1,8 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{
-    environment::Ticker, game::GameState, neighbor::VecExt as _, organism::Organism, CellTree,
-};
+use crate::{game::GameState, neighbor::VecExt as _, organism::Organism, CellTree};
 
 use super::{CellType, FoodBundle};
 
@@ -19,17 +17,12 @@ impl Plugin for KillerPlugin {
 
 fn kill_organisms(
     mut commands: Commands,
-    timer: Res<Ticker>,
     tree: Res<CellTree>,
     killers: Query<(&Parent, &GlobalTransform), With<KillerCell>>,
     cells: Query<(&Parent, &CellType)>,
     organisms: Query<&Children, With<Organism>>,
     locations: Query<&GlobalTransform>,
 ) {
-    if !timer.just_finished() {
-        return;
-    }
-
     for (killer_parent, killer_transform) in &killers {
         let translation = killer_transform.translation();
 

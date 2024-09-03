@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 pub use bevy::prelude::*;
+use mouse_hover::hover_over_organism;
 
 use super::{
     game::GameState,
@@ -10,10 +11,12 @@ use super::{
 pub mod direction;
 pub use direction::*;
 
+pub mod mouse_hover;
+
 #[allow(dead_code)]
 #[derive(Resource, Debug)]
 pub struct EnvironmentSettings {
-    pub producer_threshold: u8,
+    pub producer_threshold: u16,
     pub hunger_tick: u64,
     pub spawn_radius: u16,
     pub age_rate: u64,
@@ -23,10 +26,10 @@ pub struct EnvironmentSettings {
 impl Default for EnvironmentSettings {
     fn default() -> Self {
         EnvironmentSettings {
-            producer_threshold: 8,
-            hunger_tick: 14,
+            producer_threshold: 35,
+            hunger_tick: 4300,
             spawn_radius: 15,
-            age_rate: 50,
+            age_rate: 8200,
             //max_organisms: Some(2000),
             max_organisms: None,
         }
@@ -51,16 +54,20 @@ pub struct EnvironmentPlugin;
 impl Plugin for EnvironmentPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(EnvironmentSettings::default())
-            .insert_resource(Ticker::new(Duration::from_millis(80)))
+            //.insert_resource(Ticker::new(Duration::from_millis(80)))
             .add_systems(
                 OnEnter(GameState::Playing),
                 (clear_background, spawn_first_organism),
             )
-            .add_systems(PreUpdate, tick_ticker)
+            //.add_systems(PreUpdate, tick_ticker)
+            .add_systems(
+                Update,
+                hover_over_organism.run_if(in_state(GameState::Playing)),
+            )
             .add_plugins(OrganismPlugin);
     }
 }
-
+/*
 #[derive(Resource)]
 pub struct Ticker(Timer, u64);
 
@@ -93,7 +100,7 @@ fn tick_ticker(mut ticker: ResMut<Ticker>, time: Res<Time>) {
         ticker.increment_tick();
     }
 }
-
+*/
 fn clear_background(mut color: ResMut<ClearColor>) {
     color.0 = Color::BLACK
 }

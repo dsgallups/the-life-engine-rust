@@ -24,12 +24,15 @@ pub struct Organism {
     brain: Option<BrainType>,
     can_move: bool,
     belly: u64,
-    tick_born: u64,
+    /// in millis
+    time_born: u64,
     offspring: u64,
+    /// in millis
+    last_starved: u64,
 }
 
 impl Organism {
-    fn new(genome: Genome, belly: u64, tick_born: u64) -> Self {
+    fn new(genome: Genome, belly: u64, time_born: u64) -> Self {
         let mut has_producer = false;
         let mut has_eye = false;
         let mut has_mover = false;
@@ -64,8 +67,9 @@ impl Organism {
             brain: brain_type,
             can_move: has_mover && !has_producer,
             belly,
-            tick_born,
+            time_born,
             offspring: 0,
+            last_starved: 0,
         }
     }
     pub fn ready_to_reproduce(&self) -> bool {
@@ -99,7 +103,7 @@ impl Organism {
         //always lose half of one's belly
         self.belly /= 2;
         let child_genome = self.genome.reproduce();
-        if child_genome.num_cells() == 0 {
+        if child_genome.num_cells() < 2 {
             return None;
         }
         self.offspring += 1;
@@ -113,13 +117,19 @@ impl Organism {
         self.belly += amt;
     }
 
-    pub fn lost_food(&mut self, amt: u64) {
+    pub fn lost_food(&mut self, amt: u64, time: u64) {
         self.belly = self.belly.saturating_sub(amt);
+        self.last_starved = time;
         //info!("Organism lost food, belly is at {}", self.belly)
     }
 
-    pub fn tick_born(&self) -> u64 {
-        self.tick_born
+    /// returns the millisecond last starved
+    pub fn time_last_starved(&self) -> u64 {
+        self.last_starved
+    }
+
+    pub fn time_born(&self) -> u64 {
+        self.time_born
     }
 
     pub fn belly(&self) -> u64 {

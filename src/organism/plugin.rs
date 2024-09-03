@@ -3,7 +3,7 @@ use bevy_spatial::SpatialAccess;
 
 use crate::{
     cell::{FoodBundle, KillerPlugin, MouthPlugin, MoverPlugin, ProducerPlugin},
-    environment::{EnvironmentSettings, Ticker},
+    environment::EnvironmentSettings,
     game::GameState,
     neighbor::VecExt as _,
     CellTree,
@@ -36,22 +36,21 @@ impl Plugin for OrganismPlugin {
 }
 
 fn starve_organism(
+    time: Res<Time>,
     mut commands: Commands,
     settings: Res<EnvironmentSettings>,
-    timer: Res<Ticker>,
     mut organisms: Query<(Entity, &Children, &mut Organism)>,
     locations: Query<&GlobalTransform>,
 ) {
-    if !timer.just_finished() {
-        return;
-    }
-
     for (organism_entity, children, mut organism) in &mut organisms {
-        let ticks_alive = timer.current_tick() - organism.tick_born();
-        if ticks_alive % settings.hunger_tick == 0 {
+        let current_time = time.elapsed().as_millis() as u64;
+        let time_alive = current_time - organism.time_born();
+
+        let d_time_last_starved = current_time - organism.time_last_starved();
+        if d_time_last_starved >= settings.hunger_tick {
             // based on the age of the organism, we out how much food it should lose
-            let age_cost = (ticks_alive / settings.age_rate) + 1;
-            organism.lost_food(age_cost);
+            let age_cost = (time_alive / settings.age_rate) + 1;
+            organism.lost_food(age_cost, current_time);
         }
 
         if organism.belly() == 0 {
@@ -69,23 +68,22 @@ fn starve_organism(
 }
 
 fn reproduce_organism(
+    time: Res<Time>,
     mut commands: Commands,
     settings: Res<EnvironmentSettings>,
-    timer: Res<Ticker>,
     tree: Res<CellTree>,
     mut organisms: Query<(&GlobalTransform, &mut Organism)>,
 ) {
-    if !timer.just_finished()
-        || settings
-            .max_organisms
-            .is_some_and(|max| organisms.iter().count() >= max)
+    if settings
+        .max_organisms
+        .is_some_and(|max| organisms.iter().count() >= max)
     {
         return;
     }
 
     for (organism_transform, mut organism) in &mut organisms {
         if organism.ready_to_reproduce() {
-            let Some(new_organism) = organism.reproduce(timer.current_tick()) else {
+            let Some(new_organism) = organism.reproduce(time.elapsed().as_millis() as u64) else {
                 continue;
             };
 

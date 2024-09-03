@@ -1,17 +1,12 @@
 use bevy::prelude::*;
 
-use crate::{
-    environment::{EnvironmentSettings, Ticker},
-    game::GameState,
-    neighbor::VecExt,
-    CellTree,
-};
+use crate::{environment::EnvironmentSettings, game::GameState, neighbor::VecExt, CellTree};
 
 use super::FoodBundle;
 
 #[derive(Component, Default)]
 pub struct ProducerCell {
-    counter: u8,
+    counter: u16,
 }
 
 pub struct ProducerPlugin;
@@ -24,14 +19,10 @@ impl Plugin for ProducerPlugin {
 
 pub fn produce_food(
     mut commands: Commands,
-    timer: Res<Ticker>,
     locations: Res<CellTree>,
     settings: Res<EnvironmentSettings>,
     mut producers: Query<(&mut ProducerCell, &GlobalTransform)>,
 ) {
-    if !timer.just_finished() {
-        return;
-    }
     for (mut producer, global_location) in &mut producers {
         producer.counter += 1;
         let translation = global_location.translation();
