@@ -29,6 +29,7 @@ pub struct Organism {
     offspring: u64,
     /// in millis
     last_starved: u64,
+    can_reproduce_at: u64,
 }
 
 impl Organism {
@@ -62,6 +63,8 @@ impl Organism {
             None
         };
 
+        let can_reproduce_at = (genome.num_cells() * 3).max(6) as u64;
+
         Self {
             genome,
             brain: brain_type,
@@ -70,12 +73,11 @@ impl Organism {
             time_born,
             offspring: 0,
             last_starved: 0,
+            can_reproduce_at,
         }
     }
     pub fn ready_to_reproduce(&self) -> bool {
-        //todo(dsgallups): remove
-        let can_reproduce_at = (self.genome.num_cells() * 3).max(6);
-        self.belly >= can_reproduce_at as u64
+        self.belly >= self.can_reproduce_at
     }
 
     /// returns the number of cells this organism takes up based on its genome
@@ -115,7 +117,9 @@ impl Organism {
         Self::new(Genome::first_organism(), 3, 0)
     }
     pub fn ate_food(&mut self, amt: u64) {
-        self.belly += amt;
+        if self.belly < self.can_reproduce_at {
+            self.belly += amt;
+        }
     }
 
     pub fn lost_food(&mut self, amt: u64, time: u64) {

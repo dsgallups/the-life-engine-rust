@@ -99,7 +99,9 @@ fn reproduce_organism(
                 }
                 let random_location = organism_location.rand_around(settings.spawn_radius);
 
-                for (_, e) in tree.within_distance(random_location, organism.radius() as f32) {
+                // must spawn 3 blocks away from anything
+                // todo(dsgallups); hack
+                for (_, e) in tree.within_distance(random_location, organism.radius() as f32 + 3.) {
                     /*// children can spawn over food
                     // this will clean up food anyway
                     if let Some(e) = e {
