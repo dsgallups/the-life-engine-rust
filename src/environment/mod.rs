@@ -3,6 +3,8 @@ use std::time::Duration;
 pub use bevy::prelude::*;
 use mouse_hover::hover_over_organism;
 
+use crate::cell::CellType;
+
 use super::{
     game::GameState,
     organism::{Organism, OrganismPlugin},
@@ -64,9 +66,22 @@ impl Plugin for EnvironmentPlugin {
                 Update,
                 hover_over_organism.run_if(in_state(GameState::Playing)),
             )
+            .add_systems(
+                PostUpdate,
+                escape_hatch.run_if(in_state(GameState::Playing)),
+            )
             .add_plugins(OrganismPlugin);
     }
 }
+
+fn escape_hatch(mut commands: Commands, childless: Query<(Entity, &CellType), Without<Parent>>) {
+    for (entity, cell_type) in &childless {
+        if cell_type != &CellType::food() {
+            commands.entity(entity).despawn_recursive();
+        }
+    }
+}
+
 /*
 #[derive(Resource)]
 pub struct Ticker(Timer, u64);

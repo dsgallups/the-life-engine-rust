@@ -52,7 +52,7 @@ pub fn plugin(app: &mut App) {
         .add_plugins(
             AutomaticUpdate::<CellType>::new()
                 .with_spatial_ds(SpatialStructure::KDTree2)
-                .with_frequency(Duration::from_millis(20))
+                .with_frequency(Duration::from_millis(1))
                 .with_transform(TransformMode::GlobalTransform),
         )
         .add_plugins(GamePlugin)
