@@ -35,25 +35,52 @@ impl Plugin for OrganismPlugin {
     }
 }
 
+#[derive(Component, Default)]
+pub struct Age {
+    ticks_alive: u64,
+}
+impl Age {
+    pub fn age(&self) -> u64 {
+        self.ticks_alive
+    }
+    pub fn tick(&mut self) {
+        self.ticks_alive += 1;
+    }
+}
+
+#[derive(Component, Default, Clone)]
+pub struct Belly(u64);
+
+impl Belly {
+    pub fn new(amt: u64) -> Self {
+        Self(amt)
+    }
+    pub fn ate_food(&mut self, amt: u64) {
+        self.0 += amt;
+    }
+    pub fn food(&self) -> u64 {
+        self.0
+    }
+    pub fn lost_food(&mut self, amt: u64) {
+        self.0 = self.0.saturating_sub(amt);
+    }
+}
+
 fn starve_organism(
-    time: Res<Time>,
     mut commands: Commands,
     settings: Res<EnvironmentSettings>,
-    mut organisms: Query<(Entity, &Children, &mut Organism)>,
+    mut organisms: Query<(Entity, &Children, &mut Belly, &mut Age), With<Organism>>,
     locations: Query<&GlobalTransform>,
 ) {
-    for (organism_entity, children, mut organism) in &mut organisms {
-        let current_time = time.elapsed().as_millis() as u64;
-        let time_alive = current_time - organism.time_born();
-
-        let d_time_last_starved = current_time - organism.time_last_starved();
-        if d_time_last_starved >= settings.hunger_tick {
+    for (organism_entity, children, mut organism_belly, mut organism_age) in &mut organisms {
+        organism_age.tick();
+        if organism_age.age() % settings.hunger_tick == 0 {
             // based on the age of the organism, we out how much food it should lose
-            let age_cost = (time_alive / settings.age_rate) + 1;
-            organism.lost_food(age_cost, current_time);
+            let age_cost = (organism_age.age() / settings.age_rate) + 1;
+            organism_belly.lost_food(age_cost);
         }
 
-        if organism.belly() == 0 {
+        if organism_belly.food() == 0 {
             //before the organism dies, we need to turn the children
             //into food :D
             // because it could be killed in the meantime or whatnot, we should just lay down the food here
@@ -68,11 +95,10 @@ fn starve_organism(
 }
 
 fn reproduce_organism(
-    time: Res<Time>,
     mut commands: Commands,
     settings: Res<EnvironmentSettings>,
     tree: Res<CellTree>,
-    mut organisms: Query<(&GlobalTransform, &mut Organism)>,
+    mut organisms: Query<(&GlobalTransform, &Organism, &mut Belly)>,
 ) {
     if settings
         .max_organisms
@@ -81,9 +107,10 @@ fn reproduce_organism(
         return;
     }
 
-    for (organism_transform, mut organism) in &mut organisms {
-        if organism.ready_to_reproduce() {
-            let Some(new_organism) = organism.reproduce(time.elapsed().as_millis() as u64) else {
+    for (organism_transform, organism, mut belly) in &mut organisms {
+        if organism.ready_to_reproduce(&belly) {
+            belly.0 /= 2;
+            let Some(new_organism) = organism.reproduce() else {
                 continue;
             };
 
@@ -116,7 +143,7 @@ fn reproduce_organism(
                 continue;
             };
 
-            new_organism.insert_at(&mut commands, final_child_location);
+            new_organism.insert_at(&mut commands, final_child_location, belly.clone());
             //info!("Child spawned!");
         }
     }

@@ -23,9 +23,6 @@ pub struct Organism {
     genome: Genome,
     brain: Option<BrainType>,
     can_move: bool,
-    belly: u64,
-    /// in millis
-    time_born: u64,
     offspring: u64,
     /// in millis
     last_starved: u64,
@@ -33,7 +30,7 @@ pub struct Organism {
 }
 
 impl Organism {
-    fn new(genome: Genome, belly: u64, time_born: u64) -> Self {
+    fn new(genome: Genome) -> Self {
         let mut has_producer = false;
         let mut has_eye = false;
         let mut has_mover = false;
@@ -63,21 +60,20 @@ impl Organism {
             None
         };
 
-        let can_reproduce_at = (genome.num_cells() * 3).max(6) as u64;
+        //let can_reproduce_at = (genome.num_cells() * 3).max(6) as u64;
+        let can_reproduce_at = (genome.num_cells() * 3) as u64;
 
         Self {
             genome,
             brain: brain_type,
             can_move: has_mover && !has_producer,
-            belly,
-            time_born,
             offspring: 0,
             last_starved: 0,
             can_reproduce_at,
         }
     }
-    pub fn ready_to_reproduce(&self) -> bool {
-        self.belly >= self.can_reproduce_at
+    pub fn ready_to_reproduce(&self, belly: &Belly) -> bool {
+        belly.food() >= self.can_reproduce_at
     }
 
     /// returns the number of cells this organism takes up based on its genome
@@ -102,30 +98,18 @@ impl Organism {
         self.can_move
     }
 
-    pub fn reproduce(&mut self, current_tick: u64) -> Option<Organism> {
+    pub fn reproduce(&self) -> Option<Organism> {
         //always lose half of one's belly
-        self.belly /= 2;
         let child_genome = self.genome.reproduce();
-        if child_genome.num_cells() < 2 {
+        if child_genome.num_cells() == 0 {
             return None;
         }
-        self.offspring += 1;
-        Some(Self::new(child_genome, self.belly, current_tick))
+        //self.offspring += 1;
+        Some(Self::new(child_genome))
     }
 
     pub fn first_organism() -> Self {
-        Self::new(Genome::first_organism(), 3, 0)
-    }
-    pub fn ate_food(&mut self, amt: u64) {
-        if self.belly < self.can_reproduce_at {
-            self.belly += amt;
-        }
-    }
-
-    pub fn lost_food(&mut self, amt: u64, time: u64) {
-        self.belly = self.belly.saturating_sub(amt);
-        self.last_starved = time;
-        //info!("Organism lost food, belly is at {}", self.belly)
+        Self::new(Genome::first_organism())
     }
 
     /// returns the millisecond last starved
@@ -133,16 +117,8 @@ impl Organism {
         self.last_starved
     }
 
-    pub fn time_born(&self) -> u64 {
-        self.time_born
-    }
-
-    pub fn belly(&self) -> u64 {
-        self.belly
-    }
-
     /// Uses both the ECS and the global positioning hashmap to insert itself.
-    pub fn insert_at(self, commands: &mut Commands, location: impl VecExt) {
+    pub fn insert_at(self, commands: &mut Commands, location: impl VecExt, belly: Belly) {
         /*info!(
             "\nInserting Organism into the world:\nLocation: {:?}\nto insert:{:#?}",
             global_location, self
@@ -157,6 +133,8 @@ impl Organism {
                     ..Default::default()
                 },
                 self,
+                belly,
+                Age::default(),
             ))
             .with_children(|child_builder| {
                 genome.spawn_cells(child_builder);

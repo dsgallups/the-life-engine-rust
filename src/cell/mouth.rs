@@ -1,6 +1,11 @@
 use bevy::prelude::*;
 
-use crate::{game::GameState, neighbor::VecExt as _, organism::Organism, CellTree};
+use crate::{
+    game::GameState,
+    neighbor::VecExt as _,
+    organism::{Belly, Organism},
+    CellTree,
+};
 
 use super::Food;
 
@@ -19,7 +24,7 @@ fn consume_food(
     mut commands: Commands,
     locations: Res<CellTree>,
     mouths: Query<(&GlobalTransform, &Parent), With<MouthCell>>,
-    mut organisms: Query<&mut Organism>,
+    mut organisms: Query<&mut Belly, With<Organism>>,
     food: Query<&Food>,
 ) {
     for (mouth, mouth_parent) in &mouths {
