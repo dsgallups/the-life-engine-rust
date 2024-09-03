@@ -3,8 +3,8 @@ use button::Buttons;
 use systems::click_button;
 
 use super::{
-    game::GameState,
     load::{AudioAssets, TextureAssets},
+    GameState,
 };
 
 mod actions;

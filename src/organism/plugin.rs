@@ -4,9 +4,8 @@ use bevy_spatial::SpatialAccess;
 use crate::{
     cell::{FoodBundle, KillerPlugin, MouthPlugin, MoverPlugin, ProducerPlugin},
     environment::EnvironmentSettings,
-    game::GameState,
     neighbor::VecExt as _,
-    CellTree,
+    CellTree, GameState,
 };
 
 use super::Organism;

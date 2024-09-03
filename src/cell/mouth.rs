@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{game::GameState, neighbor::VecExt as _, organism::Organism, CellTree};
+use crate::{GameState, neighbor::VecExt as _, organism::Organism, CellTree};
 
 use super::Food;
 

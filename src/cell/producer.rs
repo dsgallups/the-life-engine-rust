@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{environment::EnvironmentSettings, game::GameState, neighbor::VecExt, CellTree};
+use crate::{environment::EnvironmentSettings, neighbor::VecExt, CellTree, GameState};
 
 use super::FoodBundle;
 

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::game::GameState;
+use crate::GameState;
 
 use super::{
     actions::{ChangeState, OpenLink},

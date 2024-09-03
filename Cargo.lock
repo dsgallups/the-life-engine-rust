@@ -319,6 +319,7 @@ version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c8ece0d8dde51890fb52dcba5b04fd1c657617a4022908c327b2d6e83d173a32"
 dependencies = [
+ "bevy_dylib",
  "bevy_internal",
 ]
 
@@ -547,6 +548,15 @@ dependencies = [
  "bevy_utils",
  "const-fnv1a-hash",
  "sysinfo",
+]
+
+[[package]]
+name = "bevy_dylib"
+version = "0.14.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "521e5c295b80798b7a886aab4e54d0a92ea1780aa9586cdb17ded1fe34f36504"
+dependencies = [
+ "bevy_internal",
 ]
 
 [[package]]
@@ -2576,6 +2586,15 @@ name = "mint"
 version = "0.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e53debba6bda7a793e5f99b8dacf19e626084f525f7829104ba9898f367d85ff"
+
+[[package]]
+name = "mobile"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "cpal",
+ "life-engine-rs",
+]
 
 [[package]]
 name = "naga"

@@ -4,8 +4,8 @@ use mouse_hover::hover_over_organism;
 use crate::cell::CellType;
 
 use super::{
-    game::GameState,
     organism::{Organism, OrganismPlugin},
+    GameState,
 };
 
 pub mod direction;

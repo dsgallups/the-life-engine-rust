@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::game::GameState;
+use crate::GameState;
 
 #[derive(Component)]
 pub struct ChangeState(pub GameState);

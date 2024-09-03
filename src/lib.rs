@@ -1,15 +1,12 @@
 use std::{io::Cursor, time::Duration};
 
-use bevy::{
-    log::{Level, LogPlugin},
-    prelude::*,
-    window::PrimaryWindow,
-    winit::WinitWindows,
-};
+use bevy::{prelude::*, window::PrimaryWindow, winit::WinitWindows};
 use bevy_spatial::{kdtree::KDTree2, AutomaticUpdate, SpatialStructure, TransformMode};
 use camera::{spawn_camera, update_camera};
 use cell::CellType;
-use game::GamePlugin;
+use environment::EnvironmentPlugin;
+use load::LoadingPlugin;
+use menu::MenuPlugin;
 use winit::window::Icon;
 
 pub const ORGANISM_LAYER: f32 = 1.0;
@@ -17,7 +14,6 @@ pub const ORGANISM_LAYER: f32 = 1.0;
 pub(crate) mod camera;
 pub(crate) mod cell;
 pub(crate) mod environment;
-pub(crate) mod game;
 pub(crate) mod load;
 pub(crate) mod menu;
 pub(crate) mod neighbor;
@@ -25,39 +21,45 @@ pub(crate) mod organism;
 
 pub type CellTree = KDTree2<CellType>;
 
-/// Entry point for the bin
+// This example game uses States to separate logic
+// See https://bevy-cheatbook.github.io/programming/states.html
+// Or https://github.com/bevyengine/bevy/blob/main/examples/ecs/state.rs
+#[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
+pub enum GameState {
+    // During the loading State the LoadingPlugin will load our assets
+    #[default]
+    Loading,
+    // During this State the actual game logic is executed
+    Playing,
+    // Here the menu is drawn and waiting for player interaction
+    Menu,
+}
+
+/// # The primary Plugin for the life engine
 ///
-/// See [`GamePlugin`] for detailed information about how the systems work
-pub fn plugin(app: &mut App) {
-    // borrowed mostly from the bevy game template
-    app.insert_resource(Msaa::Off)
-        .insert_resource(ClearColor(Color::linear_rgb(0.4, 0.4, 0.4)))
-        .add_plugins(
-            DefaultPlugins
-                .set(WindowPlugin {
-                    primary_window: Some(Window {
-                        title: "The Life Engine".to_string(),
-                        fit_canvas_to_parent: true,
-                        prevent_default_event_handling: false,
-                        ..Default::default()
-                    }),
-                    ..Default::default()
-                })
-                .set(ImagePlugin::default_nearest())
-                .set(LogPlugin {
-                    level: Level::ERROR,
-                    ..Default::default()
-                }),
-        )
-        .add_plugins(
-            AutomaticUpdate::<CellType>::new()
-                .with_spatial_ds(SpatialStructure::KDTree2)
-                .with_frequency(Duration::from_millis(1))
-                .with_transform(TransformMode::GlobalTransform),
-        )
-        .add_plugins(GamePlugin)
-        .add_systems(Startup, (set_window_icon, spawn_camera))
-        .add_systems(Update, update_camera);
+/// This inserts three different plugins:
+/// - [`LoadingPlugin`] is used for inserting initial resources, like sound and textures for
+///     the main menu
+/// - [`MenuPlugin`] is used for rendering and controlling actions on the main menu. This
+///     plugin essentially "kicks in" after the [`GameState::Loading`] has transitioned to [`GameState::Menu`].
+///     This also spawns a camera.
+///
+/// - [`EnvironmentPlugin`] is the meat of the game, which loads in systems for organisms and replicating behavior.
+pub struct GamePlugin;
+
+impl Plugin for GamePlugin {
+    fn build(&self, app: &mut App) {
+        app.init_state::<GameState>()
+            .add_plugins((LoadingPlugin, MenuPlugin, EnvironmentPlugin))
+            .add_systems(Startup, (set_window_icon, spawn_camera))
+            .add_systems(Update, update_camera)
+            .add_plugins(
+                AutomaticUpdate::<CellType>::new()
+                    .with_spatial_ds(SpatialStructure::KDTree2)
+                    .with_frequency(Duration::from_millis(1))
+                    .with_transform(TransformMode::GlobalTransform),
+            );
+    }
 }
 
 // Sets the icon on windows and X11. Borrowed from the bevy game template

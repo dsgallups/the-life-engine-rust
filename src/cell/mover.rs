@@ -5,7 +5,7 @@ use bevy_spatial::SpatialAccess;
 
 use crate::{
     environment::Dir,
-    game::GameState,
+    GameState,
     neighbor::VecExt as _,
     organism::{BrainType, Organism},
     CellTree,

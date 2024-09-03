@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 
-use super::game::GameState;
+use super::GameState;
 
 pub struct LoadingPlugin;
 

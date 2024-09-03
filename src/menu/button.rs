@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{game::GameState, load::TextureAssets};
+use crate::{load::TextureAssets, GameState};
 
 use super::actions::{ChangeState, OpenLink};
 
