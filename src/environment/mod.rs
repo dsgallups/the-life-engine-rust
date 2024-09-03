@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 pub use bevy::prelude::*;
 use mouse_hover::hover_over_organism;
 

@@ -73,7 +73,8 @@ impl Organism {
         }
     }
     pub fn ready_to_reproduce(&self) -> bool {
-        let can_reproduce_at = self.genome.num_cells() * 3;
+        //todo(dsgallups): remove
+        let can_reproduce_at = (self.genome.num_cells() * 3).max(6);
         self.belly >= can_reproduce_at as u64
     }
 
