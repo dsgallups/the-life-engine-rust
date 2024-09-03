@@ -1,7 +1,13 @@
 [package]
 name = "life-engine-rs"
 version = "0.1.0"
+publish = false
+authors = ["Daniel Gallups <dsgallups@protonmail.com>"]
 edition = "2021"
+
+
+[workspace]
+members = ["mobile"]
 
 [dependencies]
 log = { version = "0.4", features = [
@@ -18,6 +24,8 @@ winit = { version = "0.30", default-features = false }
 image = { version = "0.25", default-features = false }
 bevy_spatial = "0.9.0"
 
+[features]
+dev = ["bevy/dynamic_linking"]
 
 [dependencies.bevy]
 version = "0.14"
@@ -59,6 +67,14 @@ opt-level = 3
 [profile.release]
 codegen-units = 1
 lto = "thin"
+
+# Profile for distribution
+[profile.dist]
+inherits = "release"
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
 
 
 [profile.wasm-release]
