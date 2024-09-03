@@ -101,23 +101,7 @@ fn reproduce_organism(
 
                 // must spawn 3 blocks away from anything
                 // todo(dsgallups); hack
-                for (_, e) in tree.within_distance(random_location, organism.radius() as f32 + 3.) {
-                    /*// children can spawn over food
-                    // this will clean up food anyway
-                    if let Some(e) = e {
-                        match food.get(e) {
-                            Ok(_) => {
-                                if let Some(mut entity) = commands.get_entity(e) {
-                                    entity.despawn()
-                                }
-                            }
-                            Err(_) => {
-                                chance += 1;
-                                continue 'find;
-                            }
-                        }
-                    }*/
-                    // actually, children cannot spawn over food
+                for (_, e) in tree.within_distance(random_location, organism.radius() as f32 + 1.) {
                     if e.is_some() {
                         chance += 1;
                         continue 'find;
