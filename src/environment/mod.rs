@@ -1,7 +1,7 @@
 pub use bevy::prelude::*;
 use mouse_hover::hover_over_organism;
 
-use crate::cell::CellType;
+use crate::{cell::CellType, organism::Belly};
 
 use super::{
     organism::{Organism, OrganismPlugin},
@@ -121,5 +121,5 @@ fn clear_background(mut color: ResMut<ClearColor>) {
 /// Creates the first organism. [`Organism::insert_at`] is used to unify spawning of the organism in the ECS
 /// as well as placing itself in the [`OccupiedLocations`] hashmap.
 fn spawn_first_organism(mut commands: Commands) {
-    Organism::first_organism().insert_at(&mut commands, Vec2::new(10., 10.));
+    Organism::first_organism().insert_at(&mut commands, Vec2::new(10., 10.), Belly(3));
 }
