@@ -11,6 +11,7 @@ pub use plugin::*;
 
 mod reproduction;
 use reproduction::*;
+pub mod count;
 
 #[derive(Component, Clone)]
 pub struct Belly(pub u64);

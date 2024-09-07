@@ -1,6 +1,8 @@
 use std::{io::Cursor, time::Duration};
 
-use bevy::{prelude::*, window::PrimaryWindow, winit::WinitWindows};
+use bevy::{
+    diagnostic::FrameTimeDiagnosticsPlugin, prelude::*, window::PrimaryWindow, winit::WinitWindows,
+};
 use bevy_spatial::{kdtree::KDTree2, AutomaticUpdate, SpatialStructure, TransformMode};
 use camera::{spawn_camera, update_camera};
 use cell::CellType;
@@ -14,6 +16,7 @@ pub const ORGANISM_LAYER: f32 = 1.0;
 pub(crate) mod camera;
 pub(crate) mod cell;
 pub(crate) mod environment;
+pub(crate) mod fps;
 pub(crate) mod load;
 pub(crate) mod menu;
 pub(crate) mod neighbor;
@@ -50,7 +53,12 @@ pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<GameState>()
-            .add_plugins((LoadingPlugin, MenuPlugin, EnvironmentPlugin))
+            .add_plugins((
+                LoadingPlugin,
+                MenuPlugin,
+                EnvironmentPlugin,
+                FrameTimeDiagnosticsPlugin,
+            ))
             .add_systems(Startup, (set_window_icon, spawn_camera))
             .add_systems(Update, update_camera)
             .add_plugins(
@@ -59,6 +67,12 @@ impl Plugin for GamePlugin {
                     .with_frequency(Duration::from_millis(1))
                     .with_transform(TransformMode::GlobalTransform),
             );
+
+        app.add_systems(Startup, fps::setup_fps_counter);
+        app.add_systems(
+            Update,
+            (fps::fps_text_update_system, fps::fps_counter_showhide),
+        );
     }
 }
 

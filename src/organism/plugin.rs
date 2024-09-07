@@ -8,7 +8,7 @@ use crate::{
     CellTree, GameState,
 };
 
-use super::{Age, Belly, Organism, StarvedAt};
+use super::{count, Age, Belly, Organism, StarvedAt};
 
 /// Combines the systems of cells and organism actions
 pub struct OrganismPlugin;
@@ -27,12 +27,16 @@ impl Plugin for OrganismPlugin {
             .add_systems(
                 Update,
                 (
-                    age_organism.run_if(in_state(GameState::Playing)),
-                    organism_hunger.run_if(in_state(GameState::Playing)),
-                    starve_organism.run_if(in_state(GameState::Playing)),
-                    reproduce_organism.run_if(in_state(GameState::Playing)),
-                ),
+                    age_organism,
+                    organism_hunger,
+                    starve_organism,
+                    reproduce_organism,
+                    count::organism_text_update_system,
+                )
+                    .run_if(in_state(GameState::Playing)),
             );
+
+        app.add_systems(Startup, count::setup_organism_counter);
     }
 }
 
