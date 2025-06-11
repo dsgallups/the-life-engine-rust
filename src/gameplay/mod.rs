@@ -10,6 +10,7 @@ use bevy::{
 
 use crate::{Pause, menus::Menu, screens::Screen};
 
+mod cell;
 mod genome;
 mod level;
 mod organism;
@@ -55,6 +56,7 @@ pub(super) fn plugin(app: &mut App) {
         level::plugin,
         genome::plugin,
         organism::plugin,
+        cell::plugin,
     ));
     // Toggle pause on key press.
     app.add_systems(

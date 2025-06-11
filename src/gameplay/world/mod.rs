@@ -13,7 +13,7 @@ pub(super) fn plugin(app: &mut App) {
     //todo
 }
 
-#[derive(Component, Deref, DerefMut, Default)]
+#[derive(Component, Deref, DerefMut)]
 pub struct GlobalCoords(pub IVec2);
 
 #[derive(Resource, Default)]
