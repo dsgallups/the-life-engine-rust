@@ -5,12 +5,15 @@
 
 mod asset_tracking;
 mod audio;
-mod demo;
 #[cfg(feature = "dev")]
 mod dev_tools;
+mod gameplay;
+mod loading;
 mod menus;
 mod screens;
+mod splash;
 mod theme;
+mod title;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
 
@@ -37,11 +40,13 @@ fn main() {
             }),
     );
 
+    app.add_plugins((loading::plugin, splash::plugin, title::plugin));
+
     // Add other plugins.
     app.add_plugins((
         asset_tracking::plugin,
         audio::plugin,
-        demo::plugin,
+        gameplay::plugin,
         #[cfg(feature = "dev")]
         dev_tools::plugin,
         menus::plugin,
