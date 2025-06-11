@@ -10,19 +10,7 @@ use bevy::{
 
 use crate::{Pause, menus::Menu, screens::Screen};
 
-mod animation;
-pub mod level;
-mod movement;
-pub mod player;
-
 pub(super) fn plugin(app: &mut App) {
-    app.add_plugins((
-        animation::plugin,
-        level::plugin,
-        movement::plugin,
-        player::plugin,
-    ));
-
     // Toggle pause on key press.
     app.add_systems(
         Update,
