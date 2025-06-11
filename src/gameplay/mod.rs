@@ -27,6 +27,8 @@ enum GameSystems {
     RecordInput,
     /// Do everything else (consider splitting this into further variants).
     Update,
+    /// sync transforms last
+    SyncTransforms,
 }
 
 #[derive(SubStates, Copy, Clone, Eq, PartialEq, Hash, Debug, Default)]
@@ -46,6 +48,7 @@ pub(super) fn plugin(app: &mut App) {
             GameSystems::TickTimers,
             GameSystems::RecordInput,
             GameSystems::Update,
+            GameSystems::SyncTransforms,
         )
             .chain()
             .run_if(in_state(GameState::Playing)),
