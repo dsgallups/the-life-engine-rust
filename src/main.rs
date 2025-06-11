@@ -5,6 +5,7 @@
 
 mod asset_tracking;
 mod audio;
+mod camera;
 #[cfg(feature = "dev")]
 mod dev;
 mod gameplay;
@@ -19,7 +20,7 @@ mod title;
 
 use bevy::prelude::*;
 
-fn main() {
+fn main() -> AppExit {
     let mut app = App::new();
     // Add Bevy plugins.
     app.add_plugins(
@@ -40,6 +41,7 @@ fn main() {
     app.add_plugins((
         asset_tracking::plugin,
         audio::plugin,
+        camera::plugin,
         gameplay::plugin,
         menus::plugin,
         screens::plugin,
@@ -66,6 +68,8 @@ fn main() {
 
     // Spawn the main camera.
     app.add_systems(Startup, spawn_camera);
+
+    app.run()
 }
 
 /// High-level groupings of systems for the app in the `Update` schedule.
@@ -89,7 +93,3 @@ struct Pause(pub bool);
 /// A system set for systems that shouldn't run while the game is paused.
 #[derive(SystemSet, Copy, Clone, Eq, PartialEq, Hash, Debug)]
 struct PausableSystems;
-
-fn spawn_camera(mut commands: Commands) {
-    commands.spawn((Name::new("Camera"), Camera2d));
-}

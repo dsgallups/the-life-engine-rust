@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::gameplay::{
     GameSystems,
-    cell::{Cell, Cells},
+    cell::*,
     genome::{CellType, OrganismGenome},
     organism::Organism,
     world::GlobalCoords,
@@ -19,6 +19,7 @@ pub(super) fn plugin(app: &mut App) {
 
     //todo
 }
+
 fn spawn_organisms(
     new_organisms: Query<(Entity, &SpawnCoords, &Organism), Without<Cells>>,
     genomes: Res<Assets<OrganismGenome>>,
@@ -28,25 +29,38 @@ fn spawn_organisms(
     for (entity, coords, organism) in &new_organisms {
         let SpawnCoords(root_coords) = coords;
         let Some(genome) = genomes.get(organism) else {
+            info!("Genome not yet loaded for unspawned organism");
             continue;
         };
+
+        info!("Spawning organism");
 
         for cell in genome.iter_cells() {
             let local_location = cell.location();
 
-            let global_coords = (Cell(entity), GlobalCoords(root_coords + local_location));
+            let default_components = (Cell(entity), GlobalCoords(root_coords + local_location));
 
             match cell.cell_type() {
                 CellType::Armor => {
-                    //todo
-                    //lol
+                    commands.spawn((Armor, default_components));
                 }
-                _ => todo!(),
+                CellType::Eye => {
+                    commands.spawn((Eye, default_components));
+                }
+                CellType::Mouth => {
+                    commands.spawn((Mouth, default_components));
+                }
+                CellType::Mover => {
+                    commands.spawn((Mover, default_components));
+                }
+                CellType::Killer => {
+                    commands.spawn((Killer, default_components));
+                }
+                CellType::Producer => {
+                    commands.spawn((Producer::default(), default_components));
+                }
             }
-            //todo
         }
-
-        //todo
     }
     //todo
 }
