@@ -20,7 +20,7 @@ mod world;
 /// When adding a new variant, make sure to order it in the `configure_sets`
 /// call above.
 #[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
-enum GameSystems {
+pub enum GameSet {
     /// Tick timers.
     TickTimers,
     /// Record player input.
@@ -45,10 +45,10 @@ pub(super) fn plugin(app: &mut App) {
     app.add_sub_state::<GameState>().configure_sets(
         Update,
         (
-            GameSystems::TickTimers,
-            GameSystems::RecordInput,
-            GameSystems::Update,
-            GameSystems::SyncTransforms,
+            GameSet::TickTimers,
+            GameSet::RecordInput,
+            GameSet::Update,
+            GameSet::SyncTransforms,
         )
             .chain()
             .run_if(in_state(GameState::Playing)),

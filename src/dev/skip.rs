@@ -1,0 +1,10 @@
+use bevy::prelude::*;
+
+use crate::screens::Screen;
+/// Goes instantly into gameplay
+pub fn plugin(app: &mut App) {
+    app.add_systems(
+        OnExit(Screen::Loading),
+        |mut screen: ResMut<NextState<Screen>>| screen.set(Screen::Gameplay),
+    );
+}

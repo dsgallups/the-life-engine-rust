@@ -7,7 +7,7 @@ This plugin will manage:
 
 use bevy::{platform::collections::HashMap, prelude::*};
 
-use crate::gameplay::GameSystems;
+use crate::gameplay::GameSet;
 
 pub(super) fn plugin(app: &mut App) {
     //app.configure_sets()
@@ -15,7 +15,7 @@ pub(super) fn plugin(app: &mut App) {
 
     app.add_systems(
         Update,
-        sync_transform_with_coords.in_set(GameSystems::SyncTransforms),
+        sync_transform_with_coords.in_set(GameSet::SyncTransforms),
     );
     //todo
 }

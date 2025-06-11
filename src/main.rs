@@ -12,6 +12,7 @@ mod gameplay;
 mod loading;
 mod menus;
 mod screens;
+mod settings;
 mod splash;
 mod theme;
 mod title;
@@ -45,6 +46,7 @@ fn main() -> AppExit {
         gameplay::plugin,
         menus::plugin,
         screens::plugin,
+        settings::plugin,
         theme::plugin,
     ));
 
@@ -56,6 +58,7 @@ fn main() -> AppExit {
         Update,
         (
             AppSystems::TickTimers,
+            AppSystems::ChangeUi,
             AppSystems::RecordInput,
             AppSystems::Update,
         )
@@ -76,6 +79,7 @@ fn main() -> AppExit {
 enum AppSystems {
     /// Tick timers.
     TickTimers,
+    ChangeUi,
     /// Record player input.
     RecordInput,
     /// Do everything else (consider splitting this into further variants).

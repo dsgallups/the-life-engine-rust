@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::gameplay::{
-    GameSystems, cell::*, genome::OrganismGenome, organism::Organism, world::GlobalCoords,
+    GameSet, cell::*, genome::OrganismGenome, organism::Organism, world::GlobalCoords,
 };
 
 /// the original location to spawn an organism
@@ -11,7 +11,7 @@ pub struct SpawnCoords(pub IVec2);
 pub(super) fn plugin(app: &mut App) {
     app.add_event::<SpawnOrganism>();
 
-    app.add_systems(Update, spawn_organisms.in_set(GameSystems::Update));
+    app.add_systems(Update, spawn_organisms.in_set(GameSet::Update));
 
     //todo
 }

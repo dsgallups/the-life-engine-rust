@@ -6,6 +6,30 @@ authors = ["Daniel Gallups <dsgallups@protonmail.com>"]
 edition = "2024"
 
 
+[features]
+# Default to a native dev build.
+default = ["dev_native"]
+dev = [
+    # Improve compile times for dev builds by linking Bevy as a dynamic library.
+    "bevy/dynamic_linking",
+    "bevy/bevy_dev_tools",
+    "bevy/bevy_ui_debug",
+    # Improve error messages coming from Bevy
+    "bevy/track_location",
+    "dep:bevy-inspector-egui",
+    "dep:egui_dock",
+    "dep:transform-gizmo-egui",
+    "bevy/sysinfo_plugin",
+]
+dev_native = [
+    "dev",
+    # Enable asset hot reloading for native dev builds.
+    "bevy/file_watcher",
+    # Enable embedded asset hot reloading for native dev builds.
+    "bevy/embedded_watcher",
+]
+
+
 [dependencies]
 bevy = { version = "0.16", features = ["wayland"] }
 rand = "0.8"
@@ -20,6 +44,10 @@ tracing = { version = "0.1", features = [
     "release_max_level_warn",
 ] }
 uuid = "1.17.0"
+bitflags = "2.9.1"
+bevy-inspector-egui = { version = "0.31.0", optional = true }
+egui_dock = { version = "0.16.0", optional = true }
+transform-gizmo-egui = { version = "0.5", optional = true }
 
 # Your web builds will start failing if you add a dependency that pulls in `getrandom` v0.3+.
 # To fix this, you should tell `getrandom` to use the `wasm_js` backend on Wasm.
@@ -32,25 +60,6 @@ uuid = "1.17.0"
 # Alternatively, you can opt out of the rustflags check with this patch:
 #[patch.crates-io]
 #getrandom = { git = "https://github.com/benfrankel/getrandom" }
-
-[features]
-# Default to a native dev build.
-default = ["dev_native"]
-dev = [
-    # Improve compile times for dev builds by linking Bevy as a dynamic library.
-    "bevy/dynamic_linking",
-    "bevy/bevy_dev_tools",
-    "bevy/bevy_ui_debug",
-    # Improve error messages coming from Bevy
-    "bevy/track_location",
-]
-dev_native = [
-    "dev",
-    # Enable asset hot reloading for native dev builds.
-    "bevy/file_watcher",
-    # Enable embedded asset hot reloading for native dev builds.
-    "bevy/embedded_watcher",
-]
 
 
 [package.metadata.bevy_cli.release]
