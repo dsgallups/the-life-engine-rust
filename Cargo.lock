@@ -2735,6 +2735,7 @@ dependencies = [
  "log",
  "rand",
  "tracing",
+ "uuid",
 ]
 
 [[package]]

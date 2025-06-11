@@ -7,15 +7,6 @@ This plugin will manage:
 
 use bevy::{platform::collections::HashMap, prelude::*};
 
-enum WorldSystems {
-    /// the world runs and sends events to be processed by the world
-    RunTick,
-    /// things to do
-    SpawnNewOrganisms,
-    /// cleanup organisms that have died
-    CleanupOrganisms,
-}
-
 pub(super) fn plugin(app: &mut App) {
     //app.configure_sets()
     app.init_resource::<WorldGrid>();
