@@ -23,6 +23,7 @@ pub enum GameSet {
     /// Record player input.
     RecordInput,
 
+    /// Things irrelevant to the state of the game that need to happen after input is recorded and timers are ticked
     Update,
 
     /// Movement
@@ -61,18 +62,16 @@ pub(super) fn plugin(app: &mut App) {
                 .chain()
                 .run_if(in_state(GameState::Playing)),
         )
+        .configure_sets(Update, GameSet::Move)
         .configure_sets(
             Update,
             (GameSet::Produce, GameSet::Eat, GameSet::Attack)
                 .after(GameSet::Move)
                 .before(GameSet::Despawn),
         )
-        .configure_sets(Update, GameSet::Move)
         .configure_sets(
             Update,
-            (GameSet::Despawn, GameSet::Spawn)
-                .chain()
-                .before(GameSet::SyncTransforms),
+            (GameSet::Despawn, GameSet::Spawn, GameSet::SyncTransforms).chain(),
         );
 
     app.add_plugins((
