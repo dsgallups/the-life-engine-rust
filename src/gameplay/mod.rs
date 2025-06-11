@@ -16,17 +16,24 @@ mod level;
 mod organism;
 mod world;
 
-/// High-level groupings of systems for the app in the `Update` schedule.
-/// When adding a new variant, make sure to order it in the `configure_sets`
-/// call above.
 #[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub enum GameSet {
     /// Tick timers.
     TickTimers,
     /// Record player input.
     RecordInput,
-    /// Do everything else (consider splitting this into further variants).
+
     Update,
+
+    /// Movement
+    Move,
+    Produce,
+    Eat,
+    Attack,
+
+    Spawn,
+    Despawn,
+
     /// sync transforms last
     SyncTransforms,
 }
@@ -42,17 +49,31 @@ enum GameState {
 }
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_sub_state::<GameState>().configure_sets(
-        Update,
-        (
-            GameSet::TickTimers,
-            GameSet::RecordInput,
-            GameSet::Update,
-            GameSet::SyncTransforms,
+    app.add_sub_state::<GameState>()
+        .configure_sets(
+            Update,
+            (
+                GameSet::TickTimers,
+                GameSet::RecordInput,
+                GameSet::Update,
+                GameSet::SyncTransforms,
+            )
+                .chain()
+                .run_if(in_state(GameState::Playing)),
         )
-            .chain()
-            .run_if(in_state(GameState::Playing)),
-    );
+        .configure_sets(
+            Update,
+            (GameSet::Produce, GameSet::Eat, GameSet::Attack)
+                .after(GameSet::Move)
+                .before(GameSet::Despawn),
+        )
+        .configure_sets(Update, GameSet::Move)
+        .configure_sets(
+            Update,
+            (GameSet::Despawn, GameSet::Spawn)
+                .chain()
+                .before(GameSet::SyncTransforms),
+        );
 
     app.add_plugins((
         world::plugin,
