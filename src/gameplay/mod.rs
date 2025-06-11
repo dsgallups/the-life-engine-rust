@@ -10,12 +10,47 @@ use bevy::{
 
 use crate::{Pause, menus::Menu, screens::Screen};
 
+mod genome;
 mod level;
 mod organism;
 mod world;
 
+/// High-level groupings of systems for the app in the `Update` schedule.
+/// When adding a new variant, make sure to order it in the `configure_sets`
+/// call above.
+#[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
+enum GameSystems {
+    /// Tick timers.
+    TickTimers,
+    /// Record player input.
+    RecordInput,
+    /// Do everything else (consider splitting this into further variants).
+    Update,
+}
+
+#[derive(SubStates, Copy, Clone, Eq, PartialEq, Hash, Debug, Default)]
+#[states(scoped_entities)]
+#[allow(dead_code)]
+#[source(Screen = Screen::Gameplay)]
+enum GameState {
+    #[default]
+    Playing,
+    Paused,
+}
+
 pub(super) fn plugin(app: &mut App) {
-    app.add_plugins((world::plugin, level::plugin));
+    app.add_sub_state::<GameState>().configure_sets(
+        Update,
+        (
+            GameSystems::TickTimers,
+            GameSystems::RecordInput,
+            GameSystems::Update,
+        )
+            .chain()
+            .run_if(in_state(GameState::Playing)),
+    );
+
+    app.add_plugins((world::plugin, level::plugin, genome::plugin));
     // Toggle pause on key press.
     app.add_systems(
         Update,
