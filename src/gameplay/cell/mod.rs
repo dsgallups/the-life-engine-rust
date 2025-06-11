@@ -1,6 +1,6 @@
 use bevy::{color::palettes::tailwind::BLUE_500, platform::collections::HashMap, prelude::*};
 
-use crate::{asset_tracking::LoadResource, gameplay::world::GlobalCoords};
+use crate::{asset_tracking::LoadResource, gameplay::environment::GlobalCoords};
 
 mod armor;
 pub use armor::*;

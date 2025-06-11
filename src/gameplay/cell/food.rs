@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::gameplay::{
     cell::{CellMaterials, panic_without_global_coords},
-    world::GlobalCoords,
+    environment::GlobalCoords,
 };
 
 pub(super) fn plugin(app: &mut App) {

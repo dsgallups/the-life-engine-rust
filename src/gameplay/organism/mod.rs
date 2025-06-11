@@ -5,8 +5,25 @@ use crate::gameplay::genome::OrganismGenome;
 mod spawn;
 pub use spawn::*;
 
+#[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub enum CellSet {
+    /// Movement
+    Move,
+    Produce,
+    Eat,
+    Attack,
+}
+
 pub(super) fn plugin(app: &mut App) {
-    app.register_type::<Organism>();
+    app.register_type::<Organism>().configure_sets(
+        Update,
+        (
+            CellSet::Move,
+            (CellSet::Eat, CellSet::Attack),
+            CellSet::Produce,
+        )
+            .chain(),
+    );
     app.add_plugins(spawn::plugin);
     //todo
 }

@@ -8,13 +8,14 @@ use bevy::{
     prelude::{Val::*, *},
 };
 
-use crate::{Pause, menus::Menu, screens::Screen};
+use crate::{Pause, gameplay::tick::GameTick, menus::Menu, screens::Screen};
 
 mod cell;
+mod environment;
 mod genome;
 mod level;
 mod organism;
-mod world;
+mod tick;
 
 #[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub enum GameSet {
@@ -22,20 +23,25 @@ pub enum GameSet {
     TickTimers,
     /// Record player input.
     RecordInput,
-
     /// Things irrelevant to the state of the game that need to happen after input is recorded and timers are ticked
     Update,
+}
 
+#[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub enum CellSet {
     /// Movement
     Move,
     Produce,
     Eat,
     Attack,
+}
 
-    Spawn,
-    Despawn,
-
-    /// sync transforms last
+#[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub enum EnvironmentSet {
+    /// PrevCoords is the location of something before the update passes start
+    SetPrevCoords,
+    FirstGridUpdate,
+    SecondGridUpdate,
     SyncTransforms,
 }
 
@@ -50,38 +56,76 @@ enum GameState {
 }
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_sub_state::<GameState>()
-        .configure_sets(
-            Update,
-            (
-                GameSet::TickTimers,
-                GameSet::RecordInput,
-                GameSet::Update,
-                GameSet::SyncTransforms,
-            )
-                .chain()
-                .run_if(in_state(GameState::Playing)),
+    app.add_sub_state::<GameState>().configure_sets(
+        Update,
+        (GameSet::TickTimers, GameSet::RecordInput, GameSet::Update)
+            .chain()
+            .run_if(in_state(GameState::Playing)),
+    );
+
+    app.configure_sets(
+        Update,
+        (
+            EnvironmentSet::SetPrevCoords,
+            EnvironmentSet::FirstGridUpdate,
+            EnvironmentSet::SecondGridUpdate,
+            EnvironmentSet::SyncTransforms,
         )
-        .configure_sets(
-            Update,
-            (
-                GameSet::Eat,
-                GameSet::Move,
-                GameSet::Attack,
-                GameSet::Produce,
-                GameSet::Despawn,
-                GameSet::Spawn,
-                GameSet::SyncTransforms,
-            )
-                .chain(),
-        );
+            .chain(),
+    );
+
+    app.configure_sets(
+        Update,
+        (
+            CellSet::Move,
+            (CellSet::Eat, CellSet::Attack),
+            CellSet::Produce,
+        )
+            .chain(),
+    );
+
+    app.configure_sets(
+        Update,
+        (EnvironmentSet::SetPrevCoords, CellSet::Move).chain(),
+    )
+    .configure_sets(
+        Update,
+        (
+            CellSet::Move,
+            EnvironmentSet::FirstGridUpdate,
+            CellSet::Eat,
+            EnvironmentSet::SecondGridUpdate,
+            CellSet::Produce,
+        )
+            .chain(),
+    );
+
+    //.configure_sets(Update, (OrganSet::Move, GameSet::SyncTransforms).chain());
+    // .configure_sets(
+    //     Update,
+    //     (
+    //         GameSet::TickTimers,
+    //         (
+    //             OrganSet::Move,
+    //             (OrganSet::Eat, OrganSet::Attack),
+    //             OrganSet::Produce,
+    //         )
+    //             .run_if(game_ticked)
+    //             .chain(),
+    //         GameSet::Despawn,
+    //         GameSet::Spawn,
+    //         GameSet::SyncTransforms,
+    //     )
+    //         .chain(),
+    // );
 
     app.add_plugins((
-        world::plugin,
+        environment::plugin,
         level::plugin,
         genome::plugin,
         organism::plugin,
         cell::plugin,
+        tick::plugin,
     ));
     // Toggle pause on key press.
     app.add_systems(
@@ -112,6 +156,15 @@ fn unpause(mut next_pause: ResMut<NextState<Pause>>) {
 
 fn pause(mut next_pause: ResMut<NextState<Pause>>) {
     next_pause.set(Pause(true));
+}
+
+pub fn game_ticked(tick: Res<GameTick>, mut prev: Local<usize>) -> bool {
+    if tick.current_tick() != *prev {
+        *prev = tick.current_tick();
+        true
+    } else {
+        false
+    }
 }
 
 fn spawn_pause_overlay(mut commands: Commands) {
