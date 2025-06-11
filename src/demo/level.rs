@@ -12,6 +12,8 @@ use crate::{
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<LevelAssets>();
     app.load_resource::<LevelAssets>();
+
+    app.add_systems(OnEnter(Screen::Gameplay), spawn_level);
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
