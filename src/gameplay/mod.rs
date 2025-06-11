@@ -10,7 +10,12 @@ use bevy::{
 
 use crate::{Pause, menus::Menu, screens::Screen};
 
+mod level;
+mod organism;
+mod world;
+
 pub(super) fn plugin(app: &mut App) {
+    app.add_plugins((world::plugin, level::plugin));
     // Toggle pause on key press.
     app.add_systems(
         Update,
