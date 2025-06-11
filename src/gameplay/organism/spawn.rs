@@ -1,11 +1,7 @@
 use bevy::prelude::*;
 
 use crate::gameplay::{
-    GameSystems,
-    cell::*,
-    genome::{CellType, OrganismGenome},
-    organism::Organism,
-    world::GlobalCoords,
+    GameSystems, cell::*, genome::OrganismGenome, organism::Organism, world::GlobalCoords,
 };
 
 /// the original location to spawn an organism

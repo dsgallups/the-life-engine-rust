@@ -1,6 +1,6 @@
-use bevy::prelude::*;
+use bevy::{platform::collections::HashMap, prelude::*};
 
-use crate::gameplay::world::GlobalCoords;
+use crate::{asset_tracking::LoadResource, gameplay::world::GlobalCoords};
 
 mod armor;
 pub use armor::*;
@@ -24,6 +24,11 @@ mod producer;
 pub use producer::*;
 
 pub(super) fn plugin(app: &mut App) {
+    app.register_type::<CellType>()
+        .register_type::<CellMaterials>()
+        .load_resource::<CellMaterials>()
+        .register_type::<Cell>()
+        .register_type::<Cells>();
     app.add_plugins((
         armor::plugin,
         eye::plugin,
@@ -34,7 +39,7 @@ pub(super) fn plugin(app: &mut App) {
         producer::plugin,
     ));
 
-    app.register_type::<Cell>().register_type::<Cells>();
+    app.add_observer(insert_visible_components);
     //todo
 }
 
@@ -53,4 +58,54 @@ pub(crate) struct Cell(pub(crate) Entity);
 
 fn panic_without_global_coords() -> GlobalCoords {
     panic!("Cell must have global coordinates")
+}
+
+#[derive(Hash, Clone, Copy, Debug, PartialEq, Eq, Reflect, Component)]
+#[reflect(Component)]
+pub enum CellType {
+    Armor,
+    Eye,
+    Killer,
+    Mover,
+    Producer,
+    Mouth,
+}
+
+#[derive(Resource, Asset, Reflect, Clone)]
+pub struct CellMaterials {
+    materials: HashMap<CellType, Color>,
+}
+impl CellMaterials {
+    pub fn get_color(&self, cell_type: &CellType) -> Color {
+        *self.materials.get(cell_type).unwrap()
+    }
+}
+
+impl FromWorld for CellMaterials {
+    fn from_world(_world: &mut World) -> Self {
+        let mut map = HashMap::new();
+        map.insert(CellType::Armor, Color::linear_rgb(0.5, 0.0, 0.5));
+        map.insert(CellType::Producer, Color::linear_rgb(0., 1., 0.));
+        map.insert(CellType::Mouth, Color::linear_rgb(1.0, 0.65, 0.));
+        map.insert(CellType::Mover, Color::linear_rgb(0.49, 1.0, 0.83));
+        map.insert(CellType::Killer, Color::linear_rgb(1.0, 0.0, 0.0));
+        map.insert(CellType::Eye, Color::linear_rgb(0.98, 0.5, 0.45));
+        Self { materials: map }
+    }
+}
+
+fn insert_visible_components(
+    trigger: Trigger<OnAdd, CellType>,
+    mut commands: Commands,
+    materials: Res<CellMaterials>,
+    cell_types: Query<&CellType>,
+) {
+    let Ok(cell_type) = cell_types.get(trigger.target()) else {
+        return;
+    };
+    let color = materials.get_color(cell_type);
+
+    commands
+        .entity(trigger.target())
+        .insert(Sprite { color, ..default() });
 }

@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 
+use crate::gameplay::cell::CellType;
+
 pub(super) fn plugin(app: &mut App) {
-    app.register_type::<CellType>()
-        .register_type::<CellGenome>()
+    app.register_type::<CellGenome>()
         .register_type::<OrganismGenome>();
     app.init_asset::<OrganismGenome>();
     //todo
@@ -55,14 +56,4 @@ impl CellGenome {
     pub fn location(&self) -> IVec2 {
         self.location
     }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Reflect)]
-pub enum CellType {
-    Armor,
-    Eye,
-    Killer,
-    Mover,
-    Producer,
-    Mouth,
 }
