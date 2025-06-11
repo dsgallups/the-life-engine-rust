@@ -6,7 +6,7 @@
 mod asset_tracking;
 mod audio;
 #[cfg(feature = "dev")]
-mod dev_tools;
+mod dev;
 mod gameplay;
 mod loading;
 mod menus;
@@ -39,12 +39,13 @@ fn main() {
         asset_tracking::plugin,
         audio::plugin,
         gameplay::plugin,
-        #[cfg(feature = "dev")]
-        dev_tools::plugin,
         menus::plugin,
         screens::plugin,
         theme::plugin,
     ));
+
+    #[cfg(feature = "dev")]
+    app.add_plugins(dev::plugin);
 
     // Order new `AppSystems` variants by adding them here:
     app.configure_sets(
