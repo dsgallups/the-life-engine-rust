@@ -13,7 +13,14 @@ pub(super) fn plugin(app: &mut App) {
     //todo
 }
 
+#[derive(Component, Deref, DerefMut, Default)]
+pub struct GlobalCoords(pub IVec2);
+
 #[derive(Resource, Default)]
 pub struct WorldGrid {
     grid: HashMap<IVec2, Entity>,
+}
+
+pub struct WorldSpatialQuery {
+    //todo
 }

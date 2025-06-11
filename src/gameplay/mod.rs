@@ -50,7 +50,12 @@ pub(super) fn plugin(app: &mut App) {
             .run_if(in_state(GameState::Playing)),
     );
 
-    app.add_plugins((world::plugin, level::plugin, genome::plugin));
+    app.add_plugins((
+        world::plugin,
+        level::plugin,
+        genome::plugin,
+        organism::plugin,
+    ));
     // Toggle pause on key press.
     app.add_systems(
         Update,

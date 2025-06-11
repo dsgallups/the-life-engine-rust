@@ -2,23 +2,20 @@ use bevy::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<CellType>()
-        .register_type::<Cell>()
-        .register_type::<Genome>();
-    app.init_asset::<Genome>();
+        .register_type::<CellGenome>()
+        .register_type::<OrganismGenome>();
+    app.init_asset::<OrganismGenome>();
     //todo
 }
 
-#[derive(Component)]
-pub struct GenomeHandle(pub Handle<Genome>);
-
 #[derive(Asset, Reflect, Clone, Debug, PartialEq)]
-pub struct Genome {
-    cells: Vec<Cell>,
+pub struct OrganismGenome {
+    cells: Vec<CellGenome>,
     mutation_rate: f64,
 }
 
-impl Genome {
-    fn new(cells: Vec<Cell>, mutation_rate: f64) -> Self {
+impl OrganismGenome {
+    fn new(cells: Vec<CellGenome>, mutation_rate: f64) -> Self {
         Self {
             cells,
             mutation_rate,
@@ -27,32 +24,41 @@ impl Genome {
     pub fn first_organism() -> Self {
         Self::new(
             vec![
-                Cell::new(CellType::Producer, IVec2::new(-1, -1)),
-                Cell::new(CellType::Mouth, IVec2::new(0, 0)),
-                Cell::new(CellType::Producer, IVec2::new(1, 1)),
+                CellGenome::new(CellType::Producer, IVec2::new(-1, -1)),
+                CellGenome::new(CellType::Mouth, IVec2::new(0, 0)),
+                CellGenome::new(CellType::Producer, IVec2::new(1, 1)),
             ],
             50.,
         )
     }
+    pub fn iter_cells(&self) -> std::slice::Iter<'_, CellGenome> {
+        self.cells.iter()
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Reflect)]
-struct Cell {
+pub struct CellGenome {
     cell_type: CellType,
     /// this is relative
     location: IVec2,
 }
-impl Cell {
+impl CellGenome {
     pub fn new(cell_type: CellType, location: IVec2) -> Self {
         Self {
             cell_type,
             location,
         }
     }
+    pub fn cell_type(&self) -> CellType {
+        self.cell_type
+    }
+    pub fn location(&self) -> IVec2 {
+        self.location
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Reflect)]
-enum CellType {
+pub enum CellType {
     Armor,
     Eye,
     Killer,
