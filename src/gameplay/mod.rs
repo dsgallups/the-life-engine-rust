@@ -62,16 +62,18 @@ pub(super) fn plugin(app: &mut App) {
                 .chain()
                 .run_if(in_state(GameState::Playing)),
         )
-        .configure_sets(Update, GameSet::Move)
         .configure_sets(
             Update,
-            (GameSet::Produce, GameSet::Eat, GameSet::Attack)
-                .after(GameSet::Move)
-                .before(GameSet::Despawn),
-        )
-        .configure_sets(
-            Update,
-            (GameSet::Despawn, GameSet::Spawn, GameSet::SyncTransforms).chain(),
+            (
+                GameSet::Eat,
+                GameSet::Move,
+                GameSet::Attack,
+                GameSet::Produce,
+                GameSet::Despawn,
+                GameSet::Spawn,
+                GameSet::SyncTransforms,
+            )
+                .chain(),
         );
 
     app.add_plugins((

@@ -1,4 +1,4 @@
-use bevy::{platform::collections::HashMap, prelude::*};
+use bevy::{color::palettes::tailwind::BLUE_500, platform::collections::HashMap, prelude::*};
 
 use crate::{asset_tracking::LoadResource, gameplay::world::GlobalCoords};
 
@@ -74,10 +74,14 @@ pub enum CellType {
 #[derive(Resource, Asset, Reflect, Clone)]
 pub struct CellMaterials {
     materials: HashMap<CellType, Color>,
+    food: Color,
 }
 impl CellMaterials {
     pub fn get_color(&self, cell_type: &CellType) -> Color {
         *self.materials.get(cell_type).unwrap()
+    }
+    pub fn food(&self) -> Color {
+        self.food
     }
 }
 
@@ -90,7 +94,10 @@ impl FromWorld for CellMaterials {
         map.insert(CellType::Mover, Color::linear_rgb(0.49, 1.0, 0.83));
         map.insert(CellType::Killer, Color::linear_rgb(1.0, 0.0, 0.0));
         map.insert(CellType::Eye, Color::linear_rgb(0.98, 0.5, 0.45));
-        Self { materials: map }
+        Self {
+            materials: map,
+            food: BLUE_500.into(),
+        }
     }
 }
 
