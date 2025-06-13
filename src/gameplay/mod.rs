@@ -21,14 +21,10 @@ mod tick;
 pub enum GameSet {
     /// Tick timers.
     TickTimers,
-    ReadyGrid,
     /// Record player input.
     RecordInput,
-    /// Things irrelevant to the state of the game that need to happen after input is recorded and timers are ticked
+    /// Things that need to happen after input is recorded and timers are ticked
     Update,
-
-    /// Sync up the grid transforms that had occured in the update schedule
-    SyncTransforms,
 }
 
 #[derive(SubStates, Copy, Clone, Eq, PartialEq, Hash, Debug, Default)]
@@ -44,15 +40,7 @@ enum GameState {
 pub(super) fn plugin(app: &mut App) {
     app.add_sub_state::<GameState>().configure_sets(
         Update,
-        (
-            (
-                GameSet::TickTimers,
-                GameSet::ReadyGrid,
-                GameSet::RecordInput,
-            ),
-            GameSet::Update,
-            GameSet::SyncTransforms,
-        )
+        ((GameSet::TickTimers, GameSet::RecordInput), GameSet::Update)
             .chain()
             .run_if(in_state(GameState::Playing)),
     );

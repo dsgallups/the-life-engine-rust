@@ -8,15 +8,16 @@ This plugin will manage:
 use std::marker::PhantomData;
 
 use bevy::{ecs::system::SystemParam, platform::collections::HashMap, prelude::*};
-use rand::Rng;
+use rand::seq::{IndexedRandom, SliceRandom};
 
 use crate::gameplay::{GameSet, GameState};
 
 #[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
-enum EnvironmentSet {
-    /// PrevCoords is the location of something before the update passes start
-    SetInitialCoords,
-    UpdateGrid,
+enum GridSet {
+    /// Prepares the environment grid for querying in the update schedule.
+    ReadyGrid,
+    /// Rectifies the grid based on events in Update
+    RectifyGrid,
     SyncTransforms,
 }
 
@@ -27,9 +28,10 @@ pub(super) fn plugin(app: &mut App) {
     app.configure_sets(
         Update,
         (
-            EnvironmentSet::SetInitialCoords,
-            EnvironmentSet::UpdateGrid,
-            EnvironmentSet::SyncTransforms,
+            GridSet::ReadyGrid,
+            GameSet::Update,
+            GridSet::RectifyGrid,
+            GridSet::SyncTransforms,
         )
             .chain(),
     );
@@ -40,17 +42,11 @@ pub(super) fn plugin(app: &mut App) {
     )
     .add_systems(
         Update,
-        (clear_previous_coords_from_grid, add_new_coords_to_grid)
-            .chain()
-            .in_set(GameSet::ReadyGrid),
-    )
-    .add_systems(
-        Update,
-        sync_transform_with_coords.in_set(GameSet::SyncTransforms),
+        sync_transform_with_coords.in_set(GridSet::SyncTransforms),
     );
 }
 
-#[derive(Component, Deref, DerefMut)]
+#[derive(Component)]
 #[require(Transform)]
 #[require(InitialFrameCoords)]
 pub struct GlobalCoords(pub IVec2);
@@ -85,27 +81,6 @@ fn set_initial_frame_coords(mut coords: Query<(&GlobalCoords, &mut InitialFrameC
     }
 }
 
-/// Note: the assumption is that
-fn clear_previous_coords_from_grid(
-    coords: Query<&InitialFrameCoords, Changed<GlobalCoords>>,
-    mut grid: ResMut<WorldGrid>,
-) {
-    for previous_coords in coords {
-        grid.map.remove(&previous_coords.0);
-    }
-}
-
-fn add_new_coords_to_grid(
-    coords: Query<(Entity, &GlobalCoords), Changed<GlobalCoords>>,
-    mut grid: ResMut<WorldGrid>,
-) {
-    for (entity, coords) in coords {
-        if grid.map.insert(coords.0, entity).is_some() {
-            panic!("Added new coords, but something was already there!");
-        }
-    }
-}
-
 fn sync_transform_with_coords(
     mut coords: Query<(&mut Transform, &GlobalCoords), Changed<GlobalCoords>>,
 ) {
@@ -130,18 +105,55 @@ enum Direction {
     Right,
 }
 
-impl Direction {
-    fn random_order() -> [Self; 4] {
-        let mut rng = rand::rng();
+const DIRECTIONS: [Direction; 4] = Direction::all();
 
-        todo!()
+impl Direction {
+    pub const fn all() -> [Self; 4] {
+        [Self::Up, Self::Down, Self::Left, Self::Right]
+    }
+
+    pub fn random_order() -> [Self; 4] {
+        let mut rng = rand::rng();
+        let mut directions = Direction::all();
+        directions.shuffle(&mut rng);
+        directions
     }
 }
 
 impl<'w, 's> EnvironmentQuery<'w, 's> {
+    /// Returns a free space if found. NOTE: does not guarantee that the caller will get this free space.
     pub fn get_free_space(&self, coords: &GlobalCoords) -> Option<GlobalCoords> {
         //let rand = rand::r
+        let mut directions = DIRECTIONS;
+        directions.shuffle(&mut rand::rng());
+
+        for direction in DIRECTIONS.choose_multiple(&mut rand::rng(), 4) {
+            let location = coords.translate(*direction);
+            let res = self.grid.map.get(&location.0);
+            //todo
+        }
 
         todo!()
     }
 }
+
+// /// Note: the assumption is that
+// fn clear_previous_coords_from_grid(
+//     coords: Query<&InitialFrameCoords, Changed<GlobalCoords>>,
+//     mut grid: ResMut<WorldGrid>,
+// ) {
+//     for previous_coords in coords {
+//         grid.map.remove(&previous_coords.0);
+//     }
+// }
+
+// fn add_new_coords_to_grid(
+//     coords: Query<(Entity, &GlobalCoords), Changed<GlobalCoords>>,
+//     mut grid: ResMut<WorldGrid>,
+// ) {
+//     for (entity, coords) in coords {
+//         if grid.map.insert(coords.0, entity).is_some() {
+//             panic!("Added new coords, but something was already there!");
+//         }
+//     }
+// }
