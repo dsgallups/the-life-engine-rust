@@ -5,9 +5,20 @@ This plugin will manage:
 3. a query parameter to search for entities
 "#]
 
+mod produce;
+pub use produce::*;
+
+mod grid;
+
+mod coords;
+pub use coords::*;
+
+mod query;
+pub use query::*;
+
 use std::marker::PhantomData;
 
-use bevy::{ecs::system::SystemParam, platform::collections::HashMap, prelude::*};
+use bevy::{ecs::system::SystemParam, prelude::*};
 use rand::seq::{IndexedRandom, SliceRandom};
 
 use crate::gameplay::{GameSet, GameState};
@@ -23,7 +34,6 @@ enum GridSet {
 
 pub(super) fn plugin(app: &mut App) {
     //app.configure_sets()
-    app.init_resource::<WorldGrid>();
 
     app.configure_sets(
         Update,
@@ -36,105 +46,7 @@ pub(super) fn plugin(app: &mut App) {
             .chain(),
     );
 
-    app.add_systems(
-        PreUpdate,
-        set_initial_frame_coords.run_if(in_state(GameState::Playing)),
-    )
-    .add_systems(
-        Update,
-        sync_transform_with_coords.in_set(GridSet::SyncTransforms),
-    );
-}
-
-#[derive(Component)]
-#[require(Transform)]
-#[require(InitialFrameCoords)]
-pub struct GlobalCoords(pub IVec2);
-
-impl GlobalCoords {
-    fn as_translation(&self) -> Vec3 {
-        Vec3::new(self.0.x as f32, self.0.y as f32, 0.)
-    }
-    fn translate(&self, direction: Direction) -> GlobalCoords {
-        match direction {
-            Direction::Up => Self(self.0 + IVec2::Y),
-            Direction::Down => Self(self.0 - IVec2::Y),
-            Direction::Left => Self(self.0 - IVec2::X),
-            Direction::Right => Self(self.0 + IVec2::X),
-        }
-    }
-}
-
-#[derive(Resource, Default)]
-pub struct WorldGrid {
-    map: HashMap<IVec2, Entity>,
-}
-
-#[derive(Component, Deref, DerefMut, Default)]
-struct InitialFrameCoords(IVec2);
-
-fn set_initial_frame_coords(mut coords: Query<(&GlobalCoords, &mut InitialFrameCoords)>) {
-    for (cur, mut prev) in &mut coords {
-        prev.0 = cur.0
-
-        //todo
-    }
-}
-
-fn sync_transform_with_coords(
-    mut coords: Query<(&mut Transform, &GlobalCoords), Changed<GlobalCoords>>,
-) {
-    for (mut transform, coords) in &mut coords {
-        *transform = transform.with_translation(coords.as_translation());
-        //todo
-    }
-}
-
-#[derive(SystemParam)]
-pub struct EnvironmentQuery<'w, 's> {
-    //todo
-    grid: Res<'w, WorldGrid>,
-    _phantom: PhantomData<&'s ()>,
-}
-
-#[derive(Clone, Copy, Debug)]
-enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-
-const DIRECTIONS: [Direction; 4] = Direction::all();
-
-impl Direction {
-    pub const fn all() -> [Self; 4] {
-        [Self::Up, Self::Down, Self::Left, Self::Right]
-    }
-
-    pub fn random_order() -> [Self; 4] {
-        let mut rng = rand::rng();
-        let mut directions = Direction::all();
-        directions.shuffle(&mut rng);
-        directions
-    }
-}
-
-impl<'w, 's> EnvironmentQuery<'w, 's> {
-    /// Returns a free space if found. NOTE: does not guarantee that the caller will get this free space.
-    pub fn get_free_space(&self, coords: &GlobalCoords) -> Option<GlobalCoords> {
-        //let rand = rand::r
-        let mut directions = DIRECTIONS;
-        directions.shuffle(&mut rand::rng());
-
-        for direction in DIRECTIONS.choose_multiple(&mut rand::rng(), 4) {
-            let location = coords.translate(*direction);
-            let res = self.grid.map.get(&location.0);
-            //todo
-        }
-
-        todo!()
-    }
+    app.add_plugins((grid::plugin, produce::plugin, coords::plugin, query::plugin));
 }
 
 // /// Note: the assumption is that
