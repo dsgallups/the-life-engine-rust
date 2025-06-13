@@ -5,7 +5,10 @@ This plugin will manage:
 3. a query parameter to search for entities
 "#]
 
-use bevy::{platform::collections::HashMap, prelude::*};
+use std::marker::PhantomData;
+
+use bevy::{ecs::system::SystemParam, platform::collections::HashMap, prelude::*};
+use rand::Rng;
 
 use crate::gameplay::{GameSet, GameState};
 
@@ -56,6 +59,14 @@ impl GlobalCoords {
     fn as_translation(&self) -> Vec3 {
         Vec3::new(self.0.x as f32, self.0.y as f32, 0.)
     }
+    fn translate(&self, direction: Direction) -> GlobalCoords {
+        match direction {
+            Direction::Up => Self(self.0 + IVec2::Y),
+            Direction::Down => Self(self.0 - IVec2::Y),
+            Direction::Left => Self(self.0 - IVec2::X),
+            Direction::Right => Self(self.0 + IVec2::X),
+        }
+    }
 }
 
 #[derive(Resource, Default)]
@@ -104,6 +115,33 @@ fn sync_transform_with_coords(
     }
 }
 
-pub struct WorldSpatialQuery {
+#[derive(SystemParam)]
+pub struct EnvironmentQuery<'w, 's> {
     //todo
+    grid: Res<'w, WorldGrid>,
+    _phantom: PhantomData<&'s ()>,
+}
+
+#[derive(Clone, Copy, Debug)]
+enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+impl Direction {
+    fn random_order() -> [Self; 4] {
+        let mut rng = rand::rng();
+
+        todo!()
+    }
+}
+
+impl<'w, 's> EnvironmentQuery<'w, 's> {
+    pub fn get_free_space(&self, coords: &GlobalCoords) -> Option<GlobalCoords> {
+        //let rand = rand::r
+
+        todo!()
+    }
 }
