@@ -7,29 +7,49 @@ This plugin will manage:
 
 use bevy::{platform::collections::HashMap, prelude::*};
 
-use crate::gameplay::EnvironmentSet;
+use crate::gameplay::{GameSet, GameState};
+
+#[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
+enum EnvironmentSet {
+    /// PrevCoords is the location of something before the update passes start
+    SetInitialCoords,
+    UpdateGrid,
+    SyncTransforms,
+}
 
 pub(super) fn plugin(app: &mut App) {
     //app.configure_sets()
     app.init_resource::<WorldGrid>();
 
-    app.add_systems(
+    app.configure_sets(
         Update,
         (
-            update_previous_coords.in_set(EnvironmentSet::SetPrevCoords),
-            (clear_previous_coords_from_grid, add_new_coords_to_grid)
-                .in_set(EnvironmentSet::FirstGridUpdate),
-            (clear_previous_coords_from_grid, add_new_coords_to_grid)
-                .in_set(EnvironmentSet::SecondGridUpdate),
-            sync_transform_with_coords.in_set(EnvironmentSet::SyncTransforms),
-        ),
+            EnvironmentSet::SetInitialCoords,
+            EnvironmentSet::UpdateGrid,
+            EnvironmentSet::SyncTransforms,
+        )
+            .chain(),
     );
-    //todo
+
+    app.add_systems(
+        PreUpdate,
+        set_initial_frame_coords.run_if(in_state(GameState::Playing)),
+    )
+    .add_systems(
+        Update,
+        (clear_previous_coords_from_grid, add_new_coords_to_grid)
+            .chain()
+            .in_set(GameSet::ReadyGrid),
+    )
+    .add_systems(
+        Update,
+        sync_transform_with_coords.in_set(GameSet::SyncTransforms),
+    );
 }
 
 #[derive(Component, Deref, DerefMut)]
 #[require(Transform)]
-#[require(PrevGlobalCoords)]
+#[require(InitialFrameCoords)]
 pub struct GlobalCoords(pub IVec2);
 
 impl GlobalCoords {
@@ -44,9 +64,9 @@ pub struct WorldGrid {
 }
 
 #[derive(Component, Deref, DerefMut, Default)]
-struct PrevGlobalCoords(IVec2);
+struct InitialFrameCoords(IVec2);
 
-fn update_previous_coords(mut coords: Query<(&GlobalCoords, &mut PrevGlobalCoords)>) {
+fn set_initial_frame_coords(mut coords: Query<(&GlobalCoords, &mut InitialFrameCoords)>) {
     for (cur, mut prev) in &mut coords {
         prev.0 = cur.0
 
@@ -56,7 +76,7 @@ fn update_previous_coords(mut coords: Query<(&GlobalCoords, &mut PrevGlobalCoord
 
 /// Note: the assumption is that
 fn clear_previous_coords_from_grid(
-    coords: Query<&PrevGlobalCoords, Changed<GlobalCoords>>,
+    coords: Query<&InitialFrameCoords, Changed<GlobalCoords>>,
     mut grid: ResMut<WorldGrid>,
 ) {
     for previous_coords in coords {

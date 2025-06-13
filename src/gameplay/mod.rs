@@ -21,27 +21,13 @@ mod tick;
 pub enum GameSet {
     /// Tick timers.
     TickTimers,
+    ReadyGrid,
     /// Record player input.
     RecordInput,
     /// Things irrelevant to the state of the game that need to happen after input is recorded and timers are ticked
     Update,
-}
 
-#[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
-pub enum CellSet {
-    /// Movement
-    Move,
-    Produce,
-    Eat,
-    Attack,
-}
-
-#[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
-pub enum EnvironmentSet {
-    /// PrevCoords is the location of something before the update passes start
-    SetPrevCoords,
-    FirstGridUpdate,
-    SecondGridUpdate,
+    /// Sync up the grid transforms that had occured in the update schedule
     SyncTransforms,
 }
 
@@ -58,66 +44,18 @@ enum GameState {
 pub(super) fn plugin(app: &mut App) {
     app.add_sub_state::<GameState>().configure_sets(
         Update,
-        (GameSet::TickTimers, GameSet::RecordInput, GameSet::Update)
+        (
+            (
+                GameSet::TickTimers,
+                GameSet::ReadyGrid,
+                GameSet::RecordInput,
+            ),
+            GameSet::Update,
+            GameSet::SyncTransforms,
+        )
             .chain()
             .run_if(in_state(GameState::Playing)),
     );
-
-    app.configure_sets(
-        Update,
-        (
-            EnvironmentSet::SetPrevCoords,
-            EnvironmentSet::FirstGridUpdate,
-            EnvironmentSet::SecondGridUpdate,
-            EnvironmentSet::SyncTransforms,
-        )
-            .chain(),
-    );
-
-    app.configure_sets(
-        Update,
-        (
-            CellSet::Move,
-            (CellSet::Eat, CellSet::Attack),
-            CellSet::Produce,
-        )
-            .chain(),
-    );
-
-    app.configure_sets(
-        Update,
-        (EnvironmentSet::SetPrevCoords, CellSet::Move).chain(),
-    )
-    .configure_sets(
-        Update,
-        (
-            CellSet::Move,
-            EnvironmentSet::FirstGridUpdate,
-            CellSet::Eat,
-            EnvironmentSet::SecondGridUpdate,
-            CellSet::Produce,
-        )
-            .chain(),
-    );
-
-    //.configure_sets(Update, (OrganSet::Move, GameSet::SyncTransforms).chain());
-    // .configure_sets(
-    //     Update,
-    //     (
-    //         GameSet::TickTimers,
-    //         (
-    //             OrganSet::Move,
-    //             (OrganSet::Eat, OrganSet::Attack),
-    //             OrganSet::Produce,
-    //         )
-    //             .run_if(game_ticked)
-    //             .chain(),
-    //         GameSet::Despawn,
-    //         GameSet::Spawn,
-    //         GameSet::SyncTransforms,
-    //     )
-    //         .chain(),
-    // );
 
     app.add_plugins((
         environment::plugin,
