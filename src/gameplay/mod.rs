@@ -52,7 +52,6 @@ pub(super) fn plugin(app: &mut App) {
         organism::plugin,
         cell::plugin,
         tick::plugin,
-        food::plugin,
     ));
     // Toggle pause on key press.
     app.add_systems(
