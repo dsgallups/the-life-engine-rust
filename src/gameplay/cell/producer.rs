@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::gameplay::{
-    cell::CellType,
+    cell::{CellType, OrganismCellType},
     environment::{EnvironmentQuery, GlobalCoords},
     tick::GameTick,
 };
@@ -15,7 +15,7 @@ pub(super) fn plugin(app: &mut App) {
 
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
-#[require(CellType = CellType::Producer)]
+#[require(CellType = CellType::Organism(OrganismCellType::Producer))]
 pub struct Producer {
     counter: u16,
 }

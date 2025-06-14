@@ -22,10 +22,10 @@ impl<'w, 's> EnvironmentQuery<'w, 's> {
     pub fn get_free_space(&self, coords: &GlobalCoords) -> Option<GlobalCoords> {
         for direction in DIRECTIONS.choose_multiple(&mut rand::rng(), 4) {
             let location = coords.directional_move(*direction);
-            let res = self.grid.get(&location);
-            //todo
+            if self.grid.get(&location.0).is_none() {
+                return Some(location);
+            };
         }
-
-        todo!()
+        None
     }
 }

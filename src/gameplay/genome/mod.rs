@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::gameplay::cell::CellType;
+use crate::gameplay::cell::OrganismCellType;
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<CellGenome>()
@@ -25,9 +25,9 @@ impl OrganismGenome {
     pub fn first_organism() -> Self {
         Self::new(
             vec![
-                CellGenome::new(CellType::Producer, IVec2::new(-1, -1)),
-                CellGenome::new(CellType::Mouth, IVec2::new(0, 0)),
-                CellGenome::new(CellType::Producer, IVec2::new(1, 1)),
+                CellGenome::new(OrganismCellType::Producer, IVec2::new(-1, -1)),
+                CellGenome::new(OrganismCellType::Mouth, IVec2::new(0, 0)),
+                CellGenome::new(OrganismCellType::Producer, IVec2::new(1, 1)),
             ],
             50.,
         )
@@ -39,18 +39,18 @@ impl OrganismGenome {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Reflect)]
 pub struct CellGenome {
-    cell_type: CellType,
+    cell_type: OrganismCellType,
     /// this is relative
     location: IVec2,
 }
 impl CellGenome {
-    pub fn new(cell_type: CellType, location: IVec2) -> Self {
+    pub fn new(cell_type: OrganismCellType, location: IVec2) -> Self {
         Self {
             cell_type,
             location,
         }
     }
-    pub fn cell_type(&self) -> CellType {
+    pub fn cell_type(&self) -> OrganismCellType {
         self.cell_type
     }
     pub fn location(&self) -> IVec2 {

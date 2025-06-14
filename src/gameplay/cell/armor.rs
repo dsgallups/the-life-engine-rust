@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::gameplay::cell::CellType;
+use crate::gameplay::cell::{CellType, OrganismCellType};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<Armor>();
@@ -8,5 +8,5 @@ pub(super) fn plugin(app: &mut App) {
 
 #[derive(Component, Reflect)]
 #[reflect(Component)]
-#[require(CellType = CellType::Armor)]
+#[require(CellType = CellType::Organism(OrganismCellType::Armor))]
 pub struct Armor;

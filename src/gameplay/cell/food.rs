@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::gameplay::{
-    cell::{CellMaterials, panic_without_global_coords},
+    cell::{CellMaterials, CellType, panic_without_global_coords},
     environment::GlobalCoords,
 };
 
@@ -22,7 +22,7 @@ fn insert_visible_food(
     materials: Res<CellMaterials>,
 ) {
     commands.entity(trigger.target()).insert(Sprite {
-        color: materials.food(),
+        color: materials.get_color(&CellType::Food),
         ..default()
     });
 }

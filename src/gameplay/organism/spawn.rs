@@ -37,22 +37,22 @@ fn spawn_organisms(
             let default_components = (Cell(entity), GlobalCoords(root_coords + local_location));
 
             match cell.cell_type() {
-                CellType::Armor => {
+                OrganismCellType::Armor => {
                     commands.spawn((Armor, default_components));
                 }
-                CellType::Eye => {
+                OrganismCellType::Eye => {
                     commands.spawn((Eye, default_components));
                 }
-                CellType::Mouth => {
+                OrganismCellType::Mouth => {
                     commands.spawn((Mouth, default_components));
                 }
-                CellType::Mover => {
+                OrganismCellType::Mover => {
                     commands.spawn((Mover, default_components));
                 }
-                CellType::Killer => {
+                OrganismCellType::Killer => {
                     commands.spawn((Killer, default_components));
                 }
-                CellType::Producer => {
+                OrganismCellType::Producer => {
                     commands.spawn((Producer::default(), default_components));
                 }
             }

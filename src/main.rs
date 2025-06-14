@@ -17,8 +17,6 @@ mod splash;
 mod theme;
 mod title;
 
-//mod old;
-
 use bevy::prelude::*;
 
 fn main() -> AppExit {

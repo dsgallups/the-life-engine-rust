@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::gameplay::cell::CellType;
+use crate::gameplay::cell::{CellType, OrganismCellType};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<Mouth>();
@@ -9,5 +9,5 @@ pub(super) fn plugin(app: &mut App) {
 
 #[derive(Component, Reflect)]
 #[reflect(Component)]
-#[require(CellType = CellType::Mouth)]
+#[require(CellType = CellType::Organism(OrganismCellType::Mouth))]
 pub struct Mouth;

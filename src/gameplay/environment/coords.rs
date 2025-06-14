@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 use rand::seq::SliceRandom;
 
-use crate::gameplay::{GameState, environment::GridSet};
+use crate::gameplay::{
+    GameState,
+    environment::{GridSet, grid::WorldGrid},
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(
@@ -64,6 +67,27 @@ fn set_initial_frame_coords(mut coords: Query<(&GlobalCoords, &mut InitialFrameC
         prev.0 = cur.0
 
         //todo
+    }
+}
+
+/// Note: the assumption is that
+fn clear_previous_coords_from_grid(
+    coords: Query<&InitialFrameCoords, Changed<GlobalCoords>>,
+    mut grid: ResMut<WorldGrid>,
+) {
+    for previous_coords in coords {
+        grid.remove(previous_coords);
+    }
+}
+
+fn add_new_coords_to_grid(
+    coords: Query<(Entity, &GlobalCoords), Changed<GlobalCoords>>,
+    mut grid: ResMut<WorldGrid>,
+) {
+    for (entity, coords) in coords {
+        if grid.insert(coords.0, entity).is_some() {
+            panic!("Added new coords, but something was already there!");
+        }
     }
 }
 

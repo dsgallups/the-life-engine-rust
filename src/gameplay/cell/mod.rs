@@ -24,7 +24,8 @@ mod producer;
 pub use producer::*;
 
 pub(super) fn plugin(app: &mut App) {
-    app.register_type::<CellType>()
+    app.register_type::<OrganismCellType>()
+        .register_type::<CellType>()
         .register_type::<CellMaterials>()
         .load_resource::<CellMaterials>()
         .register_type::<Cell>()
@@ -60,9 +61,8 @@ fn panic_without_global_coords() -> GlobalCoords {
     panic!("Cell must have global coordinates")
 }
 
-#[derive(Hash, Clone, Copy, Debug, PartialEq, Eq, Reflect, Component)]
-#[reflect(Component)]
-pub enum CellType {
+#[derive(Hash, Clone, Copy, Debug, PartialEq, Eq, Reflect)]
+pub enum OrganismCellType {
     Armor,
     Eye,
     Killer,
@@ -71,33 +71,53 @@ pub enum CellType {
     Mouth,
 }
 
+#[derive(Hash, Clone, Copy, Debug, PartialEq, Eq, Reflect, Component)]
+#[reflect(Component)]
+pub enum CellType {
+    Organism(OrganismCellType),
+    Wall,
+    Food,
+}
+
 #[derive(Resource, Asset, Reflect, Clone)]
 pub struct CellMaterials {
     materials: HashMap<CellType, Color>,
-    food: Color,
 }
 impl CellMaterials {
     pub fn get_color(&self, cell_type: &CellType) -> Color {
         *self.materials.get(cell_type).unwrap()
-    }
-    pub fn food(&self) -> Color {
-        self.food
     }
 }
 
 impl FromWorld for CellMaterials {
     fn from_world(_world: &mut World) -> Self {
         let mut map = HashMap::new();
-        map.insert(CellType::Armor, Color::linear_rgb(0.5, 0.0, 0.5));
-        map.insert(CellType::Producer, Color::linear_rgb(0., 1., 0.));
-        map.insert(CellType::Mouth, Color::linear_rgb(1.0, 0.65, 0.));
-        map.insert(CellType::Mover, Color::linear_rgb(0.49, 1.0, 0.83));
-        map.insert(CellType::Killer, Color::linear_rgb(1.0, 0.0, 0.0));
-        map.insert(CellType::Eye, Color::linear_rgb(0.98, 0.5, 0.45));
-        Self {
-            materials: map,
-            food: BLUE_500.into(),
-        }
+        map.insert(
+            CellType::Organism(OrganismCellType::Armor),
+            Color::linear_rgb(0.5, 0.0, 0.5),
+        );
+        map.insert(
+            CellType::Organism(OrganismCellType::Producer),
+            Color::linear_rgb(0., 1., 0.),
+        );
+        map.insert(
+            CellType::Organism(OrganismCellType::Mouth),
+            Color::linear_rgb(1.0, 0.65, 0.),
+        );
+        map.insert(
+            CellType::Organism(OrganismCellType::Mover),
+            Color::linear_rgb(0.49, 1.0, 0.83),
+        );
+        map.insert(
+            CellType::Organism(OrganismCellType::Killer),
+            Color::linear_rgb(1.0, 0.0, 0.0),
+        );
+        map.insert(
+            CellType::Organism(OrganismCellType::Eye),
+            Color::linear_rgb(0.98, 0.5, 0.45),
+        );
+        map.insert(CellType::Food, BLUE_500.into());
+        Self { materials: map }
     }
 }
 

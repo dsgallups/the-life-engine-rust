@@ -5,8 +5,8 @@ This plugin will manage:
 3. a query parameter to search for entities
 "#]
 
-mod produce;
-pub use produce::*;
+mod actions;
+pub use actions::*;
 
 mod grid;
 
@@ -16,12 +16,9 @@ pub use coords::*;
 mod query;
 pub use query::*;
 
-use std::marker::PhantomData;
+use bevy::prelude::*;
 
-use bevy::{ecs::system::SystemParam, prelude::*};
-use rand::seq::{IndexedRandom, SliceRandom};
-
-use crate::gameplay::{GameSet, GameState};
+use crate::gameplay::GameSet;
 
 #[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
 enum GridSet {
@@ -46,26 +43,5 @@ pub(super) fn plugin(app: &mut App) {
             .chain(),
     );
 
-    app.add_plugins((grid::plugin, produce::plugin, coords::plugin, query::plugin));
+    app.add_plugins((grid::plugin, actions::plugin, coords::plugin, query::plugin));
 }
-
-// /// Note: the assumption is that
-// fn clear_previous_coords_from_grid(
-//     coords: Query<&InitialFrameCoords, Changed<GlobalCoords>>,
-//     mut grid: ResMut<WorldGrid>,
-// ) {
-//     for previous_coords in coords {
-//         grid.map.remove(&previous_coords.0);
-//     }
-// }
-
-// fn add_new_coords_to_grid(
-//     coords: Query<(Entity, &GlobalCoords), Changed<GlobalCoords>>,
-//     mut grid: ResMut<WorldGrid>,
-// ) {
-//     for (entity, coords) in coords {
-//         if grid.map.insert(coords.0, entity).is_some() {
-//             panic!("Added new coords, but something was already there!");
-//         }
-//     }
-// }
