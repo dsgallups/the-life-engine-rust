@@ -3,6 +3,7 @@ pub use neuron_type::*;
 
 mod input;
 pub use input::*;
+use rand::Rng;
 
 use std::sync::{Arc, RwLock};
 
@@ -31,13 +32,13 @@ impl NeuronTopology {
         }
     }
 
-    pub fn hidden(id: Uuid, inputs: Vec<NeuronInput<Topology>>) -> Self {
-        let neuron_type = NeuronProps::hidden(inputs);
+    pub fn hidden(id: Uuid, inputs: Vec<NeuronInput<Topology>>, rng: &mut impl Rng) -> Self {
+        let neuron_type = NeuronProps::hidden(inputs, rng);
         Self::new(id, Some(neuron_type))
     }
 
-    pub fn output(id: Uuid, inputs: Vec<NeuronInput<Topology>>) -> Self {
-        let neuron_props = NeuronProps::output(inputs);
+    pub fn output(id: Uuid, inputs: Vec<NeuronInput<Topology>>, rng: &mut impl Rng) -> Self {
+        let neuron_props = NeuronProps::output(inputs, rng);
 
         Self::new(id, Some(neuron_props))
     }

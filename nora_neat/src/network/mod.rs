@@ -75,6 +75,7 @@ impl NetworkTopology {
                 Arc::new(RwLock::new(NeuronTopology::output(
                     Uuid::new_v4(),
                     chosen_inputs,
+                    rng,
                 )))
             })
             .collect::<Vec<_>>();
@@ -109,6 +110,7 @@ impl NetworkTopology {
                 Arc::new(RwLock::new(NeuronTopology::output(
                     Uuid::new_v4(),
                     chosen_inputs,
+                    rng,
                 )))
             })
             .collect::<Vec<_>>();
@@ -315,11 +317,8 @@ impl NetworkTopology {
                 {
                     //let cloned_ident_ref = Arc::downgrade();
 
-                    let cloned_input_topology = NeuronInput::new(
-                        Topology::new(&new_neurons[index]),
-                        og_input.weight(),
-                        og_input.exponent(),
-                    );
+                    let cloned_input_topology =
+                        NeuronInput::new(Topology::new(&new_neurons[index]), og_input.weight());
 
                     cloned_inputs.push(cloned_input_topology);
                 }
@@ -429,16 +428,14 @@ impl NetworkTopology {
                     let new_hidden_node = Arc::new(RwLock::new(NeuronTopology::hidden(
                         Uuid::new_v4(),
                         vec![removed_input],
+                        rng,
                     )));
 
                     self.push(Arc::clone(&new_hidden_node));
 
                     //add the new hidden node to the list of inputs for the neuron
-                    let new_replicant_for_neuron = NeuronInput::new(
-                        Topology::new(&new_hidden_node),
-                        Bias::rand(rng),
-                        Exponent::rand(rng),
-                    );
+                    let new_replicant_for_neuron =
+                        NeuronInput::new(Topology::new(&new_hidden_node), Bias::rand(rng));
 
                     let mut neuron_to_split = neuron_to_split.write().unwrap();
 
@@ -459,11 +456,7 @@ impl NetworkTopology {
                     }
 
                     if let Some(props) = output_neuron.write().unwrap().props_mut() {
-                        let input = NeuronInput::new(
-                            Topology::new(input_neuron),
-                            Bias::rand(rng),
-                            Exponent::rand(rng),
-                        );
+                        let input = NeuronInput::new(Topology::new(input_neuron), Bias::rand(rng));
                         props.add_input(input);
                     }
                 }
@@ -602,27 +595,31 @@ pub struct TopologyInfo {
 
 #[test]
 fn make_simple_network() {
+    let mut rng = <rand::rngs::StdRng as rand::SeedableRng>::seed_from_u64(30);
     let input = arc(NeuronTopology::input(Uuid::new_v4()));
 
     let hidden_1 = arc(NeuronTopology::hidden(
         Uuid::new_v4(),
         vec![
-            NeuronInput::downgrade(&input, 3., 1),
-            NeuronInput::downgrade(&input, 1., 2),
+            NeuronInput::downgrade(&input, 3.),
+            NeuronInput::downgrade(&input, 1.),
         ],
+        &mut rng,
     ));
 
     let hidden_2 = arc(NeuronTopology::hidden(
         Uuid::new_v4(),
-        vec![NeuronInput::downgrade(&input, 1., 2)],
+        vec![NeuronInput::downgrade(&input, 1.)],
+        &mut rng,
     ));
 
     let output = arc(NeuronTopology::output(
         Uuid::new_v4(),
         vec![
-            NeuronInput::downgrade(&hidden_1, 1., 1),
-            NeuronInput::downgrade(&hidden_2, 1., 1),
+            NeuronInput::downgrade(&hidden_1, 1.),
+            NeuronInput::downgrade(&hidden_2, 1.),
         ],
+        &mut rng,
     ));
 
     let topology = NetworkTopology::from_raw_parts(

@@ -51,17 +51,39 @@ pub enum PropsType {
 pub struct NeuronProps<I> {
     pub(crate) props_type: PropsType,
     pub(crate) inputs: Vec<NeuronInput<I>>,
+    bias: f32,
+    activation: fn(f32) -> f32,
 }
 
 impl<I> NeuronProps<I> {
-    pub fn new(props_type: PropsType, inputs: Vec<NeuronInput<I>>) -> Self {
-        Self { props_type, inputs }
+    pub fn new(
+        props_type: PropsType,
+        inputs: Vec<NeuronInput<I>>,
+        bias: f32,
+        activation: fn(f32) -> f32,
+    ) -> Self {
+        Self {
+            props_type,
+            inputs,
+            bias,
+            activation,
+        }
     }
-    pub fn hidden(inputs: Vec<NeuronInput<I>>) -> Self {
-        Self::new(PropsType::Hidden, inputs)
+    pub fn hidden(inputs: Vec<NeuronInput<I>>, rng: &mut impl Rng) -> Self {
+        Self::new(
+            PropsType::Hidden,
+            inputs,
+            rng.random(),
+            Activation::rand(rng),
+        )
     }
-    pub fn output(inputs: Vec<NeuronInput<I>>) -> Self {
-        Self::new(PropsType::Output, inputs)
+    pub fn output(inputs: Vec<NeuronInput<I>>, rng: &mut impl Rng) -> Self {
+        Self::new(
+            PropsType::Output,
+            inputs,
+            rng.random(),
+            Activation::rand(rng),
+        )
     }
 
     pub fn num_inputs(&self) -> usize {
@@ -100,6 +122,8 @@ impl NeuronProps<Topology> {
         Self {
             props_type: self.props_type,
             inputs: Vec::with_capacity(self.inputs.len()),
+            activation: self.activation,
+            bias: self.bias,
         }
     }
 

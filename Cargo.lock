@@ -5502,6 +5502,7 @@ dependencies = [
  "pretty_assertions",
  "rand 0.9.2",
  "rayon",
+ "strum 0.27.2",
  "tracing",
  "tracing-subscriber",
  "uuid",
