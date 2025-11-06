@@ -1,21 +1,12 @@
 //! Development tools for the game. This plugin is only enabled in dev builds.
 
-use bevy::{dev_tools::states::log_transitions, prelude::*};
+use bevy::prelude::*;
 
-use crate::{game::GameMode, menus::Menu, Screen};
-
-mod autoselect_port;
 mod debug;
 mod inspector;
-mod skip;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_plugins((
-        inspector::gadget,
-        debug::plugin,
-        skip::plugin,
-        autoselect_port::plugin,
-    ));
+    app.add_plugins((inspector::gadget, debug::plugin));
     // Log `Screen` state transitions.
     // app.add_systems(
     //     Update,

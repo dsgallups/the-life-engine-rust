@@ -1,12 +1,14 @@
 //! Toggles for the different debug UIs that our plugins provide.
 
-use bevy::camera::visibility::RenderLayers;
 use bevy::dev_tools::fps_overlay::FrameTimeGraphConfig;
 use bevy::ui::Val::*;
 use bevy::{
     dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin},
     prelude::*,
 };
+
+use crate::settings::Keybinds;
+use crate::widgets;
 
 #[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum DebugSet {
@@ -16,38 +18,6 @@ enum DebugSet {
 
 pub(super) fn plugin(app: &mut App) {
     app.init_resource::<DebugState>();
-
-    app.add_plugins((
-        PhysicsDebugPlugin,
-        PhysicsDiagnosticsPlugin,
-        PhysicsDiagnosticsUiPlugin,
-    ));
-
-    app.insert_resource(PhysicsDiagnosticsUiSettings {
-        enabled: false,
-        ..default()
-    });
-
-    app.insert_gizmo_config(
-        PhysicsGizmos::default(),
-        GizmoConfig {
-            enabled: false,
-            render_layers: RenderLayers::from(RenderLayer::GIZMO3),
-            ..default()
-        },
-    );
-
-    app.insert_gizmo_config(
-        LightGizmoConfigGroup {
-            draw_all: true,
-            ..default()
-        },
-        GizmoConfig {
-            enabled: false,
-            render_layers: RenderLayers::from(RenderLayer::GIZMO3),
-            ..default()
-        },
-    );
 
     app.add_plugins(FpsOverlayPlugin {
         config: FpsOverlayConfig {
@@ -73,9 +43,6 @@ pub(super) fn plugin(app: &mut App) {
         (
             toggle_fps_overlay,
             toggle_debug_ui.run_if(toggled_state(DebugState::Ui)),
-            toggle_physics_debug_ui.run_if(toggled_state(DebugState::Physics)),
-            toggle_agent_debug_ui.run_if(toggled_state(DebugState::Agent)),
-            toggle_lighting_debug_ui.run_if(toggled_state(DebugState::Lighting)),
         )
             .in_set(DebugSet::Update)
             .chain(),
@@ -116,9 +83,6 @@ fn update_debug_ui_text(
     text.0 = match *debug_state {
         DebugState::None => "",
         DebugState::Ui => "Ui",
-        DebugState::Physics => "Physics",
-        DebugState::Lighting => "Lighting",
-        DebugState::Agent => "Nav + Agent",
     }
     .to_string();
 }
@@ -142,44 +106,15 @@ pub(super) enum DebugState {
     #[default]
     None,
     Ui,
-    Physics,
-    Agent,
-    Lighting,
 }
 
 impl DebugState {
     fn next(&self) -> Self {
         match self {
             Self::None => Self::Ui,
-            Self::Ui => Self::Physics,
-            Self::Physics => Self::Agent,
-            Self::Agent => Self::Lighting,
-            Self::Lighting => Self::None,
+            Self::Ui => Self::None,
         }
     }
-}
-
-fn toggle_physics_debug_ui(
-    mut config_store: ResMut<GizmoConfigStore>,
-    mut physics_diagnostics: ResMut<PhysicsDiagnosticsUiSettings>,
-) {
-    let config = config_store.config_mut::<PhysicsGizmos>().0;
-    config.enabled = !config.enabled;
-    physics_diagnostics.enabled = !physics_diagnostics.enabled;
-}
-
-fn toggle_agent_debug_ui(
-    mut agent: ResMut<AgentGizmoConfig>,
-    mut navmesh: ResMut<NavmeshGizmoConfig>,
-) {
-    // **debug = !**debug;
-    agent.path.enabled = !agent.path.enabled;
-    navmesh.detail_navmesh.enabled = !navmesh.detail_navmesh.enabled;
-}
-
-fn toggle_lighting_debug_ui(mut config_store: ResMut<GizmoConfigStore>) {
-    let config = config_store.config_mut::<LightGizmoConfigGroup>().0;
-    config.enabled = !config.enabled;
 }
 
 pub(super) fn toggled_state(state: DebugState) -> impl SystemCondition<()> {

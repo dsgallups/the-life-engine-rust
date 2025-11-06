@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
-    //todo
+    app.add_systems(Startup, setup);
 }
 
 fn setup(mut commands: Commands) {

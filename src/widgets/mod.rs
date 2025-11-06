@@ -1,8 +1,8 @@
+#![allow(dead_code)]
+#![allow(unused)]
+
 mod legacy;
 pub use legacy::*;
-
-mod game_mode_btn;
-pub use game_mode_btn::*;
 
 mod text;
 pub use text::*;

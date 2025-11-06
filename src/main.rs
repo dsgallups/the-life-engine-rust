@@ -13,7 +13,7 @@ fn main() {
 
     app.add_plugins(DefaultPlugins);
 
-    app.add_plugins((camera::plugin, settings::plugin));
+    app.add_plugins((camera::plugin, settings::plugin, utils::plugin));
 
     #[cfg(feature = "dev")]
     app.add_plugins(dev_tools::plugin);
