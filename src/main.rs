@@ -1,3 +1,13 @@
+mod camera;
+
+use bevy::prelude::*;
+
 fn main() {
-    println!("halope");
+    let mut app = App::new();
+
+    app.add_plugins(DefaultPlugins);
+
+    app.add_plugins((camera::plugin));
+
+    app.run();
 }
