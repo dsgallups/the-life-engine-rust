@@ -18,9 +18,6 @@ pub enum MutationAction {
     /// Modify the weight of an existing connection.
     /// This fine-tunes the strength of connections.
     MutateWeight,
-    /// Modify the exponent of a polynomial activation.
-    /// This changes the shape of the activation function.
-    MutateExponent,
 }
 
 /// Extension trait for random number generators to generate mutation-related values.
@@ -54,8 +51,6 @@ impl<T: Rng> MutationRateExt for T {
                 return RemoveNeuron;
             } else if chances.mutate_weight() > 0.0 {
                 return MutateWeight;
-            } else {
-                return MutateExponent;
             }
         }
 
@@ -67,15 +62,8 @@ impl<T: Rng> MutationRateExt for T {
             <= chances.split_connection() + chances.add_connection() + chances.remove_connection()
         {
             RemoveNeuron
-        } else if rate
-            <= chances.split_connection()
-                + chances.add_connection()
-                + chances.remove_connection()
-                + chances.mutate_weight()
-        {
-            MutateWeight
         } else {
-            MutateExponent
+            MutateWeight
         }
     }
 }
@@ -121,8 +109,6 @@ pub struct MutationChances {
     remove_connection: f32,
     /// Relative probability of mutating a weight
     mutate_weight: f32,
-    /// Relative probability of mutating an exponent
-    mutate_exponent: f32,
 }
 
 impl MutationChances {
@@ -138,12 +124,11 @@ impl MutationChances {
     /// let chances = MutationChances::new(50);
     /// ```
     pub fn new(self_mutation_rate: u8) -> Self {
-        let value = 100. / 5.;
+        let value = 100. / 4.;
 
         Self {
             self_mutation: self_mutation_rate,
             remove_connection: value,
-            mutate_exponent: value,
             split_connection: value,
             add_connection: value,
             mutate_weight: value,
@@ -160,7 +145,6 @@ impl MutationChances {
             add_connection: 0.,
             remove_connection: 0.,
             mutate_weight: 0.,
-            mutate_exponent: 0.,
         }
     }
 
@@ -195,7 +179,6 @@ impl MutationChances {
         add_connection: f32,
         remove_connection: f32,
         mutate_weight: f32,
-        mutate_exponent: f32,
     ) -> Self {
         let mut new = Self {
             self_mutation,
@@ -203,7 +186,6 @@ impl MutationChances {
             add_connection,
             remove_connection,
             mutate_weight,
-            mutate_exponent,
         };
         new.recalculate();
         new
@@ -222,12 +204,11 @@ impl MutationChances {
         const MAX_LOOP: u8 = 5;
         let mut loop_count = 0;
         while rng.gen_rate() < self.self_mutation() && loop_count < MAX_LOOP {
-            let action = match rng.random_range(0..5) {
+            let action = match rng.random_range(0..4) {
                 0 => SplitConnection,
                 1 => AddConnection,
                 2 => RemoveNeuron,
-                3 => MutateWeight,
-                _ => MutateExponent,
+                _ => MutateWeight,
             };
 
             // Generate a random number between 1.0 and 10.0
@@ -247,9 +228,6 @@ impl MutationChances {
                 }
                 MutationAction::MutateWeight => {
                     self.adjust_mutate_weight(add_to);
-                }
-                MutationAction::MutateExponent => {
-                    self.adjust_mutate_exponent(add_to);
                 }
             }
 
@@ -310,11 +288,6 @@ impl MutationChances {
         self.mutate_weight
     }
 
-    /// Get the normalized probability of mutating an exponent (0-100).
-    pub fn mutate_exponent(&self) -> f32 {
-        self.mutate_exponent
-    }
-
     fn adjust(&mut self, cmd: impl FnOnce(&mut Self)) {
         cmd(self);
         if self.split_connection < 0. {
@@ -328,9 +301,6 @@ impl MutationChances {
         }
         if self.mutate_weight < 0. {
             self.mutate_weight = 0.;
-        }
-        if self.mutate_exponent < 0. {
-            self.mutate_exponent = 0.;
         }
 
         self.recalculate();
@@ -376,28 +346,16 @@ impl MutationChances {
         self.recalculate();
     }
 
-    fn adjust_mutate_exponent(&mut self, amt: f32) {
-        self.mutate_exponent += amt;
-
-        if self.mutate_exponent < 0. {
-            self.mutate_exponent = 0.;
-        }
-
-        self.recalculate();
-    }
-
     fn recalculate(&mut self) {
         let total = self.split_connection
             + self.add_connection
             + self.remove_connection
-            + self.mutate_weight
-            + self.mutate_exponent;
+            + self.mutate_weight;
 
         self.split_connection = (self.split_connection * 100.) / total;
         self.add_connection = (self.add_connection * 100.) / total;
         self.remove_connection = (self.remove_connection * 100.) / total;
         self.mutate_weight = (self.mutate_weight * 100.) / total;
-        self.mutate_exponent = (self.mutate_exponent * 100.) / total;
     }
 
     /// Generate a sequence of mutation actions based on the configured probabilities.
@@ -423,7 +381,6 @@ impl MutationChances {
                 MutationAction::AddConnection => replica.adjust(|s| s.add_connection /= 2.),
                 MutationAction::RemoveNeuron => replica.adjust(|s| s.remove_connection /= 2.),
                 MutationAction::MutateWeight => replica.adjust(|s| s.mutate_weight /= 2.),
-                MutationAction::MutateExponent => replica.adjust(|s| s.mutate_exponent /= 2.),
             }
 
             actions.push(rng.gen_mutation_action(self));
@@ -449,8 +406,7 @@ pub fn adjust_mutation_chances() {
     let total = chances.split_connection
         + chances.add_connection
         + chances.remove_connection
-        + chances.mutate_weight
-        + chances.mutate_exponent;
+        + chances.mutate_weight;
     let diff = (100. - total).abs();
 
     assert!(diff <= 0.0001);
@@ -470,8 +426,7 @@ pub fn check_mutate() {
         let total = chances.split_connection
             + chances.add_connection
             + chances.remove_connection
-            + chances.mutate_weight
-            + chances.mutate_exponent;
+            + chances.mutate_weight;
 
         let diff = (100. - total).abs();
 
@@ -527,14 +482,12 @@ mod tests {
         assert!((chances.add_connection() - 20.0).abs() < 0.001);
         assert!((chances.remove_connection() - 20.0).abs() < 0.001);
         assert!((chances.mutate_weight() - 20.0).abs() < 0.001);
-        assert!((chances.mutate_exponent() - 20.0).abs() < 0.001);
 
         // Total should be 100%
         let total = chances.split_connection()
             + chances.add_connection()
             + chances.remove_connection()
-            + chances.mutate_weight()
-            + chances.mutate_exponent();
+            + chances.mutate_weight();
         assert!((total - 100.0).abs() < 0.001);
     }
 
@@ -547,12 +500,11 @@ mod tests {
         assert_eq!(chances.add_connection(), 0.0);
         assert_eq!(chances.remove_connection(), 0.0);
         assert_eq!(chances.mutate_weight(), 0.0);
-        assert_eq!(chances.mutate_exponent(), 0.0);
     }
 
     #[test]
     fn test_mutation_chances_new_from_raw() {
-        let chances = MutationChances::new_from_raw(80, 40.0, 30.0, 10.0, 15.0, 5.0);
+        let chances = MutationChances::new_from_raw(80, 40.0, 30.0, 10.0, 15.0);
 
         assert_eq!(chances.self_mutation(), 80);
 
@@ -560,21 +512,19 @@ mod tests {
         let total = chances.split_connection()
             + chances.add_connection()
             + chances.remove_connection()
-            + chances.mutate_weight()
-            + chances.mutate_exponent();
+            + chances.mutate_weight();
         assert!((total - 100.0).abs() < 0.001);
 
         // Check relative proportions
         assert!(chances.split_connection() > chances.add_connection());
         assert!(chances.add_connection() > chances.mutate_weight());
         assert!(chances.mutate_weight() > chances.remove_connection());
-        assert!(chances.remove_connection() > chances.mutate_exponent());
     }
 
     #[test]
     fn test_mutation_chances_new_from_raw_zero_total() {
         // Test edge case where all values are zero
-        let chances = MutationChances::new_from_raw(50, 0.0, 0.0, 0.0, 0.0, 0.0);
+        let chances = MutationChances::new_from_raw(50, 0.0, 0.0, 0.0, 0.0);
 
         // Should handle division by zero gracefully
         assert_eq!(chances.self_mutation(), 50);
@@ -610,8 +560,7 @@ mod tests {
         let total = chances.split_connection()
             + chances.add_connection()
             + chances.remove_connection()
-            + chances.mutate_weight()
-            + chances.mutate_exponent();
+            + chances.mutate_weight();
         assert!((total - 100.0).abs() < 0.001);
 
         // Test negative adjustments
@@ -619,8 +568,7 @@ mod tests {
         let total = chances.split_connection()
             + chances.add_connection()
             + chances.remove_connection()
-            + chances.mutate_weight()
-            + chances.mutate_exponent();
+            + chances.mutate_weight();
         assert!((total - 100.0).abs() < 0.001);
 
         // Test adjustment below zero
@@ -629,8 +577,7 @@ mod tests {
         let total = chances.split_connection()
             + chances.add_connection()
             + chances.remove_connection()
-            + chances.mutate_weight()
-            + chances.mutate_exponent();
+            + chances.mutate_weight();
         assert!((total - 100.0).abs() < 0.001);
     }
 
@@ -679,7 +626,6 @@ mod tests {
             30.0, // Medium add chance
             5.0,  // Low remove chance
             10.0, // Low weight chance
-            5.0,  // Low exponent chance
         );
 
         // Collect many mutations
@@ -730,17 +676,17 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(7777);
 
         // Test extreme cases - only split connection
-        let chances = MutationChances::new_from_raw(100, 100.0, 0.0, 0.0, 0.0, 0.0);
+        let chances = MutationChances::new_from_raw(100, 100.0, 0.0, 0.0, 0.0);
         for _ in 0..10 {
             let action = rng.gen_mutation_action(&chances);
             assert!(matches!(action, MutationAction::SplitConnection));
         }
 
         // Test extreme cases - only mutate exponent
-        let chances = MutationChances::new_from_raw(100, 0.0, 0.0, 0.0, 0.0, 100.0);
+        let chances = MutationChances::new_from_raw(100, 100.0, 0.0, 0.0, 0.0);
         for _ in 0..10 {
             let action = rng.gen_mutation_action(&chances);
-            assert!(matches!(action, MutationAction::MutateExponent));
+            assert!(matches!(action, MutationAction::SplitConnection));
         }
     }
 
@@ -757,7 +703,6 @@ mod tests {
             || chances.add_connection() != original.add_connection()
             || chances.remove_connection() != original.remove_connection()
             || chances.mutate_weight() != original.mutate_weight()
-            || chances.mutate_exponent() != original.mutate_exponent()
             || chances.self_mutation() != original.self_mutation();
 
         assert!(changed, "High self-mutation should cause changes");
@@ -766,14 +711,13 @@ mod tests {
         let total = chances.split_connection()
             + chances.add_connection()
             + chances.remove_connection()
-            + chances.mutate_weight()
-            + chances.mutate_exponent();
+            + chances.mutate_weight();
         assert!((total - 100.0).abs() < 0.001);
     }
 
     #[test]
     fn test_copy_and_equality() {
-        let chances1 = MutationChances::new_from_raw(75, 30.0, 25.0, 20.0, 15.0, 10.0);
+        let chances1 = MutationChances::new_from_raw(75, 30.0, 25.0, 20.0, 15.0);
         let chances2 = chances1; // Copy
 
         assert_eq!(chances1, chances2);
@@ -782,6 +726,5 @@ mod tests {
         assert_eq!(chances1.add_connection(), chances2.add_connection());
         assert_eq!(chances1.remove_connection(), chances2.remove_connection());
         assert_eq!(chances1.mutate_weight(), chances2.mutate_weight());
-        assert_eq!(chances1.mutate_exponent(), chances2.mutate_exponent());
     }
 }
