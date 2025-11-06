@@ -5,13 +5,18 @@ use crate::game::{
         CellOf,
     },
 };
-use bevy::{color::palettes::tailwind::PINK_400, prelude::*};
+use bevy::{
+    color::palettes::tailwind::{PINK_400, RED_600, YELLOW_400},
+    prelude::*,
+};
 
 #[derive(Resource)]
 struct CellAssets {
     cell: Handle<Mesh>,
     white: Handle<ColorMaterial>,
     pink: Handle<ColorMaterial>,
+    red: Handle<ColorMaterial>,
+    yellow: Handle<ColorMaterial>,
 }
 
 impl FromWorld for CellAssets {
@@ -24,6 +29,8 @@ impl FromWorld for CellAssets {
             cell,
             white: materials.add(Color::WHITE),
             pink: materials.add(Color::from(PINK_400)),
+            red: materials.add(Color::from(RED_600)),
+            yellow: materials.add(Color::from(YELLOW_400)),
         }
     }
 }
@@ -67,25 +74,24 @@ fn spawn_genomes(
         ));
 
         for cell in msg.genome.cells() {
+            let location = cell.location();
             let mut commands = commands.spawn((
                 ChildOf(organism),
                 CellOf(organism),
+                Transform::from_xyz(location.x as f32, location.y as f32, 0.),
                 Mesh2d(assets.cell.clone()),
-                MeshMaterial2d(assets.white.clone()),
             ));
             match cell.kind() {
                 CellType::Collagen => {
-                    commands.insert(Collagen::default());
+                    commands.insert((Collagen::default(), MeshMaterial2d(assets.white.clone())));
                 }
                 CellType::Data => {
-                    commands.insert(DataCell::default());
+                    commands.insert((DataCell::default(), MeshMaterial2d(assets.yellow.clone())));
                 }
                 CellType::Launcher => {
-                    commands.insert(Launcher::default());
+                    commands.insert((Launcher::default(), MeshMaterial2d(assets.red.clone())));
                 }
             }
         }
-
-        todo!()
     }
 }

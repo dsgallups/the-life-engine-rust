@@ -12,6 +12,9 @@ impl CellGenome {
     pub fn kind(&self) -> &CellType {
         &self.kind
     }
+    pub fn location(&self) -> IVec2 {
+        self.location
+    }
 }
 
 macro_rules! cellg {
@@ -39,8 +42,9 @@ impl Genome {
     pub fn sandbox() -> Self {
         let cells = vec![
             cellg!(Launcher at 1, 0),
-            cellg!(Collagen at 1, 0),
-            cellg!(Launcher at -1, 0),
+            cellg!(Launcher at 0, 1),
+            cellg!(Collagen at -1, 0),
+            cellg!(Data at 0, -1),
         ];
 
         Self { cells }
