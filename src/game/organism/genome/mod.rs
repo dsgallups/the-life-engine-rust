@@ -1,9 +1,9 @@
+mod plugin;
+pub use plugin::*;
+
 use bevy::prelude::*;
 
-pub(super) fn plugin(app: &mut App) {
-    //todo
-}
-
+#[derive(Clone)]
 pub struct CellGenome {
     kind: CellType,
     location: IVec2,
@@ -17,13 +17,14 @@ macro_rules! cellg {
     };
 }
 
+#[derive(Clone)]
 pub enum CellType {
-    Defender,
     Launcher,
+    Collagen,
     Data,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone, Component)]
 pub struct Genome {
     cells: Vec<CellGenome>,
 }
@@ -31,9 +32,9 @@ pub struct Genome {
 impl Genome {
     pub fn sandbox() -> Self {
         let cells = vec![
-            cellg!(Defender at 1, 0),
-            cellg!(Defender at 1, 0),
-            cellg!(Defender at -1, 0),
+            cellg!(Launcher at 1, 0),
+            cellg!(Collagen at 1, 0),
+            cellg!(Launcher at -1, 0),
         ];
 
         Self { cells }
