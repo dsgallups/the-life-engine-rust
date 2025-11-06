@@ -1,6 +1,8 @@
 mod genome;
 
-use bevy::prelude::*;
+use bevy::{color::palettes::tailwind::PINK_400, prelude::*};
+
+use crate::game::cell::BrainCell;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(genome::plugin);
@@ -23,6 +25,7 @@ fn spawn_first_organism(
 ) {
     let square = meshes.add(Rectangle::default());
     let white = materials.add(Color::WHITE);
+    let pink = materials.add(Color::from(PINK_400));
 
     let organism = commands
         .spawn((InheritedVisibility::VISIBLE, Transform::default()))
@@ -37,7 +40,8 @@ fn spawn_first_organism(
 
     commands.spawn((
         Mesh2d(square.clone()),
-        MeshMaterial2d(white.clone()),
+        MeshMaterial2d(pink),
+        BrainCell::default(),
         Transform::default(),
         CellOf(organism),
     ));
