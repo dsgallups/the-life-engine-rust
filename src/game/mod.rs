@@ -1,5 +1,9 @@
+mod cell;
+mod grid;
+mod organism;
+
 use bevy::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
-    //todo
+    app.add_plugins((grid::plugin, organism::plugin, cell::plugin));
 }
