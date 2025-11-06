@@ -8,6 +8,12 @@ pub struct CellGenome {
     kind: CellType,
     location: IVec2,
 }
+impl CellGenome {
+    pub fn kind(&self) -> &CellType {
+        &self.kind
+    }
+}
+
 macro_rules! cellg {
     ($variant:ident at $x:expr, $y:expr) => {
         CellGenome {
@@ -17,7 +23,7 @@ macro_rules! cellg {
     };
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum CellType {
     Launcher,
     Collagen,
@@ -38,5 +44,8 @@ impl Genome {
         ];
 
         Self { cells }
+    }
+    pub fn cells(&self) -> impl Iterator<Item = &CellGenome> {
+        self.cells.iter()
     }
 }

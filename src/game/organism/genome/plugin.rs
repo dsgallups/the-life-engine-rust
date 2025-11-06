@@ -1,4 +1,10 @@
-use crate::game::organism::{genome::Genome, CellOf};
+use crate::game::{
+    cell::{Collagen, DataCell, Launcher},
+    organism::{
+        genome::{CellType, Genome},
+        CellOf,
+    },
+};
 use bevy::{color::palettes::tailwind::PINK_400, prelude::*};
 
 #[derive(Resource)]
@@ -60,13 +66,24 @@ fn spawn_genomes(
             MeshMaterial2d(assets.pink.clone()),
         ));
 
-        for cell in msg.genome.cells.iter() {
-            commands.spawn((
+        for cell in msg.genome.cells() {
+            let mut commands = commands.spawn((
                 ChildOf(organism),
                 CellOf(organism),
                 Mesh2d(assets.cell.clone()),
                 MeshMaterial2d(assets.white.clone()),
             ));
+            match cell.kind() {
+                CellType::Collagen => {
+                    commands.insert(Collagen::default());
+                }
+                CellType::Data => {
+                    commands.insert(DataCell::default());
+                }
+                CellType::Launcher => {
+                    commands.insert(Launcher::default());
+                }
+            }
         }
 
         todo!()
