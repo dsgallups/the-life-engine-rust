@@ -1,6 +1,6 @@
 mod genome;
 
-use bevy::{color::palettes::tailwind::BLUE_400, prelude::*};
+use bevy::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(genome::plugin);
