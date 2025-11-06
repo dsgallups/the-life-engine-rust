@@ -2,6 +2,9 @@
 mod dev_tools;
 
 mod camera;
+mod settings;
+mod utils;
+mod widgets;
 
 use bevy::prelude::*;
 
@@ -10,7 +13,7 @@ fn main() {
 
     app.add_plugins(DefaultPlugins);
 
-    app.add_plugins((camera::plugin));
+    app.add_plugins((camera::plugin, settings::plugin));
 
     #[cfg(feature = "dev")]
     app.add_plugins(dev_tools::plugin);

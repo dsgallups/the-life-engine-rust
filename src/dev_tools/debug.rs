@@ -1,12 +1,5 @@
 //! Toggles for the different debug UIs that our plugins provide.
 
-use crate::camera::RenderLayer;
-use crate::settings::Keybinds;
-use crate::widgets;
-use avian3d::prelude::{
-    PhysicsDebugPlugin, PhysicsDiagnosticsPlugin, PhysicsDiagnosticsUiPlugin,
-    PhysicsDiagnosticsUiSettings, PhysicsGizmos,
-};
 use bevy::camera::visibility::RenderLayers;
 use bevy::dev_tools::fps_overlay::FrameTimeGraphConfig;
 use bevy::ui::Val::*;
@@ -14,9 +7,6 @@ use bevy::{
     dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin},
     prelude::*,
 };
-use bevy_reagent::gizmo::AgentGizmoConfig;
-//use bevy_landmass::debug::{EnableLandmassDebug, Landmass3dDebugPlugin, LandmassGizmos};
-use bevy_rerecast::debug::NavmeshGizmoConfig;
 
 #[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum DebugSet {
@@ -69,41 +59,6 @@ pub(super) fn plugin(app: &mut App) {
             ..default()
         },
     });
-    app.insert_resource(NavmeshGizmoConfig {
-        polygon_navmesh: GizmoConfig {
-            enabled: false,
-            ..default()
-        },
-        detail_navmesh: GizmoConfig {
-            enabled: false,
-            ..default()
-        },
-    });
-    app.insert_resource(AgentGizmoConfig {
-        path: GizmoConfig {
-            enabled: false,
-            ..default()
-        },
-    });
-
-    // app.add_plugins(Landmass3dDebugPlugin {
-    //     draw_on_start: false,
-    //     ..default()
-    // });
-
-    // app.insert_gizmo_config(
-    //     LandmassGizmos {
-    //         boundary_edge: None,
-    //         connectivity_edge: None,
-    //         ..default()
-    //     },
-    //     GizmoConfig {
-    //         enabled: true,
-    //         depth_bias: -0.03,
-    //         render_layers: RenderLayers::from(RenderLayer::GIZMO3),
-    //         ..default()
-    //     },
-    // );
 
     app.configure_sets(Update, (DebugSet::RecordInput, DebugSet::Update).chain());
 
