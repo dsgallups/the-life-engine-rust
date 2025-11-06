@@ -27,7 +27,7 @@ cosmic-text = "0.14"
 # dev
 bevy-inspector-egui = {version = "0.35", optional = true }
 bevy_egui = { version = "0.38", features = ["bevy_ui"], optional = true }
-
+neat_brain = {path = "neat_brain"}
 
 
 [profile.dev]
@@ -58,3 +58,9 @@ type_complexity = "allow"
 # Make sure macros use their standard braces, such as `[]` for `bevy_ecs::children!`.
 nonstandard_macro_braces = "warn"
 double-parens = "allow"
+
+[workspace]
+members = ["neat_brain"]
+
+[workspace.dependencies]
+rand = "0.9.2"
