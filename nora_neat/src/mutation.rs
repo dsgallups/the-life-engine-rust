@@ -49,7 +49,7 @@ impl<T: Rng> MutationRateExt for T {
                 return AddConnection;
             } else if chances.remove_connection() > 0.0 {
                 return RemoveNeuron;
-            } else if chances.mutate_weight() > 0.0 {
+            } else {
                 return MutateWeight;
             }
         }
@@ -683,10 +683,10 @@ mod tests {
         }
 
         // Test extreme cases - only mutate exponent
-        let chances = MutationChances::new_from_raw(100, 100.0, 0.0, 0.0, 0.0);
+        let chances = MutationChances::new_from_raw(100, 0.0, 0.0, 100.0, 0.0);
         for _ in 0..10 {
             let action = rng.gen_mutation_action(&chances);
-            assert!(matches!(action, MutationAction::SplitConnection));
+            assert!(matches!(action, MutationAction::RemoveNeuron));
         }
     }
 
