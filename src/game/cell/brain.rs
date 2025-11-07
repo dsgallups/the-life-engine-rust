@@ -20,15 +20,25 @@ impl BrainCell {
     }
 }
 
+#[derive(Component)]
+pub struct ActiveCell;
+
 fn on_click_brain_cell(
     ev: On<Pointer<Click>>,
     mut commands: Commands,
     brain_cells: Query<&BrainCell>,
+    active_cells: Query<Entity, With<ActiveCell>>,
 ) {
-    let Ok(brain_cell) = brain_cells.get(ev.entity) else {
+    let entity = ev.entity;
+    let Ok(brain_cell) = brain_cells.get(entity) else {
         info!("No brain cell!");
         return;
     };
+    for active_cell in active_cells {
+        commands.entity(active_cell).remove::<ActiveCell>();
+    }
+
+    commands.entity(entity).insert(ActiveCell);
 
     info!("click!");
 }

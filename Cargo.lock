@@ -3347,6 +3347,7 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_egui",
  "bevy_ui_text_input",
+ "bitflags 2.10.0",
  "cosmic-text",
  "nora_neat",
  "rand",

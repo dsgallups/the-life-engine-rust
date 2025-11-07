@@ -1,4 +1,8 @@
+mod render_layers;
+pub use render_layers::*;
+
 use bevy::{
+    camera::visibility::RenderLayers,
     input::mouse::{AccumulatedMouseScroll, MouseScrollUnit},
     prelude::*,
 };
@@ -21,7 +25,19 @@ fn setup_cameras(mut commands: Commands) {
         MeshPickingCamera,
         Transform::from_scale(Vec3::splat(0.05)),
         Camera {
+            order: 0,
             clear_color: ClearColorConfig::Custom(Color::BLACK),
+            ..default()
+        },
+        RenderLayers::from(RenderLayer::DEFAULT | RenderLayer::GIZMO),
+    ));
+
+    commands.spawn((
+        Camera2d,
+        UiPickingCamera,
+        IsDefaultUiCamera,
+        Camera {
+            order: 1,
             ..default()
         },
     ));
