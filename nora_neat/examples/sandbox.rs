@@ -1,4 +1,4 @@
-use nora_neat::{naive_net::network::SimpleNetwork, prelude::*};
+use nora_neat::{naive_net::network::NaiveNetwork, prelude::*};
 use rand::{SeedableRng, rngs::StdRng};
 
 fn main() {
@@ -6,7 +6,7 @@ fn main() {
     let mut topology = NetworkTopology::new(2, 2, MutationChances::new(8), &mut rng);
 
     loop {
-        let net = SimpleNetwork::from_topology(&topology);
+        let net = NaiveNetwork::from_topology(&topology);
         let output = net.predict(&[1.0, 1.0]).collect::<Vec<_>>();
         println!("outputs: {output:?}");
         topology = topology.replicate(&mut rng);

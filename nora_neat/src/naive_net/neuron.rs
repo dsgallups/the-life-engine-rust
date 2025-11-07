@@ -4,14 +4,14 @@ use crate::{naive_net::neuron_type::Active, prelude::*};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator as _, ParallelIterator as _};
 use uuid::Uuid;
 
-pub struct SimpleNeuron {
+pub struct NaiveNeuron {
     id: Uuid,
     props: Option<NeuronProps<Active>>,
     /// some working value, returned by the result of the activation value.
     activated_value: Option<f32>,
 }
 
-impl SimpleNeuron {
+impl NaiveNeuron {
     pub fn new(id: Uuid, props: Option<NeuronProps<Active>>) -> Self {
         Self {
             id,
@@ -101,7 +101,7 @@ impl SimpleNeuron {
     }
 }
 
-pub fn to_neuron(topology: &NeuronTopology, neurons: &mut Vec<Arc<RwLock<SimpleNeuron>>>) {
+pub fn to_neuron(topology: &NeuronTopology, neurons: &mut Vec<Arc<RwLock<NaiveNeuron>>>) {
     for neuron in neurons.iter() {
         if neuron.read().unwrap().id() == topology.id() {
             return;
@@ -116,7 +116,7 @@ pub fn to_neuron(topology: &NeuronTopology, neurons: &mut Vec<Arc<RwLock<SimpleN
                 if let Some(topology_input_neuron) = topology_input.neuron() {
                     {
                         let read_lock = topology_input_neuron.read().unwrap();
-                        to_neuron(&*read_lock, neurons);
+                        to_neuron(&read_lock, neurons);
                     }
 
                     let neuron_in_array = neurons
@@ -143,7 +143,7 @@ pub fn to_neuron(topology: &NeuronTopology, neurons: &mut Vec<Arc<RwLock<SimpleN
         None => None,
     };
 
-    let neuron = Arc::new(RwLock::new(SimpleNeuron::new(
+    let neuron = Arc::new(RwLock::new(NaiveNeuron::new(
         topology.id(),
         new_neuron_props,
     )));

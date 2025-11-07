@@ -3,20 +3,20 @@ use std::sync::{Arc, RwLock};
 use rayon::iter::{IndexedParallelIterator as _, IntoParallelRefIterator, ParallelIterator as _};
 
 use crate::{
+    naive_net::neuron::{NaiveNeuron, to_neuron},
     prelude::*,
-    naive_net::neuron::{SimpleNeuron, to_neuron},
 };
 
-pub struct SimpleNetwork {
+pub struct NaiveNetwork {
     // contains all neurons
-    neurons: Vec<Arc<RwLock<SimpleNeuron>>>,
+    neurons: Vec<Arc<RwLock<NaiveNeuron>>>,
     // contains the input neurons. cloned arc of neurons in neurons
-    input_layer: Vec<Arc<RwLock<SimpleNeuron>>>,
+    input_layer: Vec<Arc<RwLock<NaiveNeuron>>>,
     // contains the output neurons. cloned arc of neurons in neurons
-    output_layer: Vec<Arc<RwLock<SimpleNeuron>>>,
+    output_layer: Vec<Arc<RwLock<NaiveNeuron>>>,
 }
 
-impl SimpleNetwork {
+impl NaiveNetwork {
     /// Perform a forward pass through the network with the given inputs.
     ///
     /// This method:
@@ -93,9 +93,9 @@ impl SimpleNetwork {
     /// let network = SimplePolyNetwork::from_raw_parts(neurons, input_layer, output_layer);
     /// ```
     pub fn from_raw_parts(
-        neurons: Vec<Arc<RwLock<SimpleNeuron>>>,
-        input_layer: Vec<Arc<RwLock<SimpleNeuron>>>,
-        output_layer: Vec<Arc<RwLock<SimpleNeuron>>>,
+        neurons: Vec<Arc<RwLock<NaiveNeuron>>>,
+        input_layer: Vec<Arc<RwLock<NaiveNeuron>>>,
+        output_layer: Vec<Arc<RwLock<NaiveNeuron>>>,
     ) -> Self {
         Self {
             neurons,
@@ -317,15 +317,15 @@ impl SimpleNetwork {
     /// let outputs: Vec<f32> = network.predict(&[1.0, 2.0, 3.0]).collect();
     /// ```
     pub fn from_topology(topology: &NetworkTopology) -> Self {
-        let mut neurons: Vec<Arc<RwLock<SimpleNeuron>>> =
+        let mut neurons: Vec<Arc<RwLock<NaiveNeuron>>> =
             Vec::with_capacity(topology.neurons().len());
-        let mut input_layer: Vec<Arc<RwLock<SimpleNeuron>>> = Vec::new();
-        let mut output_layer: Vec<Arc<RwLock<SimpleNeuron>>> = Vec::new();
+        let mut input_layer: Vec<Arc<RwLock<NaiveNeuron>>> = Vec::new();
+        let mut output_layer: Vec<Arc<RwLock<NaiveNeuron>>> = Vec::new();
 
         for neuron_replicant in topology.neurons() {
             let neuron = neuron_replicant.read().unwrap();
 
-            to_neuron(&*neuron, &mut neurons);
+            to_neuron(&neuron, &mut neurons);
             let neuron = neurons
                 .iter()
                 .find(|n| n.read().unwrap().id() == neuron.id())
@@ -341,6 +341,6 @@ impl SimpleNetwork {
             }
         }
 
-        SimpleNetwork::from_raw_parts(neurons, input_layer, output_layer)
+        NaiveNetwork::from_raw_parts(neurons, input_layer, output_layer)
     }
 }
