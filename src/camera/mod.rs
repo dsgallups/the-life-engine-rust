@@ -36,6 +36,7 @@ fn setup_cameras(mut commands: Commands) {
         Camera2d,
         UiPickingCamera,
         IsDefaultUiCamera,
+        RenderLayers::none(),
         Camera {
             order: 1,
             ..default()

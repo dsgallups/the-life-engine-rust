@@ -8,12 +8,16 @@ pub(super) fn plugin(app: &mut App) {
 pub struct UiRoot;
 
 pub fn spawn_ui(mut commands: Commands) {
-    commands.spawn((
-        UiRoot,
-        Node {
-            width: percent(100.),
-            height: percent(100.),
-            ..default()
-        },
-    ));
+    let root = commands
+        .spawn((
+            UiRoot,
+            Node {
+                width: percent(100.),
+                height: percent(100.),
+                ..default()
+            },
+        ))
+        .id();
+
+    commands.spawn((Node::default(), Text::new("YOWEUIRFWOEFJI"), ChildOf(root)));
 }
