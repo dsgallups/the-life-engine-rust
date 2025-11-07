@@ -1,12 +1,12 @@
 use crate::game::{
-    cell::{Collagen, DataCell, Launcher},
+    cell::{BrainCell, Collagen, DataCell, Eye, Launcher},
     organism::{
         genome::{CellType, Genome},
         CellOf,
     },
 };
 use bevy::{
-    color::palettes::tailwind::{PINK_400, RED_600, YELLOW_400},
+    color::palettes::tailwind::{PINK_400, RED_600, SKY_300, YELLOW_400},
     prelude::*,
 };
 
@@ -17,6 +17,7 @@ struct CellAssets {
     pink: Handle<ColorMaterial>,
     red: Handle<ColorMaterial>,
     yellow: Handle<ColorMaterial>,
+    sky: Handle<ColorMaterial>,
 }
 
 impl FromWorld for CellAssets {
@@ -31,6 +32,7 @@ impl FromWorld for CellAssets {
             pink: materials.add(Color::from(PINK_400)),
             red: materials.add(Color::from(RED_600)),
             yellow: materials.add(Color::from(YELLOW_400)),
+            sky: materials.add(Color::from(SKY_300)),
         }
     }
 }
@@ -90,6 +92,15 @@ fn spawn_genomes(
                 }
                 CellType::Launcher => {
                     commands.insert((Launcher::default(), MeshMaterial2d(assets.red.clone())));
+                }
+                CellType::Eye => {
+                    commands.insert((Eye::default(), MeshMaterial2d(assets.sky.clone())));
+                }
+                CellType::Brain(topology) => {
+                    commands.insert((
+                        BrainCell::new(topology),
+                        MeshMaterial2d(assets.pink.clone()),
+                    ));
                 }
             }
         }

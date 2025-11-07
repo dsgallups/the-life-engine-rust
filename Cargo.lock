@@ -3349,6 +3349,7 @@ dependencies = [
  "bevy_ui_text_input",
  "cosmic-text",
  "nora_neat",
+ "rand",
 ]
 
 [[package]]

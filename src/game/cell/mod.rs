@@ -10,6 +10,9 @@ pub use collagen::*;
 mod launcher;
 pub use launcher::*;
 
+mod eye;
+pub use eye::*;
+
 use bevy::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
