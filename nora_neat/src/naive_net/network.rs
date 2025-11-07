@@ -123,6 +123,10 @@ impl NaiveNetwork {
         )
     }
 
+    pub fn neurons(&self) -> &[NaiveNeuron] {
+        &self.neurons
+    }
+
     /// Get the total number of neurons in the network.
     ///
     /// This includes input, hidden, and output neurons.

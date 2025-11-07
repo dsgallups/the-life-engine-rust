@@ -1,7 +1,13 @@
+mod edge;
+mod node;
+
 use bevy::{asset::uuid::Uuid, prelude::*};
 use bimap::BiMap;
 
-use crate::organism::{ActiveCell, BrainCell};
+use crate::{
+    node_visual::node::Nid,
+    organism::{ActiveCell, BrainCell},
+};
 
 const NODE_LAYER: f32 = 1.;
 const EDGE_LAYER: f32 = 0.;
@@ -30,7 +36,11 @@ impl EntityGraphMap {
     }
 }
 
+#[derive(Component)]
+pub struct GraphComponent;
+
 pub(super) fn plugin(app: &mut App) {
+    app.add_plugins((node::plugin, edge::plugin));
     app.init_resource::<EntityGraphMap>();
 }
 
@@ -76,6 +86,10 @@ fn spawn_new_nodes(
         let neuron_e = *map.get_entity(&neuron.id()).unwrap();
 
         let mut new_edges = Vec::new();
+
+        if let Some(dendrite) = neuron.inner().read().unwrap().inputs() {
+            //todo
+        }
 
         for dendrite in neuron.dendrites() {
             if map.get_entity(&dendrite.id()).is_none() {
