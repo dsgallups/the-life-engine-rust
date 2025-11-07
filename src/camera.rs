@@ -3,10 +3,12 @@ use bevy::{
     prelude::*,
 };
 
+use crate::settings::Keybinds;
+
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(Startup, setup);
 
-    app.add_systems(Update, update_zoom);
+    app.add_systems(Update, (update_zoom, move_camera));
 }
 
 #[derive(Component)]
@@ -51,4 +53,33 @@ fn update_zoom(
             }
         }
     }
+}
+
+fn move_camera(
+    input: Res<ButtonInput<KeyCode>>,
+    keybinds: Res<Keybinds>,
+    mut camera: Single<&mut Transform, With<WorldCamera>>,
+    time: Res<Time>,
+) {
+    let mut del = Vec2::ZERO;
+    if input.pressed(keybinds.key_up) {
+        del.y = 1.;
+    }
+    if input.pressed(keybinds.key_down) {
+        del.y -= 1.;
+    }
+    if input.pressed(keybinds.key_left) {
+        del.x = -1.;
+    }
+    if input.pressed(keybinds.key_right) {
+        del.x += 1.;
+    }
+    if del == Vec2::ZERO {
+        return;
+    }
+
+    let del = del * camera.scale.xy() * time.delta_secs() * 200.;
+
+    camera.translation.x += del.x;
+    camera.translation.y += del.y;
 }

@@ -14,11 +14,21 @@ fn main() {
 
     app.add_plugins(DefaultPlugins.set(WindowPlugin {
         primary_window: Some(Window {
+            title: "The Brain Engine".to_string(),
             resolution: WindowResolution::new(1920, 1080),
             ..default()
         }),
         ..default()
     }));
+
+    app.insert_resource(MeshPickingSettings {
+        require_markers: true,
+        ..default()
+    });
+
+    app.insert_resource(UiPickingSettings {
+        require_markers: true,
+    });
 
     app.add_plugins((
         camera::plugin,
