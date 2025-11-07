@@ -1,5 +1,5 @@
 //pub mod burn_net;
-pub mod simple_net;
+pub mod naive_net;
 
 pub mod activation;
 pub mod active;
