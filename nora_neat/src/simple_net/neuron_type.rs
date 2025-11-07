@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-use crate::prelude::*;
+use crate::{prelude::*, simple_net::neuron::SimpleNeuron};
 
 pub struct Active(Arc<RwLock<SimpleNeuron>>);
 impl Active {

@@ -69,21 +69,18 @@ impl<I> NeuronProps<I> {
             activation,
         }
     }
+    pub fn new_rand(
+        props_type: PropsType,
+        inputs: Vec<NeuronInput<I>>,
+        rng: &mut impl Rng,
+    ) -> Self {
+        Self::new(props_type, inputs, rng.random(), Activation::rand(rng))
+    }
     pub fn hidden(inputs: Vec<NeuronInput<I>>, rng: &mut impl Rng) -> Self {
-        Self::new(
-            PropsType::Hidden,
-            inputs,
-            rng.random(),
-            Activation::rand(rng),
-        )
+        Self::new_rand(PropsType::Hidden, inputs, rng)
     }
     pub fn output(inputs: Vec<NeuronInput<I>>, rng: &mut impl Rng) -> Self {
-        Self::new(
-            PropsType::Output,
-            inputs,
-            rng.random(),
-            Activation::rand(rng),
-        )
+        Self::new_rand(PropsType::Output, inputs, rng)
     }
 
     pub fn num_inputs(&self) -> usize {
@@ -96,6 +93,13 @@ impl<I> NeuronProps<I> {
 
     pub fn props_type(&self) -> PropsType {
         self.props_type
+    }
+    pub fn bias(&self) -> f32 {
+        self.bias
+    }
+
+    pub fn activation(&self) -> fn(f32) -> f32 {
+        self.activation
     }
 }
 

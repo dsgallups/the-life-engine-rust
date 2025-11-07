@@ -1,3 +1,5 @@
+use std::sync::{Arc, RwLock};
+
 use crate::{prelude::*, simple_net::neuron_type::Active};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator as _, ParallelIterator as _};
 use uuid::Uuid;
@@ -93,4 +95,53 @@ impl SimpleNeuron {
     pub fn override_state(&mut self, value: f32) {
         self.activated_value = Some(value);
     }
+}
+
+pub fn to_neuron(topology: &NeuronTopology, neurons: &mut Vec<Arc<RwLock<SimpleNeuron>>>) {
+    for neuron in neurons.iter() {
+        if neuron.read().unwrap().id() == topology.id() {
+            return;
+        }
+    }
+
+    let new_neuron_props = match topology.props() {
+        Some(topology_props) => {
+            let mut new_neuron_inputs = Vec::with_capacity(topology_props.inputs().len());
+
+            for topology_input in topology_props.inputs() {
+                if let Some(topology_input_neuron) = topology_input.neuron() {
+                    {
+                        let read_lock = topology_input_neuron.read().unwrap();
+                        to_neuron(&*read_lock, neurons);
+                    }
+
+                    let neuron_in_array = neurons
+                        .iter()
+                        .find(|n| {
+                            n.read().unwrap().id() == topology_input_neuron.read().unwrap().id()
+                        })
+                        .unwrap();
+
+                    new_neuron_inputs.push(NeuronInput::new(
+                        Active::new(neuron_in_array.clone()),
+                        topology_input.weight(),
+                    ));
+                }
+            }
+
+            Some(NeuronProps::new(
+                topology_props.props_type(),
+                new_neuron_inputs,
+                topology_props.bias(),
+                topology_props.activation(),
+            ))
+        }
+        None => None,
+    };
+
+    let neuron = Arc::new(RwLock::new(SimpleNeuron::new(
+        topology.id(),
+        new_neuron_props,
+    )));
+    neurons.push(Arc::clone(&neuron));
 }
