@@ -1,5 +1,7 @@
 mod ui;
+
 mod visual;
+pub use visual::*;
 
 use bevy::prelude::*;
 use nora_neat::{naive_net::network::NaiveNetwork, prelude::NetworkTopology};

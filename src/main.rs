@@ -6,6 +6,7 @@ mod dev_tools;
 mod camera;
 mod game;
 mod node_visual;
+mod organism;
 mod settings;
 mod utils;
 mod widgets;
@@ -41,6 +42,7 @@ fn main() {
         node_visual::plugin,
         settings::plugin,
         utils::plugin,
+        organism::plugin,
         game::plugin,
     ));
 
