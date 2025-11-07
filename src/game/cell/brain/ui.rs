@@ -4,38 +4,23 @@ use bevy::{
     prelude::*,
     render::render_resource::{TextureDimension, TextureFormat, TextureUsages},
 };
-use nora_neat::{naive_net::network::NaiveNetwork, prelude::NetworkTopology};
 
-use crate::{camera::RenderLayer, game::ui::UiRoot};
+use crate::{
+    camera::RenderLayer,
+    game::cell::{ActiveCell, BrainCell, CellVisual},
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_observer(on_click_brain_cell);
     app.add_observer(spawn_brain_cell_ui);
-    //todo
 }
-
-#[derive(Component)]
-pub struct BrainCell {
-    topology: NetworkTopology,
-    network: NaiveNetwork,
-}
-impl BrainCell {
-    pub fn new(topology: NetworkTopology) -> Self {
-        Self {
-            network: NaiveNetwork::from_topology(&topology),
-            topology,
-        }
-    }
-}
-
-#[derive(Component)]
-pub struct ActiveCellEntities;
 
 fn on_click_brain_cell(
     ev: On<Pointer<Click>>,
     mut commands: Commands,
     brain_cells: Query<&BrainCell>,
-    active_cells: Query<Entity, With<ActiveCellEntities>>,
+    active_cells: Query<Entity, With<ActiveCell>>,
+    visuals: Query<Entity, With<CellVisual>>,
 ) {
     let entity = ev.entity;
     let Ok(brain_cell) = brain_cells.get(entity) else {
@@ -43,10 +28,13 @@ fn on_click_brain_cell(
         return;
     };
     for active_cell in active_cells {
-        commands.entity(active_cell).remove::<ActiveCellEntities>();
+        commands.entity(active_cell).remove::<ActiveCell>();
+    }
+    for visual in visuals {
+        commands.entity(visual).despawn();
     }
 
-    commands.entity(entity).insert(ActiveCellEntities);
+    commands.entity(entity).insert(ActiveCell);
     commands.trigger(SpawnBrainCellUi);
 }
 #[derive(Event)]
@@ -72,7 +60,7 @@ fn spawn_brain_cell_ui(
 
     let camera = commands
         .spawn((
-            ActiveCellEntities,
+            CellVisual,
             Camera2d,
             Camera {
                 target: image_handle.clone().into(),
@@ -84,7 +72,7 @@ fn spawn_brain_cell_ui(
 
     commands
         .spawn((
-            ActiveCellEntities,
+            CellVisual,
             Pickable::default(),
             Node {
                 position_type: PositionType::Absolute,
