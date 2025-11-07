@@ -1,5 +1,5 @@
-use rand::Rng;
-//use strum::EnumIter;
+use rand::{Rng, seq::IteratorRandom};
+use strum::{EnumIter, IntoEnumIterator};
 
 pub struct Bias;
 
@@ -10,15 +10,7 @@ impl Bias {
     }
 }
 
-// pub struct Exponent;
-
-// impl Exponent {
-//     pub fn rand(rng: &mut impl Rng) -> i32 {
-//         rng.random_range(0..=1)
-//     }
-// }
-
-#[derive(Debug)]
+#[derive(Debug, EnumIter)]
 pub enum Activation {
     Sigmoid,
     Relu,
@@ -27,9 +19,12 @@ pub enum Activation {
 
 impl Activation {
     pub fn rand(rng: &mut impl Rng) -> fn(f32) -> f32 {
-        //let random_val = Self::iter().choose(&mut rng).unwrap();
-
-        todo!()
+        let random_val = Self::iter().choose(rng).unwrap();
+        match random_val {
+            Activation::Linear => linear_activation,
+            Activation::Relu => relu,
+            Activation::Sigmoid => sigmoid,
+        }
     }
 }
 
