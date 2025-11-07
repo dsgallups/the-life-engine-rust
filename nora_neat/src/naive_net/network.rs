@@ -15,6 +15,52 @@ pub struct NaiveNetwork {
 }
 
 impl NaiveNetwork {
+    /// Create a network from raw components.
+    ///
+    /// This is a low-level constructor that assumes the provided components
+    /// are correctly structured. The input and output layer vectors should
+    /// contain references to neurons that also exist in the main neurons vector.
+    pub fn from_raw_parts(
+        neurons: Vec<NaiveNeuron>,
+        input_layer: Vec<NaiveNeuron>,
+        output_layer: Vec<NaiveNeuron>,
+    ) -> Self {
+        Self {
+            neurons,
+            input_layer,
+            output_layer,
+        }
+    }
+
+    /// Create an executable network from a topology representation.
+    ///
+    /// This method converts a `NetworkTopology` (which represents the
+    /// structure and evolution parameters) into a `SimplePolyNetwork` that
+    /// can perform inference.
+    pub fn from_topology(topology: &NetworkTopology) -> Self {
+        let mut neurons: Vec<NaiveNeuron> = Vec::with_capacity(topology.neurons().len());
+        let mut input_layer: Vec<NaiveNeuron> = Vec::new();
+        let mut output_layer: Vec<NaiveNeuron> = Vec::new();
+
+        for neuron_replicant in topology.neurons() {
+            let neuron = neuron_replicant.read().unwrap();
+
+            to_neuron(&neuron, &mut neurons);
+            let neuron = neurons.iter().find(|n| n.id() == neuron.id()).unwrap();
+
+            let neuron_read = neuron.inner().read().unwrap();
+
+            if neuron_read.is_input() {
+                input_layer.push(neuron.clone());
+            }
+            if neuron_read.is_output() {
+                output_layer.push(neuron.clone());
+            }
+        }
+
+        NaiveNetwork::from_raw_parts(neurons, input_layer, output_layer)
+    }
+
     /// Perform a forward pass through the network with the given inputs.
     ///
     /// This method:
@@ -64,62 +110,10 @@ impl NaiveNetwork {
             .flat_map(|inner_vec| inner_vec.into_iter())
     }
 
-    /// Create a network from raw components.
-    ///
-    /// This is a low-level constructor that assumes the provided components
-    /// are correctly structured. The input and output layer vectors should
-    /// contain references to neurons that also exist in the main neurons vector.
-    ///
-    /// # Arguments
-    /// * `neurons` - All neurons in the network
-    /// * `input_layer` - References to input neurons
-    /// * `output_layer` - References to output neurons
-    ///
-    /// # Example
-    /// ```rust
-    /// # use polynomial_neat::prelude::*;
-    /// # use std::sync::{Arc, RwLock};
-    /// # use uuid::Uuid;
-    /// // Create neurons manually
-    /// let input = Arc::new(RwLock::new(SimpleNeuron::new(Uuid::new_v4(), None)));
-    /// let output = Arc::new(RwLock::new(SimpleNeuron::new(Uuid::new_v4(), None)));
-    ///
-    /// let neurons = vec![input.clone(), output.clone()];
-    /// let input_layer = vec![input];
-    /// let output_layer = vec![output];
-    ///
-    /// let network = SimplePolyNetwork::from_raw_parts(neurons, input_layer, output_layer);
-    /// ```
-    pub fn from_raw_parts(
-        neurons: Vec<NaiveNeuron>,
-        input_layer: Vec<NaiveNeuron>,
-        output_layer: Vec<NaiveNeuron>,
-    ) -> Self {
-        Self {
-            neurons,
-            input_layer,
-            output_layer,
-        }
-    }
-
     /// Generate a human-readable summary of the network's structure.
     ///
     /// # Returns
     /// A formatted string describing the network's neuron counts.
-    ///
-    /// # Example
-    /// ```rust
-    /// # use polynomial_neat::prelude::*;
-    /// # use polynomial_neat::topology::mutation::MutationChances;
-    /// # let mutations = MutationChances::new(50);
-    /// # let topology = PolyNetworkTopology::new(2, 1, mutations, &mut rand::rng());
-    /// # let network = topology.to_simple_network();
-    /// println!("{}", network.summarize());
-    /// // Output: Network with
-    /// // 3 total nodes
-    /// // 2 input nodes
-    /// // 1 output nodes
-    /// ```
     pub fn summarize(&self) -> String {
         format!(
             "Network with \n{} total nodes\n{} input nodes\n{} output nodes",
@@ -282,59 +276,5 @@ impl NaiveNetwork {
         }
 
         str
-    }
-
-    /// Create an executable network from a topology representation.
-    ///
-    /// This method converts a `PolyNetworkTopology` (which represents the
-    /// structure and evolution parameters) into a `SimplePolyNetwork` that
-    /// can perform inference.
-    ///
-    /// The conversion process:
-    /// 1. Creates `SimpleNeuron` instances from topology neurons
-    /// 2. Establishes connections between neurons
-    /// 3. Organizes neurons into input and output layers
-    ///
-    /// # Arguments
-    /// * `topology` - The network topology to convert
-    ///
-    /// # Returns
-    /// A new `SimplePolyNetwork` ready for inference
-    ///
-    /// # Example
-    /// ```rust
-    /// # use polynomial_neat::prelude::*;
-    /// # use polynomial_neat::topology::mutation::MutationChances;
-    /// let mutations = MutationChances::new(50);
-    /// let topology = PolyNetworkTopology::new(3, 2, mutations, &mut rand::rng());
-    ///
-    /// // Convert to executable network
-    /// let network = SimplePolyNetwork::from_topology(&topology);
-    ///
-    /// // Now ready for inference
-    /// let outputs: Vec<f32> = network.predict(&[1.0, 2.0, 3.0]).collect();
-    /// ```
-    pub fn from_topology(topology: &NetworkTopology) -> Self {
-        let mut neurons: Vec<NaiveNeuron> = Vec::with_capacity(topology.neurons().len());
-        let mut input_layer: Vec<NaiveNeuron> = Vec::new();
-        let mut output_layer: Vec<NaiveNeuron> = Vec::new();
-
-        for neuron_replicant in topology.neurons() {
-            let neuron = neuron_replicant.read().unwrap();
-
-            to_neuron(&neuron, &mut neurons);
-            let neuron = neurons.iter().find(|n| n.id() == neuron.id()).unwrap();
-
-            let neuron_read = neuron.inner().read().unwrap();
-
-            if neuron_read.is_input() {
-                input_layer.push(neuron.clone());
-            }
-            if neuron_read.is_output() {
-                output_layer.push(neuron.clone());
-            }
-        }
-
-        NaiveNetwork::from_raw_parts(neurons, input_layer, output_layer)
     }
 }
