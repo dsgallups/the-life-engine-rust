@@ -1,30 +1,22 @@
-use bevy::{
-    log::{Level, LogPlugin},
-    prelude::*,
-};
-use life_engine_rs::GamePlugin;
+#[cfg(feature = "dev")]
+mod dev_tools;
 
-fn main() -> AppExit {
-    App::new()
-        .insert_resource(Msaa::Off)
-        .insert_resource(ClearColor(Color::linear_rgb(0.4, 0.4, 0.4)))
-        .add_plugins(
-            DefaultPlugins
-                .set(WindowPlugin {
-                    primary_window: Some(Window {
-                        title: "The Life Engine".to_string(),
-                        fit_canvas_to_parent: true,
-                        prevent_default_event_handling: false,
-                        ..Default::default()
-                    }),
-                    ..Default::default()
-                })
-                .set(ImagePlugin::default_nearest())
-                .set(LogPlugin {
-                    level: Level::ERROR,
-                    ..Default::default()
-                }),
-        )
-        .add_plugins(GamePlugin)
-        .run()
+mod camera;
+mod settings;
+mod utils;
+mod widgets;
+
+use bevy::prelude::*;
+
+fn main() {
+    let mut app = App::new();
+
+    app.add_plugins(DefaultPlugins);
+
+    app.add_plugins((camera::plugin, settings::plugin, utils::plugin));
+
+    #[cfg(feature = "dev")]
+    app.add_plugins(dev_tools::plugin);
+
+    app.run();
 }

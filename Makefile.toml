@@ -1,4 +1,4 @@
-[tasks.run]
+[tasks.dev]
 command = "cargo"
 args = ["run", "--features", "dev"]
 
