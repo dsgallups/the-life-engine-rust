@@ -1,5 +1,4 @@
 mod plugin;
-use std::collections::HashMap;
 
 use nora_neat::prelude::{MutationChances, NetworkTopology};
 pub use plugin::*;

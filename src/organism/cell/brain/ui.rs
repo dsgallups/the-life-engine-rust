@@ -44,8 +44,8 @@ fn spawn_brain_cell_ui(
     _: On<SpawnBrainCellUi>,
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    // mut meshes: ResMut<Assets<Mesh>>,
+    // mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let mut image = Image::new_uninit(
         default(),
@@ -79,8 +79,8 @@ fn spawn_brain_cell_ui(
                 position_type: PositionType::Absolute,
                 top: px(50),
                 left: px(50),
-                width: px(400),
-                height: px(400),
+                width: px(800),
+                height: px(600),
                 border: px(5).all(),
                 ..default()
             },
