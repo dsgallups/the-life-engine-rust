@@ -6,7 +6,7 @@ use bevy::{
 use crate::settings::Keybinds;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(Startup, setup);
+    app.add_systems(Startup, setup_cameras);
 
     app.add_systems(Update, (update_zoom, move_camera));
 }
@@ -14,7 +14,7 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Component)]
 pub struct WorldCamera;
 
-fn setup(mut commands: Commands) {
+fn setup_cameras(mut commands: Commands) {
     commands.spawn((
         WorldCamera,
         Camera2d,
