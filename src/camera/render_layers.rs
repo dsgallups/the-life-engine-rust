@@ -6,7 +6,7 @@ bitflags! {
         /// Implicitly used without identifying a render layer component
         const DEFAULT = 0b0000_0001;
         /// Used specifically for a camera that renders a UI texture
-        const CELL_VISUAL = 0b0000_0010;
+        const NODE_VISUAL = 0b0000_0010;
         /// Gizmos (debug info)
         const GIZMO = 0b0000_0100;
     }

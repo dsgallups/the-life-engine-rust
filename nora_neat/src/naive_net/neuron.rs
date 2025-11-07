@@ -7,12 +7,15 @@ use uuid::Uuid;
 #[derive(Clone)]
 pub struct NaiveNeuron {
     name: String,
+    // this is duplicated from inner :)
+    id: Uuid,
     inner: Arc<RwLock<NaiveNeuronInner>>,
 }
 impl NaiveNeuron {
     pub fn new(name: impl ToString, id: Uuid, props: Option<NeuronProps<NaiveNeuron>>) -> Self {
         Self {
             name: name.to_string(),
+            id,
             inner: Arc::new(RwLock::new(NaiveNeuronInner::new(id, props))),
         }
     }
@@ -25,7 +28,7 @@ impl NaiveNeuron {
     }
 
     pub fn id(&self) -> Uuid {
-        self.inner.read().unwrap().id()
+        self.id
     }
     pub fn name(&self) -> &str {
         &self.name

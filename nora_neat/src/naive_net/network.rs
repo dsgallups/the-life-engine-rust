@@ -1,4 +1,5 @@
 use rayon::iter::{IndexedParallelIterator as _, IntoParallelRefIterator, ParallelIterator as _};
+use uuid::Uuid;
 
 use crate::{
     naive_net::neuron::{NaiveNeuron, to_neuron},
@@ -125,6 +126,23 @@ impl NaiveNetwork {
 
     pub fn neurons(&self) -> &[NaiveNeuron] {
         &self.neurons
+    }
+
+    pub fn get_neuron(&self, id: Uuid) -> Option<&NaiveNeuron> {
+        self.neurons.iter().find(|neuron| neuron.id() == id)
+    }
+
+    pub fn has_input(&self, id: Uuid) -> bool {
+        self.neurons
+            .iter()
+            .find_map(|neuron| {
+                let lock = neuron.read();
+                let inputs = lock.inputs()?;
+
+                inputs.iter().find(|input| input.id() == id)?;
+                Some(())
+            })
+            .is_some()
     }
 
     /// Get the total number of neurons in the network.

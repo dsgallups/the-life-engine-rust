@@ -10,11 +10,20 @@ use uuid::Uuid;
 /// - The source of the input (typically a neuron identifier)
 /// - The connection weight
 /// - The exponent applied to the input value
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct NeuronInput<I> {
     id: Uuid,
     node: I,
     weight: f32,
+}
+impl<I: Clone> Clone for NeuronInput<I> {
+    fn clone(&self) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            node: self.node.clone(),
+            weight: self.weight,
+        }
+    }
 }
 
 impl<I> NeuronInput<I> {

@@ -67,7 +67,7 @@ fn spawn_brain_cell_ui(
                 target: image_handle.clone().into(),
                 ..default()
             },
-            RenderLayers::from(RenderLayer::CELL_VISUAL),
+            RenderLayers::from(RenderLayer::NODE_VISUAL),
         ))
         .id();
 

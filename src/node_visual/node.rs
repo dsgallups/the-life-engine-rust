@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use uuid::Uuid;
 
 #[derive(Component, Reflect)]
 pub struct Nid(pub Uuid);

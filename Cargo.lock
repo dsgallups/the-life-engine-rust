@@ -3358,6 +3358,7 @@ dependencies = [
  "cosmic-text",
  "nora_neat",
  "rand",
+ "uuid",
 ]
 
 [[package]]
