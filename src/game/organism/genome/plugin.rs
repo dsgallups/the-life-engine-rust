@@ -98,7 +98,7 @@ fn spawn_genomes(
                 }
                 CellType::Brain(topology) => {
                     commands.insert((
-                        BrainCell::new(topology),
+                        BrainCell::new(topology.deep_clone()),
                         MeshMaterial2d(assets.pink.clone()),
                     ));
                 }

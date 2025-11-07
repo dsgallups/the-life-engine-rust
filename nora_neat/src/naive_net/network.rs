@@ -4,7 +4,7 @@ use rayon::iter::{IndexedParallelIterator as _, IntoParallelRefIterator, Paralle
 
 use crate::{
     prelude::*,
-    simple_net::neuron::{SimpleNeuron, to_neuron},
+    naive_net::neuron::{SimpleNeuron, to_neuron},
 };
 
 pub struct SimpleNetwork {

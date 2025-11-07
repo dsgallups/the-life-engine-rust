@@ -1,4 +1,4 @@
-use nora_neat::{prelude::*, simple_net::network::SimpleNetwork};
+use nora_neat::{naive_net::network::SimpleNetwork, prelude::*};
 use rand::{SeedableRng, rngs::StdRng};
 
 fn main() {

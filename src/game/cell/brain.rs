@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use nora_neat::{prelude::NetworkTopology, simple_net::network::SimpleNetwork};
+use nora_neat::{naive_net::network::SimpleNetwork, prelude::NetworkTopology};
 
 pub(super) fn plugin(app: &mut App) {
     //todo
@@ -7,12 +7,14 @@ pub(super) fn plugin(app: &mut App) {
 
 #[derive(Component)]
 pub struct BrainCell {
+    topology: NetworkTopology,
     network: SimpleNetwork,
 }
 impl BrainCell {
-    pub fn new(topology: &NetworkTopology) -> Self {
+    pub fn new(topology: NetworkTopology) -> Self {
         Self {
-            network: SimpleNetwork::from_topology(topology),
+            network: SimpleNetwork::from_topology(&topology),
+            topology,
         }
     }
 }

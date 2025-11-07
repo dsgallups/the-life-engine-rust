@@ -1,6 +1,6 @@
 use std::f32;
 
-use crate::{prelude::*, simple_net::neuron_type::Active};
+use crate::{prelude::*, naive_net::neuron_type::Active};
 
 //pub type NeuronInputAlias = NeuronInput<Arc<RwLock<SimpleNeuron>>>;
 

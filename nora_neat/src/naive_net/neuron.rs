@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-use crate::{prelude::*, simple_net::neuron_type::Active};
+use crate::{naive_net::neuron_type::Active, prelude::*};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator as _, ParallelIterator as _};
 use uuid::Uuid;
 
