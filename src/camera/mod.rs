@@ -1,3 +1,6 @@
+mod node;
+pub use node::*;
+
 mod render_layers;
 pub use render_layers::*;
 
@@ -10,6 +13,8 @@ use bevy::{
 use crate::settings::Keybinds;
 
 pub(super) fn plugin(app: &mut App) {
+    app.add_plugins(node::plugin);
+
     app.add_systems(Startup, setup_cameras);
 
     app.add_systems(Update, (update_zoom, move_camera));

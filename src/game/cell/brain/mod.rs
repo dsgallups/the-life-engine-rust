@@ -1,10 +1,11 @@
 mod ui;
+mod visual;
 
 use bevy::prelude::*;
 use nora_neat::{naive_net::network::NaiveNetwork, prelude::NetworkTopology};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_plugins((ui::plugin));
+    app.add_plugins((ui::plugin, visual::plugin));
 }
 
 #[derive(Component)]
@@ -23,6 +24,3 @@ impl BrainCell {
 
 #[derive(Component)]
 pub struct ActiveCell;
-
-#[derive(Component)]
-pub struct CellVisual;

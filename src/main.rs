@@ -1,3 +1,5 @@
+#![allow(unused_variables)]
+
 #[cfg(feature = "dev")]
 mod dev_tools;
 

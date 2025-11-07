@@ -6,8 +6,8 @@ use bevy::{
 };
 
 use crate::{
-    camera::RenderLayer,
-    game::cell::{ActiveCell, BrainCell, CellVisual},
+    camera::{NodeCamera, RenderLayer},
+    game::cell::{brain::visual::CellVisual, ActiveCell, BrainCell},
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -61,6 +61,7 @@ fn spawn_brain_cell_ui(
     let camera = commands
         .spawn((
             CellVisual,
+            NodeCamera,
             Camera2d,
             Camera {
                 target: image_handle.clone().into(),
