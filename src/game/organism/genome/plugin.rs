@@ -62,18 +62,12 @@ fn spawn_genomes(
     for msg in msgs.read() {
         let organism = commands
             .spawn((
+                Name::new("Organism"),
                 InheritedVisibility::VISIBLE,
                 msg.genome.clone(),
                 Transform::from_xyz(msg.location.x, msg.location.y, 0.),
             ))
             .id();
-
-        commands.spawn((
-            ChildOf(organism),
-            CellOf(organism),
-            Mesh2d(assets.cell.clone()),
-            MeshMaterial2d(assets.pink.clone()),
-        ));
 
         for cell in msg.genome.cells() {
             let location = cell.location();
@@ -85,20 +79,38 @@ fn spawn_genomes(
             ));
             match cell.kind() {
                 CellType::Collagen => {
-                    commands.insert((Collagen::default(), MeshMaterial2d(assets.white.clone())));
+                    commands.insert((
+                        Name::new("Collagen"),
+                        Collagen::default(),
+                        MeshMaterial2d(assets.white.clone()),
+                    ));
                 }
                 CellType::Data => {
-                    commands.insert((DataCell::default(), MeshMaterial2d(assets.yellow.clone())));
+                    commands.insert((
+                        Name::new("Data Cell"),
+                        DataCell::default(),
+                        MeshMaterial2d(assets.yellow.clone()),
+                    ));
                 }
                 CellType::Launcher => {
-                    commands.insert((Launcher::default(), MeshMaterial2d(assets.red.clone())));
+                    commands.insert((
+                        Name::new("Launcher Cell"),
+                        Launcher::default(),
+                        MeshMaterial2d(assets.red.clone()),
+                    ));
                 }
                 CellType::Eye => {
-                    commands.insert((Eye::default(), MeshMaterial2d(assets.sky.clone())));
+                    commands.insert((
+                        Name::new("Eye Cell"),
+                        Eye::default(),
+                        MeshMaterial2d(assets.sky.clone()),
+                    ));
                 }
                 CellType::Brain(topology) => {
                     commands.insert((
+                        Name::new("Brain Cell"),
                         BrainCell::new(topology.deep_clone()),
+                        Pickable::default(),
                         MeshMaterial2d(assets.pink.clone()),
                     ));
                 }

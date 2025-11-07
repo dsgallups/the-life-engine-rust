@@ -46,8 +46,8 @@ fn update_zoom(
             }
         } else {
             #[allow(clippy::collapsible_else_if)]
-            if transform.scale.y == 0.05 {
-                transform.scale -= Vec3::splat(0.1);
+            if transform.scale.y <= 0.09 {
+                return;
             } else {
                 transform.scale -= Vec3::splat(0.05);
             }
