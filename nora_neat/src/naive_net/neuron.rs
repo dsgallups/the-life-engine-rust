@@ -17,6 +17,9 @@ impl NaiveNeuron {
     pub fn inner(&self) -> &Arc<RwLock<NaiveNeuronInner>> {
         &self.inner
     }
+    pub fn id(&self) -> Uuid {
+        self.inner.read().unwrap().id()
+    }
 }
 
 pub struct NaiveNeuronInner {
@@ -118,7 +121,7 @@ impl NaiveNeuronInner {
 
 pub fn to_neuron(topology: &NeuronTopology, neurons: &mut Vec<NaiveNeuron>) {
     for neuron in neurons.iter() {
-        if neuron.inner().read().unwrap().id() == topology.id() {
+        if neuron.id() == topology.id() {
             return;
         }
     }
@@ -136,10 +139,7 @@ pub fn to_neuron(topology: &NeuronTopology, neurons: &mut Vec<NaiveNeuron>) {
 
                     let neuron_in_array = neurons
                         .iter()
-                        .find(|n| {
-                            n.inner().read().unwrap().id()
-                                == topology_input_neuron.read().unwrap().id()
-                        })
+                        .find(|n| n.id() == topology_input_neuron.read().unwrap().id())
                         .unwrap();
 
                     new_neuron_inputs.push(NeuronInput::new(

@@ -195,7 +195,7 @@ impl NaiveNetwork {
                         let loc = self
                             .neurons
                             .iter()
-                            .position(|neuron| neuron.inner().read().unwrap().id() == n.id())
+                            .position(|neuron| neuron.id() == n.id())
                             .unwrap();
 
                         str.push_str(&format!("({})", loc));
@@ -230,7 +230,7 @@ impl NaiveNetwork {
                         let loc = self
                             .neurons
                             .iter()
-                            .position(|neuron| neuron.inner().read().unwrap().id() == n.id())
+                            .position(|neuron| neuron.id() == n.id())
                             .unwrap();
 
                         str.push_str(&format!("({})", loc));
@@ -265,7 +265,7 @@ impl NaiveNetwork {
                         let loc = self
                             .neurons
                             .iter()
-                            .position(|neuron| neuron.inner().read().unwrap().id() == n.id())
+                            .position(|neuron| neuron.id() == n.id())
                             .unwrap();
 
                         str.push_str(&format!("({})", loc));
@@ -323,10 +323,7 @@ impl NaiveNetwork {
             let neuron = neuron_replicant.read().unwrap();
 
             to_neuron(&neuron, &mut neurons);
-            let neuron = neurons
-                .iter()
-                .find(|n| n.inner().read().unwrap().id() == neuron.id())
-                .unwrap();
+            let neuron = neurons.iter().find(|n| n.id() == neuron.id()).unwrap();
 
             let neuron_read = neuron.inner().read().unwrap();
 
