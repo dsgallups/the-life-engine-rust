@@ -15,3 +15,7 @@ Things for modeling
 - Information: arbitrary data storage
 
 Cells die when their brain is hit
+
+
+- We should enforce that all input nodes are part of the map,
+- or at least that input nodes cannot be pruned.
