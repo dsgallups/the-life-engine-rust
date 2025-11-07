@@ -18,6 +18,7 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         WorldCamera,
         Camera2d,
+        MeshPickingCamera,
         Transform::from_scale(Vec3::splat(0.05)),
         Camera {
             clear_color: ClearColorConfig::Custom(Color::BLACK),

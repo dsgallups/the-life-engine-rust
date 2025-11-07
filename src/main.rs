@@ -12,14 +12,17 @@ use bevy::{prelude::*, window::WindowResolution};
 fn main() {
     let mut app = App::new();
 
-    app.add_plugins(DefaultPlugins.set(WindowPlugin {
-        primary_window: Some(Window {
-            title: "The Brain Engine".to_string(),
-            resolution: WindowResolution::new(1920, 1080),
+    app.add_plugins((
+        DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "The Brain Engine".to_string(),
+                resolution: WindowResolution::new(1920, 1080),
+                ..default()
+            }),
             ..default()
         }),
-        ..default()
-    }));
+        MeshPickingPlugin,
+    ));
 
     app.insert_resource(MeshPickingSettings {
         require_markers: true,
