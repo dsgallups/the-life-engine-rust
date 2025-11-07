@@ -22,7 +22,7 @@ impl BrainCell {
             topology,
         }
     }
+    pub fn network(&self) -> &NaiveNetwork {
+        &self.network
+    }
 }
-
-#[derive(Component)]
-pub struct ActiveCell;

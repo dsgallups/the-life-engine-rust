@@ -1,10 +1,12 @@
 use bevy::{asset::uuid::Uuid, prelude::*};
 use bimap::BiMap;
 
-use crate::organism::BrainCell;
+use crate::organism::{ActiveCell, BrainCell};
 
 const NODE_LAYER: f32 = 1.;
 const EDGE_LAYER: f32 = 0.;
+pub const NODE_RADIUS: f32 = 20.;
+const MIN_DISTANCE: f32 = 140.;
 
 #[derive(Resource, Default)]
 pub struct EntityGraphMap {
@@ -34,12 +36,12 @@ pub(super) fn plugin(app: &mut App) {
 
 fn spawn_new_nodes(
     mut commands: Commands,
-    nora: Query<BrainCell>,
+    cell: Single<&BrainCell, With<ActiveCell>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut map: ResMut<EntityGraphMap>,
 ) {
-    let brain = nora.brain();
+    let brain = cell.network();
 
     let circle = meshes.add(Circle::new(NODE_RADIUS));
 

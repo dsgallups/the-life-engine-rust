@@ -4,14 +4,29 @@ use crate::{naive_net::neuron_type::Active, prelude::*};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator as _, ParallelIterator as _};
 use uuid::Uuid;
 
+#[derive(Clone)]
 pub struct NaiveNeuron {
+    inner: Arc<RwLock<NaiveNeuronInner>>,
+}
+impl NaiveNeuron {
+    pub fn new(id: Uuid, props: Option<NeuronProps<Active>>) -> Self {
+        Self {
+            inner: Arc::new(RwLock::new(NaiveNeuronInner::new(id, props))),
+        }
+    }
+    pub fn inner(&self) -> &Arc<RwLock<NaiveNeuronInner>> {
+        &self.inner
+    }
+}
+
+pub struct NaiveNeuronInner {
     id: Uuid,
     props: Option<NeuronProps<Active>>,
     /// some working value, returned by the result of the activation value.
     activated_value: Option<f32>,
 }
 
-impl NaiveNeuron {
+impl NaiveNeuronInner {
     pub fn new(id: Uuid, props: Option<NeuronProps<Active>>) -> Self {
         Self {
             id,
@@ -101,9 +116,9 @@ impl NaiveNeuron {
     }
 }
 
-pub fn to_neuron(topology: &NeuronTopology, neurons: &mut Vec<Arc<RwLock<NaiveNeuron>>>) {
+pub fn to_neuron(topology: &NeuronTopology, neurons: &mut Vec<NaiveNeuron>) {
     for neuron in neurons.iter() {
-        if neuron.read().unwrap().id() == topology.id() {
+        if neuron.inner().read().unwrap().id() == topology.id() {
             return;
         }
     }
@@ -122,7 +137,8 @@ pub fn to_neuron(topology: &NeuronTopology, neurons: &mut Vec<Arc<RwLock<NaiveNe
                     let neuron_in_array = neurons
                         .iter()
                         .find(|n| {
-                            n.read().unwrap().id() == topology_input_neuron.read().unwrap().id()
+                            n.inner().read().unwrap().id()
+                                == topology_input_neuron.read().unwrap().id()
                         })
                         .unwrap();
 
@@ -143,9 +159,6 @@ pub fn to_neuron(topology: &NeuronTopology, neurons: &mut Vec<Arc<RwLock<NaiveNe
         None => None,
     };
 
-    let neuron = Arc::new(RwLock::new(NaiveNeuron::new(
-        topology.id(),
-        new_neuron_props,
-    )));
-    neurons.push(Arc::clone(&neuron));
+    let neuron = NaiveNeuron::new(topology.id(), new_neuron_props);
+    neurons.push(neuron.clone());
 }

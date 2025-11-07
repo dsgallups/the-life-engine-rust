@@ -1,8 +1,6 @@
 use std::f32;
 
-use crate::{prelude::*, naive_net::neuron_type::Active};
-
-//pub type NeuronInputAlias = NeuronInput<Arc<RwLock<SimpleNeuron>>>;
+use crate::{naive_net::neuron_type::Active, prelude::*};
 
 impl NeuronInput<Active> {
     /// applies a weight and exponent to the input neuron and returns the result
@@ -12,6 +10,7 @@ impl NeuronInput<Active> {
         if let Some(cached) = {
             self.input()
                 .handle()
+                .inner()
                 .read()
                 .unwrap()
                 .check_activated()
@@ -20,7 +19,7 @@ impl NeuronInput<Active> {
             return cached;
         }
 
-        let neuron_value = self.input().handle().write().unwrap().activate();
+        let neuron_value = self.input().handle().inner().write().unwrap().activate();
 
         // if result.is_infinite() || result.is_nan() {
         //     println!(

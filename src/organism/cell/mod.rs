@@ -15,6 +15,9 @@ pub use eye::*;
 
 use bevy::prelude::*;
 
+#[derive(Component, Reflect)]
+pub struct ActiveCell;
+
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins((
         brain::plugin,
