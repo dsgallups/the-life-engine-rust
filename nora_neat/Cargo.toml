@@ -1,0 +1,17 @@
+[package]
+name = "nora_neat"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rand.workspace = true
+uuid.workspace = true
+rayon.workspace = true
+# burn.workspace = true
+fnv.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+strum.workspace = true
+
+[dev-dependencies]
+pretty_assertions.workspace = true

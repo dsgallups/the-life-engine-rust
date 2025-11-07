@@ -23,12 +23,15 @@ dev = [
 bevy = { version = "0.17", features = ["experimental_bevy_feathers"] }
 bevy_ui_text_input = { git = "https://github.com/dsgallups/bevy_ui_text_input.git", branch = "dsgallups/disable-default" }
 cosmic-text = "0.14"
+rand.workspace = true
+
 
 # dev
 bevy-inspector-egui = {version = "0.35", optional = true }
 bevy_egui = { version = "0.38", features = ["bevy_ui"], optional = true }
 
-
+#nora
+nora_neat = {path = "nora_neat"}
 
 [profile.dev]
 opt-level = 1
@@ -58,3 +61,19 @@ type_complexity = "allow"
 # Make sure macros use their standard braces, such as `[]` for `bevy_ecs::children!`.
 nonstandard_macro_braces = "warn"
 double-parens = "allow"
+
+[workspace]
+resolver = "3"
+members = ["nora_neat"]
+
+
+[workspace.dependencies]
+uuid = { version = "1.10", features = ["rng", "serde", "v4"] }
+rand = "0.9.2"
+rayon = "1.11.0"
+burn = { version = "0.17.1", features = ["ndarray", "cuda", "wgpu"] }
+fnv = "1.0"
+tracing = "0.1.41"
+tracing-subscriber = "0.3.20"
+pretty_assertions = "1.4.1"
+strum = {version = "0.27.2", features = ["derive"] }
