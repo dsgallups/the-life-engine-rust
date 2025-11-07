@@ -10,11 +10,11 @@ use rand::Rng;
 #[derive(Clone)]
 pub struct CellGenome {
     junction_id: Option<usize>,
-    kind: CellType,
+    kind: CellDetails,
     location: IVec2,
 }
 impl CellGenome {
-    pub fn kind(&self) -> &CellType {
+    pub fn details(&self) -> &CellDetails {
         &self.kind
     }
     pub fn location(&self) -> IVec2 {
@@ -26,7 +26,7 @@ macro_rules! cellg {
     ($j:expr, $variant:ident $( ( $($args:expr),* $(,)? ) )? at $x:expr, $y:expr) => {
         CellGenome {
             junction_id: Some($j),
-            kind: CellType::$variant $( ( $($args),* ) )?,
+            kind: CellDetails::$variant $( ( $($args),* ) )?,
             location: IVec2::new($x, $y),
         }
     };
@@ -34,15 +34,35 @@ macro_rules! cellg {
     ($variant:ident $( ( $($args:expr),* $(,)? ) )? at $x:expr, $y:expr) => {
         CellGenome {
             junction_id: None,
-            kind: CellType::$variant $( ( $($args),* ) )?,
+            kind: CellDetails::$variant $( ( $($args),* ) )?,
             location: IVec2::new($x, $y),
         }
     };
 }
 
 #[derive(Clone)]
-pub enum CellType {
+pub enum CellDetails {
     Brain(NetworkTopology),
+    Launcher,
+    Eye,
+    Collagen,
+    Data,
+}
+impl CellDetails {
+    pub fn cell_type(&self) -> Cell {
+        match self {
+            CellDetails::Brain(_) => Cell::Brain,
+            CellDetails::Collagen => Cell::Collagen,
+            CellDetails::Data => Cell::Data,
+            CellDetails::Eye => Cell::Eye,
+            CellDetails::Launcher => Cell::Launcher,
+        }
+    }
+}
+
+#[derive(Component, Reflect)]
+pub enum Cell {
+    Brain,
     Launcher,
     Eye,
     Collagen,
