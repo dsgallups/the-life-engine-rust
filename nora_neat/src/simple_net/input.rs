@@ -7,11 +7,6 @@ use crate::{prelude::*, simple_net::neuron_type::Active};
 impl NeuronInput<Active> {
     /// applies a weight and exponent to the input neuron and returns the result
     pub fn get_input_value(&self) -> f32 {
-        // don't need to activate the neuron since x^0 = 1
-        if self.exponent() == 0 {
-            return self.weight();
-        }
-
         //note that this can totally return inf if the value is zero. This is intentional.
 
         if let Some(cached) = {
@@ -20,7 +15,7 @@ impl NeuronInput<Active> {
                 .read()
                 .unwrap()
                 .check_activated()
-                .map(|val| val.powi(self.exponent()) * self.weight())
+                .map(|val| val * self.weight())
         } {
             return cached;
         }
@@ -38,7 +33,7 @@ impl NeuronInput<Active> {
         // }
         // result
 
-        neuron_value.powi(self.exponent()) * self.weight()
+        neuron_value * self.weight()
     }
 }
 

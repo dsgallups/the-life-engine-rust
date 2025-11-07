@@ -1,7 +1,8 @@
 //pub mod burn_net;
-//pub mod simple_net;
+pub mod simple_net;
 
 pub mod activation;
+pub mod active;
 pub mod mutation;
 pub mod network;
 pub mod neuron;

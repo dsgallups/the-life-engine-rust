@@ -2,7 +2,10 @@ use std::sync::{Arc, RwLock};
 
 use rayon::iter::{IndexedParallelIterator as _, IntoParallelRefIterator, ParallelIterator as _};
 
-use crate::prelude::*;
+use crate::{
+    prelude::*,
+    simple_net::neuron::{SimpleNeuron, to_neuron},
+};
 
 pub struct SimpleNetwork {
     // contains all neurons
@@ -322,7 +325,7 @@ impl SimpleNetwork {
         for neuron_replicant in topology.neurons() {
             let neuron = neuron_replicant.read().unwrap();
 
-            neuron.to_neuron(&mut neurons);
+            to_neuron(&*neuron, &mut neurons);
             let neuron = neurons
                 .iter()
                 .find(|n| n.read().unwrap().id() == neuron.id())
