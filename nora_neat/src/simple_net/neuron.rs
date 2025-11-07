@@ -78,13 +78,17 @@ impl SimpleNeuron {
            Deeply nested like this will block all threads on rayon.
            we cannot use rayon here, but an async implementation *could* work.
         */
-        let result = self
+        let mut result = self
             .inputs()
             .unwrap()
             .par_iter()
             .by_uniform_blocks(1)
             .map(|input| input.get_input_value())
             .sum::<f32>();
+
+        if let Some(props) = &self.props {
+            result = (props.activation())(result);
+        }
 
         self.activated_value = Some(result);
 

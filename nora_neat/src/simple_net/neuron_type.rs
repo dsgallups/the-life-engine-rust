@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-use crate::{prelude::*, simple_net::neuron::SimpleNeuron};
+use crate::simple_net::neuron::SimpleNeuron;
 
 pub struct Active(Arc<RwLock<SimpleNeuron>>);
 impl Active {
@@ -11,5 +11,3 @@ impl Active {
         &self.0
     }
 }
-
-//pub type NeuronPropsAlias = NeuronProps<Arc<RwLock<SimpleNeuron>>>;
