@@ -9,8 +9,6 @@ use std::sync::{Arc, RwLock};
 
 use uuid::Uuid;
 
-use crate::prelude::*;
-
 /// This defines a node's topology. What does this mean?
 ///
 /// this node has an identifier.
