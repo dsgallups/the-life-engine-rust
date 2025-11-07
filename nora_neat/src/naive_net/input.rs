@@ -1,25 +1,22 @@
 use std::f32;
 
-use crate::{naive_net::neuron_type::Active, prelude::*};
+use crate::{naive_net::neuron::NaiveNeuron, prelude::*};
 
-impl NeuronInput<Active> {
+impl NeuronInput<NaiveNeuron> {
     /// applies a weight and exponent to the input neuron and returns the result
     pub fn get_input_value(&self) -> f32 {
         //note that this can totally return inf if the value is zero. This is intentional.
 
         if let Some(cached) = {
-            self.input()
-                .handle()
-                .inner()
+            self.node()
                 .read()
-                .unwrap()
                 .check_activated()
                 .map(|val| val * self.weight())
         } {
             return cached;
         }
 
-        let neuron_value = self.input().handle().inner().write().unwrap().activate();
+        let neuron_value = self.node().write().activate();
 
         // if result.is_infinite() || result.is_nan() {
         //     println!(

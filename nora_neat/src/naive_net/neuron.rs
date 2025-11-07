@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use crate::{naive_net::neuron_type::Active, prelude::*};
+use crate::prelude::*;
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator as _, ParallelIterator as _};
 use uuid::Uuid;
 
@@ -10,7 +10,7 @@ pub struct NaiveNeuron {
     inner: Arc<RwLock<NaiveNeuronInner>>,
 }
 impl NaiveNeuron {
-    pub fn new(name: impl ToString, id: Uuid, props: Option<NeuronProps<Active>>) -> Self {
+    pub fn new(name: impl ToString, id: Uuid, props: Option<NeuronProps<NaiveNeuron>>) -> Self {
         Self {
             name: name.to_string(),
             inner: Arc::new(RwLock::new(NaiveNeuronInner::new(id, props))),
@@ -34,13 +34,13 @@ impl NaiveNeuron {
 
 pub struct NaiveNeuronInner {
     id: Uuid,
-    props: Option<NeuronProps<Active>>,
+    props: Option<NeuronProps<NaiveNeuron>>,
     /// some working value, returned by the result of the activation value.
     activated_value: Option<f32>,
 }
 
 impl NaiveNeuronInner {
-    pub fn new(id: Uuid, props: Option<NeuronProps<Active>>) -> Self {
+    pub fn new(id: Uuid, props: Option<NeuronProps<NaiveNeuron>>) -> Self {
         Self {
             id,
             props,
@@ -48,7 +48,7 @@ impl NaiveNeuronInner {
         }
     }
 
-    pub fn inputs(&self) -> Option<&[NeuronInput<Active>]> {
+    pub fn inputs(&self) -> Option<&[NeuronInput<NaiveNeuron>]> {
         self.props.as_ref().map(|props| props.inputs())
     }
 
@@ -56,7 +56,7 @@ impl NaiveNeuronInner {
         self.id
     }
 
-    pub fn props(&self) -> Option<&NeuronProps<Active>> {
+    pub fn props(&self) -> Option<&NeuronProps<NaiveNeuron>> {
         self.props.as_ref()
     }
 
@@ -153,7 +153,7 @@ pub fn to_neuron(topology: &NeuronTopology, neurons: &mut Vec<NaiveNeuron>) {
                         .unwrap();
 
                     new_neuron_inputs.push(NeuronInput::new(
-                        Active::new(neuron_in_array.clone()),
+                        neuron_in_array.clone(),
                         topology_input.weight(),
                     ));
                 }

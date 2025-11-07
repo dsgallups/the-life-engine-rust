@@ -48,7 +48,7 @@ impl NaiveNetwork {
             to_neuron(&neuron, &mut neurons);
             let neuron = neurons.iter().find(|n| n.id() == neuron.id()).unwrap();
 
-            let neuron_read = neuron.inner().read().unwrap();
+            let neuron_read = neuron.read();
 
             if neuron_read.is_input() {
                 input_layer.push(neuron.clone());
@@ -79,7 +79,7 @@ impl NaiveNetwork {
     pub fn predict(&self, inputs: &[f32]) -> impl Iterator<Item = f32> {
         // reset all states first
         self.neurons.par_iter().for_each(|neuron| {
-            let mut neuron = neuron.inner().write().unwrap();
+            let mut neuron = neuron.write();
             neuron.flush_state();
         });
         inputs.par_iter().enumerate().for_each(|(index, value)| {
@@ -88,7 +88,7 @@ impl NaiveNetwork {
                 return;
                 //panic!("couldn't flush i {}", index);
             };
-            let mut nw = nw.inner().write().unwrap();
+            let mut nw = nw.write();
             nw.override_state(*value);
         });
 
@@ -96,7 +96,7 @@ impl NaiveNetwork {
             .output_layer
             .par_iter()
             .fold(Vec::new, |mut values, neuron| {
-                let mut neuron = neuron.inner().write().unwrap();
+                let mut neuron = neuron.write();
 
                 values.push(neuron.activate());
 
@@ -177,7 +177,7 @@ impl NaiveNetwork {
     pub fn debug_str(&self) -> String {
         let mut str = "neurons: \n".to_string();
         for (neuron_index, neuron) in self.neurons.iter().enumerate() {
-            let neuron = neuron.inner().read().unwrap();
+            let neuron = neuron.read();
             str.push_str(&format!(
                 "\n(({}) {}[{}]: ",
                 neuron_index,
@@ -188,7 +188,7 @@ impl NaiveNetwork {
                 Some(props) => {
                     str.push('[');
                     for input in props.inputs() {
-                        let n = input.input().handle().inner().read().unwrap();
+                        let n = input.node().read();
 
                         let loc = self
                             .neurons
@@ -212,7 +212,7 @@ impl NaiveNetwork {
         str.push_str("\n\ninput_layer:");
 
         for (neuron_index, neuron) in self.input_layer.iter().enumerate() {
-            let neuron = neuron.inner().read().unwrap();
+            let neuron = neuron.read();
             str.push_str(&format!(
                 "\n(({}) {}[{}]: ",
                 neuron_index,
@@ -223,7 +223,7 @@ impl NaiveNetwork {
                 Some(props) => {
                     str.push('[');
                     for input in props.inputs() {
-                        let n = input.input().handle().inner().read().unwrap();
+                        let n = input.node().read();
 
                         let loc = self
                             .neurons
@@ -247,7 +247,7 @@ impl NaiveNetwork {
         str.push_str("\n\noutput layer:");
 
         for (neuron_index, neuron) in self.output_layer.iter().enumerate() {
-            let neuron = neuron.inner().read().unwrap();
+            let neuron = neuron.read();
             str.push_str(&format!(
                 "\n(({}) {}[{}]: ",
                 neuron_index,
@@ -258,7 +258,7 @@ impl NaiveNetwork {
                 Some(props) => {
                     str.push('[');
                     for input in props.inputs() {
-                        let n = input.input().handle().inner().read().unwrap();
+                        let n = input.node().read();
 
                         let loc = self
                             .neurons
