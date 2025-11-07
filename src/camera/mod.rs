@@ -1,4 +1,11 @@
+mod node;
+pub use node::*;
+
+mod render_layers;
+pub use render_layers::*;
+
 use bevy::{
+    camera::visibility::RenderLayers,
     input::mouse::{AccumulatedMouseScroll, MouseScrollUnit},
     prelude::*,
 };
@@ -6,6 +13,8 @@ use bevy::{
 use crate::settings::Keybinds;
 
 pub(super) fn plugin(app: &mut App) {
+    app.add_plugins(node::plugin);
+
     app.add_systems(Startup, setup_cameras);
 
     app.add_systems(Update, (update_zoom, move_camera));
@@ -21,7 +30,20 @@ fn setup_cameras(mut commands: Commands) {
         MeshPickingCamera,
         Transform::from_scale(Vec3::splat(0.05)),
         Camera {
+            order: 0,
             clear_color: ClearColorConfig::Custom(Color::BLACK),
+            ..default()
+        },
+        RenderLayers::from(RenderLayer::DEFAULT | RenderLayer::GIZMO),
+    ));
+
+    commands.spawn((
+        Camera2d,
+        UiPickingCamera,
+        IsDefaultUiCamera,
+        RenderLayers::none(),
+        Camera {
+            order: 1,
             ..default()
         },
     ));

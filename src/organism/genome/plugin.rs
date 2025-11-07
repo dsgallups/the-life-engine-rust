@@ -1,9 +1,7 @@
-use crate::game::{
+use crate::organism::{
     cell::{BrainCell, Collagen, DataCell, Eye, Launcher},
-    organism::{
-        genome::{CellDetails, Genome},
-        CellOf,
-    },
+    genome::{CellDetails, Genome},
+    CellOf,
 };
 use bevy::{
     color::palettes::tailwind::{PINK_400, RED_600, SKY_300, YELLOW_400},

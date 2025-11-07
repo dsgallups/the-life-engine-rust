@@ -1,12 +1,14 @@
+mod cell;
+pub use cell::*;
+
 mod genome;
+pub use genome::*;
 
 use bevy::prelude::*;
-use rand::{rngs::StdRng, SeedableRng};
-
-use crate::game::organism::genome::{Genome, SpawnOrganism};
+use rand::{SeedableRng, rngs::StdRng};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_plugins(genome::plugin);
+    app.add_plugins((cell::plugin, genome::plugin));
 
     app.add_systems(Startup, spawn_first_organism);
 }

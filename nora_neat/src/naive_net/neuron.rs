@@ -1,18 +1,49 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use crate::{naive_net::neuron_type::Active, prelude::*};
+use crate::prelude::*;
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator as _, ParallelIterator as _};
 use uuid::Uuid;
 
+#[derive(Clone)]
 pub struct NaiveNeuron {
+    name: String,
+    // this is duplicated from inner :)
     id: Uuid,
-    props: Option<NeuronProps<Active>>,
+    inner: Arc<RwLock<NaiveNeuronInner>>,
+}
+impl NaiveNeuron {
+    pub fn new(name: impl ToString, id: Uuid, props: Option<NeuronProps<NaiveNeuron>>) -> Self {
+        Self {
+            name: name.to_string(),
+            id,
+            inner: Arc::new(RwLock::new(NaiveNeuronInner::new(id, props))),
+        }
+    }
+
+    pub fn read(&self) -> RwLockReadGuard<'_, NaiveNeuronInner> {
+        self.inner.read().unwrap()
+    }
+    pub fn write(&self) -> RwLockWriteGuard<'_, NaiveNeuronInner> {
+        self.inner.write().unwrap()
+    }
+
+    pub fn id(&self) -> Uuid {
+        self.id
+    }
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+pub struct NaiveNeuronInner {
+    id: Uuid,
+    props: Option<NeuronProps<NaiveNeuron>>,
     /// some working value, returned by the result of the activation value.
     activated_value: Option<f32>,
 }
 
-impl NaiveNeuron {
-    pub fn new(id: Uuid, props: Option<NeuronProps<Active>>) -> Self {
+impl NaiveNeuronInner {
+    pub fn new(id: Uuid, props: Option<NeuronProps<NaiveNeuron>>) -> Self {
         Self {
             id,
             props,
@@ -20,7 +51,7 @@ impl NaiveNeuron {
         }
     }
 
-    pub fn inputs(&self) -> Option<&[NeuronInput<Active>]> {
+    pub fn inputs(&self) -> Option<&[NeuronInput<NaiveNeuron>]> {
         self.props.as_ref().map(|props| props.inputs())
     }
 
@@ -28,7 +59,7 @@ impl NaiveNeuron {
         self.id
     }
 
-    pub fn props(&self) -> Option<&NeuronProps<Active>> {
+    pub fn props(&self) -> Option<&NeuronProps<NaiveNeuron>> {
         self.props.as_ref()
     }
 
@@ -101,9 +132,9 @@ impl NaiveNeuron {
     }
 }
 
-pub fn to_neuron(topology: &NeuronTopology, neurons: &mut Vec<Arc<RwLock<NaiveNeuron>>>) {
+pub fn to_neuron(topology: &NeuronTopology, neurons: &mut Vec<NaiveNeuron>) {
     for neuron in neurons.iter() {
-        if neuron.read().unwrap().id() == topology.id() {
+        if neuron.id() == topology.id() {
             return;
         }
     }
@@ -121,13 +152,11 @@ pub fn to_neuron(topology: &NeuronTopology, neurons: &mut Vec<Arc<RwLock<NaiveNe
 
                     let neuron_in_array = neurons
                         .iter()
-                        .find(|n| {
-                            n.read().unwrap().id() == topology_input_neuron.read().unwrap().id()
-                        })
+                        .find(|n| n.id() == topology_input_neuron.read().unwrap().id())
                         .unwrap();
 
                     new_neuron_inputs.push(NeuronInput::new(
-                        Active::new(neuron_in_array.clone()),
+                        neuron_in_array.clone(),
                         topology_input.weight(),
                     ));
                 }
@@ -143,9 +172,8 @@ pub fn to_neuron(topology: &NeuronTopology, neurons: &mut Vec<Arc<RwLock<NaiveNe
         None => None,
     };
 
-    let neuron = Arc::new(RwLock::new(NaiveNeuron::new(
-        topology.id(),
-        new_neuron_props,
-    )));
-    neurons.push(Arc::clone(&neuron));
+    let neuron_name = neurons.len();
+
+    let neuron = NaiveNeuron::new(neuron_name, topology.id(), new_neuron_props);
+    neurons.push(neuron.clone());
 }
