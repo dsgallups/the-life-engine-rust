@@ -35,6 +35,7 @@ bevy_egui = { version = "0.38", features = ["bevy_ui"], optional = true }
 nora_neat = {path = "nora_neat"}
 bitflags = "2.10.0"
 bimap = "0.6.3"
+enum_dispatch = "0.3.13"
 
 [profile.dev]
 opt-level = 1

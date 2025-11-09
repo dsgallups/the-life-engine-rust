@@ -1,9 +1,24 @@
-use crate::network::{CellTemplate, PartialNetworkTemplate};
+use crate::genome::PartialNetworkTemplate;
+
+pub enum CellTemplate {
+    Eye(EyeGenome),
+    Brain(BrainGenome),
+    Launcher(LauncherTemplate),
+}
+impl CellTemplate {
+    pub fn template(&self) -> PartialNetworkTemplate {
+        match self {
+            Self::Brain(b) => b.template(),
+            Self::Eye(e) => e.template(),
+            Self::Launcher(l) => l.template(),
+        }
+    }
+}
 
 #[derive(Default)]
-pub struct EyeTemplate {}
+pub struct EyeGenome {}
 
-impl CellTemplate for EyeTemplate {
+impl EyeGenome {
     /// The eye feeds 3 data points into the network
     /// 1 - enemy is around
     /// 2 - enemy position x
@@ -14,8 +29,9 @@ impl CellTemplate for EyeTemplate {
 }
 
 #[derive(Default)]
-pub struct BrainTemplate {}
-impl CellTemplate for BrainTemplate {
+pub struct BrainGenome {}
+
+impl BrainGenome {
     /// the brain feeds 2 data points into the network
     /// 1 - position x
     /// 2 - position y
@@ -27,7 +43,7 @@ impl CellTemplate for BrainTemplate {
 #[derive(Default)]
 pub struct LauncherTemplate {}
 
-impl CellTemplate for LauncherTemplate {
+impl LauncherTemplate {
     /// the launcher doesn't feed any data into the network.
     ///
     /// the launcher receives 3 data points from the network:

@@ -6,7 +6,7 @@ mod dev_tools;
 pub mod camera;
 pub mod cell;
 pub mod game;
-pub mod network;
+pub mod genome;
 pub mod node_visual;
 pub mod organism;
 pub mod settings;
@@ -39,6 +39,7 @@ pub fn plugin(app: &mut App) {
 
     app.add_plugins((
         cell::plugin,
+        genome::plugin,
         camera::plugin,
         node_visual::plugin,
         settings::plugin,

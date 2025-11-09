@@ -25,9 +25,12 @@ impl NetworkTopology {
     ///
     /// This is a low-level constructor primarily used internally or when
     /// manually constructing network architectures.
-    pub fn from_raw_parts(neurons: Vec<NeuronTopology>, mutation_chances: MutationChances) -> Self {
+    pub fn from_raw_parts(
+        neurons: impl IntoIterator<Item = NeuronTopology>,
+        mutation_chances: MutationChances,
+    ) -> Self {
         Self {
-            neurons,
+            neurons: neurons.into_iter().collect(),
             mutation_chances,
         }
     }
