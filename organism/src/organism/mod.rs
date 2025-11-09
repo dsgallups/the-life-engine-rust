@@ -1,13 +1,93 @@
+use crate::{
+    CellAssets, CellDetails, CellOf,
+    cell::{Collagen, DataCell, Eye, Launcher},
+    genome::Genome,
+};
 use bevy::prelude::*;
 
-#[derive(Component, Reflect)]
-#[relationship_target(relationship = CellOf)]
-pub struct Cells(Vec<Entity>);
+#[derive(Message)]
+pub struct SpawnOrganism {
+    genome: Genome,
+    location: Vec2,
+}
+impl SpawnOrganism {
+    pub fn new(genome: Genome, location: Vec2) -> Self {
+        Self { genome, location }
+    }
+}
 
-#[derive(Component, Reflect)]
-#[relationship(relationship_target = Cells)]
-pub struct CellOf(pub Entity);
+pub fn plugin(app: &mut App) {
+    app.add_message::<SpawnOrganism>();
+    app.add_systems(Update, spawn_genomes);
+}
 
-pub(super) fn plugin(app: &mut App) {
-    //todo
+fn spawn_genomes(
+    mut msgs: MessageReader<SpawnOrganism>,
+    mut commands: Commands,
+    assets: Res<CellAssets>,
+) {
+    for msg in msgs.read() {
+        let organism = commands
+            .spawn((
+                Name::new("Organism"),
+                InheritedVisibility::VISIBLE,
+                msg.genome.clone(),
+                Pickable::default(),
+                Transform::from_xyz(msg.location.x, msg.location.y, 0.),
+            ))
+            .id();
+
+        for cell in msg.genome.cells() {
+            let location = cell.location();
+            let mut commands = commands.spawn((
+                cell.details().cell_type(),
+                ChildOf(organism),
+                CellOf(organism),
+                Pickable::default(),
+                Transform::from_xyz(location.x as f32, location.y as f32, 0.),
+                Mesh2d(assets.cell.clone()),
+            ));
+            match cell.details() {
+                CellDetails::Collagen => {
+                    commands.insert((
+                        Name::new("Collagen"),
+                        Collagen::default(),
+                        MeshMaterial2d(assets.white.clone()),
+                    ));
+                }
+                CellDetails::Data => {
+                    commands.insert((
+                        Name::new("Data Cell"),
+                        DataCell::default(),
+                        MeshMaterial2d(assets.yellow.clone()),
+                    ));
+                }
+                CellDetails::Launcher => {
+                    commands.insert((
+                        Name::new("Launcher Cell"),
+                        Launcher::default(),
+                        MeshMaterial2d(assets.red.clone()),
+                    ));
+                }
+                CellDetails::Eye => {
+                    commands.insert((
+                        Name::new("Eye Cell"),
+                        Eye::default(),
+                        MeshMaterial2d(assets.sky.clone()),
+                    ));
+                }
+
+                CellDetails::Brain => {
+                    // todo
+                    todo!()
+                } // CellDetails::Brain(topology) => {
+                  //     commands.insert((
+                  //         Name::new("Brain Cell"),
+                  //         BrainCell::new(topology.deep_clone()),
+                  //         MeshMaterial2d(assets.pink.clone()),
+                  //     ));
+                  // }
+            }
+        }
+    }
 }

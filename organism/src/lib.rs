@@ -16,11 +16,3 @@ impl Plugin for OrganismPlugin {
         app.add_plugins((cell::plugin, organism::plugin));
     }
 }
-
-#[derive(Component, Reflect)]
-#[relationship_target(relationship = CellOf)]
-pub struct Cells(Vec<Entity>);
-
-#[derive(Component, Reflect)]
-#[relationship(relationship_target = Cells)]
-pub struct CellOf(pub Entity);
