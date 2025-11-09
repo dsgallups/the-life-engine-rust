@@ -30,6 +30,11 @@ what if the cell replicates and loses this node. Then those inputs and outputs a
 
 
 
+Ok, so now we have templates. what the fuck now
+We should take this cell template, and then
+1. determine where the cell will be located
+2. create a fresh network topology where we will set the input values of a cell and put it into the network
+3. do things
 
 
 

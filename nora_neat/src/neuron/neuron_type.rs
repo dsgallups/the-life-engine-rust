@@ -104,13 +104,13 @@ impl<I> NeuronProps<I> {
 }
 
 #[derive(Debug, Clone)]
-pub struct Topology(Weak<RwLock<NeuronTopology>>);
+pub struct Topology(Weak<RwLock<NeuronTopologyInner>>);
 
 impl Topology {
-    pub fn new(inner: &Arc<RwLock<NeuronTopology>>) -> Self {
-        Self(Arc::downgrade(inner))
+    pub fn new(top: &NeuronTopology) -> Self {
+        Self(Arc::downgrade(top.inner()))
     }
-    pub fn handle(&self) -> &Weak<RwLock<NeuronTopology>> {
+    pub fn handle(&self) -> &Weak<RwLock<NeuronTopologyInner>> {
         &self.0
     }
 }

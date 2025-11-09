@@ -18,3 +18,7 @@ impl OrganismGenome {
         todo!()
     }
 }
+
+// pub struct NetworkTopology {
+//     input: Vec<f32>
+// }
