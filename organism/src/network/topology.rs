@@ -9,6 +9,10 @@ pub trait Junction {
     fn efference(&mut self) -> Option<Vec<JunctionEffer>>;
 }
 
+pub enum NeuronInterface {
+    Junction(),
+}
+
 /// This receives input
 pub struct JunctionAffer {
     channel: BusReader<f32>,

@@ -3650,6 +3650,10 @@ checksum = "610a5acd306ec67f907abe5567859a3c693fb9886eb1f012ab8f2a47bef3db51"
 [[package]]
 name = "nora"
 version = "0.1.0"
+dependencies = [
+ "rand",
+ "trotcast",
+]
 
 [[package]]
 name = "nora_neat"
@@ -4839,6 +4843,7 @@ version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d5fe4ccb98d9c292d56fec89a5e07da7fc4cf0dc11e156b41793132775d3e591"
 dependencies = [
+ "lock_api",
  "portable-atomic",
 ]
 
@@ -5215,6 +5220,15 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "trotcast"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "61e0ceee0e2fa8cfed894a7d5663c4c4c4f4dda5ff436fc030300becccd701d3"
+dependencies = [
+ "spin",
 ]
 
 [[package]]
