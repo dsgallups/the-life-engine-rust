@@ -87,7 +87,7 @@ impl GenomeBuilder {
             let mut cell_genome = CellGenome::new(
                 partial_cell_genome.id(),
                 partial_cell_genome.kind().cell_details(),
-                partial_cell_genome.location(),
+                partial_cell_genome.position(),
             );
 
             if let Some(inputs) = input_ir_map.remove(&ir_id) {

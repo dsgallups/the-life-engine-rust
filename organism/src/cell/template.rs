@@ -7,6 +7,7 @@ use crate::{CellKind, genome::PartialNetworkTemplate};
 pub struct PartialCellGenome {
     id: Uuid,
     kind: CellKind,
+    position: IVec2,
 }
 
 impl PartialCellGenome {
@@ -16,17 +17,35 @@ impl PartialCellGenome {
     pub fn kind(&self) -> CellKind {
         self.kind
     }
-    pub fn location(&self) -> IVec2 {
-        todo!()
+    pub fn position(&self) -> IVec2 {
+        self.position
+    }
+}
+pub struct CellTemplate {
+    position: IVec2,
+    template_kind: CellTemplateKind,
+}
+
+impl CellTemplate {
+    pub fn template(&self) -> PartialNetworkTemplate {
+        self.template_kind.template()
+    }
+    pub fn into_genome(self) -> PartialCellGenome {
+        let id = Uuid::new_v4();
+        PartialCellGenome {
+            id,
+            kind: self.template_kind.into_kind(),
+            position: self.position,
+        }
     }
 }
 
-pub enum CellTemplate {
+pub enum CellTemplateKind {
     Eye(EyeGenome),
     Brain(BrainGenome),
     Launcher(LauncherTemplate),
 }
-impl CellTemplate {
+impl CellTemplateKind {
     pub fn template(&self) -> PartialNetworkTemplate {
         match self {
             Self::Brain(b) => b.template(),
@@ -35,16 +54,12 @@ impl CellTemplate {
         }
     }
 
-    pub fn into_genome(self) -> PartialCellGenome {
-        let id = Uuid::new_v4();
-
-        let kind = match self {
-            CellTemplate::Brain(_) => CellKind::Brain,
-            CellTemplate::Eye(_) => CellKind::Eye,
-            CellTemplate::Launcher(_) => CellKind::Launcher,
-        };
-
-        PartialCellGenome { id, kind }
+    pub fn into_kind(self) -> CellKind {
+        match self {
+            Self::Brain(_) => CellKind::Brain,
+            Self::Eye(_) => CellKind::Eye,
+            Self::Launcher(_) => CellKind::Launcher,
+        }
     }
 }
 

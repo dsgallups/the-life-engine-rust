@@ -28,21 +28,3 @@ impl Genome {
         self.cells.iter()
     }
 }
-
-// macro_rules! cellg {
-//     ($j:expr, $variant:ident $( ( $($args:expr),* $(,)? ) )? at $x:expr, $y:expr) => {
-//         CellGenome {
-//             junction_id: Some($j),
-//             kind: CellDetails::$variant $( ( $($args),* ) )?,
-//             location: IVec2::new($x, $y),
-//         }
-//     };
-
-//     ($variant:ident $( ( $($args:expr),* $(,)? ) )? at $x:expr, $y:expr) => {
-//         CellGenome {
-//             junction_id: None,
-//             kind: CellDetails::$variant $( ( $($args),* ) )?,
-//             location: IVec2::new($x, $y),
-//         }
-//     };
-// }
