@@ -9,10 +9,7 @@ impl CellTemplate for EyeTemplate {
     /// 2 - enemy position x
     /// 3 - enemy position y
     fn template(&self) -> PartialNetworkTemplate {
-        PartialNetworkTemplate {
-            input_junctions: 3,
-            output_junctions: 0,
-        }
+        PartialNetworkTemplate::new(3, 0)
     }
 }
 
@@ -23,10 +20,7 @@ impl CellTemplate for BrainTemplate {
     /// 1 - position x
     /// 2 - position y
     fn template(&self) -> PartialNetworkTemplate {
-        PartialNetworkTemplate {
-            input_junctions: 2,
-            output_junctions: 0,
-        }
+        PartialNetworkTemplate::new(2, 0)
     }
 }
 
@@ -41,9 +35,6 @@ impl CellTemplate for LauncherTemplate {
     /// 2 - sine
     /// 3 - Fire (threshold)
     fn template(&self) -> PartialNetworkTemplate {
-        PartialNetworkTemplate {
-            input_junctions: 0,
-            output_junctions: 3,
-        }
+        PartialNetworkTemplate::new(0, 3)
     }
 }
