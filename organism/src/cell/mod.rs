@@ -1,17 +1,5 @@
-mod brain;
-pub use brain::*;
-
-mod data;
-pub use data::*;
-
-mod collagen;
-pub use collagen::*;
-
-mod launcher;
-pub use launcher::*;
-
-mod eye;
-pub use eye::*;
+mod cell_types;
+pub use cell_types::*;
 
 use bevy::prelude::*;
 
@@ -19,11 +7,6 @@ use bevy::prelude::*;
 pub struct ActiveCell;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_plugins((
-        brain::plugin,
-        data::plugin,
-        collagen::plugin,
-        launcher::plugin,
-    ));
+    app.add_plugins(cell_types::plugin);
     //todo
 }
