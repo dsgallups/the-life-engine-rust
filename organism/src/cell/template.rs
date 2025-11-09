@@ -1,11 +1,24 @@
+use bevy::math::IVec2;
 use uuid::Uuid;
 
 use crate::{CellKind, genome::PartialNetworkTemplate};
 
-#[derive(Clone)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub struct PartialCellGenome {
-    pub id: Uuid,
-    pub kind: CellKind,
+    id: Uuid,
+    kind: CellKind,
+}
+
+impl PartialCellGenome {
+    pub fn id(&self) -> Uuid {
+        self.id
+    }
+    pub fn kind(&self) -> CellKind {
+        self.kind
+    }
+    pub fn location(&self) -> IVec2 {
+        todo!()
+    }
 }
 
 pub enum CellTemplate {

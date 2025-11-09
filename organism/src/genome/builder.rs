@@ -6,7 +6,7 @@ use nora_neat::{
 use rand::Rng;
 use uuid::Uuid;
 
-use crate::{CellTemplate, Genome};
+use crate::{CellGenome, CellTemplate, Genome, PartialCellGenome};
 
 pub struct GenomeBuilder {
     cell_templates: Vec<CellTemplate>,
@@ -25,17 +25,24 @@ impl GenomeBuilder {
         // After we insert the neuron topology ids, we will then grab the uuids out of the topology.
         //
         // This means that outputs can potentially be intermediary nodes. in the future.
-        let mut input_ir_map: HashMap<Uuid, Vec<Uuid>> = HashMap::default();
-        let mut output_ir_map: HashMap<Uuid, Vec<Uuid>> = HashMap::default();
+
+        let mut partial_cell_genomes: Vec<PartialCellGenome> =
+            Vec::with_capacity(self.cell_templates.capacity());
+
+        let mut input_ir_map: HashMap<usize, Vec<Uuid>> = HashMap::default();
+        let mut output_ir_map: HashMap<usize, Vec<Uuid>> = HashMap::default();
 
         let mut input_neurons = Vec::new();
         let mut output_neurons = Vec::new();
 
         for cell_template in self.cell_templates {
             let p_net_template = cell_template.template();
-            let id = Uuid::new_v4();
 
-            for i in 0..p_net_template.input_junctions() {
+            let partial_cell_genome = cell_template.into_genome();
+            partial_cell_genomes.push(partial_cell_genome);
+            let id = partial_cell_genomes.len() - 1;
+
+            for _ in 0..p_net_template.input_junctions() {
                 let topology_id = Uuid::new_v4();
                 let neuron_topology = NeuronTopology::input(topology_id);
 
@@ -44,7 +51,7 @@ impl GenomeBuilder {
                 indices.push(topology_id);
             }
 
-            for i in 0..p_net_template.output_junctions() {
+            for _ in 0..p_net_template.output_junctions() {
                 let topology_id = Uuid::new_v4();
                 let output_topology = NeuronTopology::output(topology_id, vec![], rng);
 
@@ -71,39 +78,49 @@ impl GenomeBuilder {
             mutation_chances,
         );
 
-        //from the network topology, we will map the associated UUIDs into indices into this topology
+        let mut cells = Vec::with_capacity(partial_cell_genomes.capacity());
 
-        let mut input_map: HashMap<Uuid, Vec<usize>> =
-            HashMap::with_capacity(input_ir_map.capacity());
-        let mut output_map: HashMap<Uuid, Vec<usize>> =
-            HashMap::with_capacity(output_ir_map.capacity());
+        // at this point, we have input mapping (uuid to indices into the topology)
+        // and partial cells. We just need to finish the owl now.
+        //from the network topology, we will map the ids into indices into this topology
+        for (ir_id, partial_cell_genome) in partial_cell_genomes.into_iter().enumerate() {
+            let mut cell_genome = CellGenome::new(
+                partial_cell_genome.id(),
+                partial_cell_genome.kind().cell_details(),
+                partial_cell_genome.location(),
+            );
 
-        for (input_id, input_neuron_ids) in input_ir_map {
-            let mut ids = Vec::with_capacity(input_neuron_ids.capacity());
-            for id in input_neuron_ids {
-                let position = network_topology
-                    .neurons()
-                    .iter()
-                    .position(|neuron| neuron.id() == id)
-                    .unwrap();
-                ids.push(position)
+            if let Some(inputs) = input_ir_map.remove(&ir_id) {
+                let mut cell_inputs = Vec::with_capacity(inputs.len());
+                for input_id in inputs {
+                    let position = network_topology
+                        .neurons()
+                        .iter()
+                        .position(|neuron| neuron.id() == input_id)
+                        .unwrap();
+                    cell_inputs.push(position);
+                }
+                cell_genome.set_inputs(cell_inputs);
             }
-            input_map.insert(input_id, ids);
+
+            if let Some(outputs) = output_ir_map.remove(&ir_id) {
+                let mut cell_outputs = Vec::with_capacity(outputs.len());
+                for output_id in outputs {
+                    let position = network_topology
+                        .neurons()
+                        .iter()
+                        .position(|neuron| neuron.id() == output_id)
+                        .unwrap();
+                    cell_outputs.push(position);
+                }
+                cell_genome.set_outputs(cell_outputs);
+            }
+            cells.push(cell_genome);
         }
 
-        for (output_id, output_neuron_ids) in output_ir_map {
-            let mut ids = Vec::with_capacity(output_neuron_ids.capacity());
-            for id in output_neuron_ids {
-                let position = network_topology
-                    .neurons()
-                    .iter()
-                    .position(|neuron| neuron.id() == id)
-                    .unwrap();
-                ids.push(position)
-            }
-            output_map.insert(output_id, ids);
+        Genome {
+            cells,
+            network_topology,
         }
-
-        todo!()
     }
 }

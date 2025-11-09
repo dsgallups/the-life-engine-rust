@@ -1,4 +1,5 @@
 mod plugin;
+use nora_neat::prelude::NetworkTopology;
 pub use plugin::*;
 
 mod template;
@@ -15,6 +16,7 @@ use crate::{CellGenome, CellTemplate};
 #[derive(Clone, Component)]
 pub struct Genome {
     cells: Vec<CellGenome>,
+    network_topology: NetworkTopology,
 }
 
 impl Genome {

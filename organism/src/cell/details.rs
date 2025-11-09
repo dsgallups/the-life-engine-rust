@@ -3,7 +3,7 @@ use nora_neat::prelude::NetworkTopology;
 
 #[derive(Clone)]
 pub enum CellDetails {
-    Brain(NetworkTopology),
+    Brain,
     Launcher,
     Eye,
     Collagen,
@@ -12,7 +12,7 @@ pub enum CellDetails {
 impl CellDetails {
     pub fn cell_type(&self) -> CellKind {
         match self {
-            CellDetails::Brain(_) => CellKind::Brain,
+            CellDetails::Brain => CellKind::Brain,
             CellDetails::Collagen => CellKind::Collagen,
             CellDetails::Data => CellKind::Data,
             CellDetails::Eye => CellKind::Eye,
@@ -21,11 +21,22 @@ impl CellDetails {
     }
 }
 
-#[derive(Component, Reflect, Clone, Copy, PartialEq, Eq)]
+#[derive(Component, Reflect, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CellKind {
     Brain,
     Launcher,
     Eye,
     Collagen,
     Data,
+}
+impl CellKind {
+    pub fn cell_details(&self) -> CellDetails {
+        match self {
+            CellKind::Brain => CellDetails::Brain,
+            CellKind::Collagen => CellDetails::Collagen,
+            CellKind::Data => CellDetails::Data,
+            CellKind::Eye => CellDetails::Eye,
+            CellKind::Launcher => CellDetails::Launcher,
+        }
+    }
 }

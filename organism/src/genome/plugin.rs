@@ -1,6 +1,6 @@
 use crate::{
     CellDetails, CellOf,
-    cell::{BrainCell, Collagen, DataCell, Eye, Launcher},
+    cell::{Collagen, DataCell, Eye, Launcher},
     genome::Genome,
 };
 use bevy::{
@@ -107,13 +107,17 @@ fn spawn_genomes(
                         MeshMaterial2d(assets.sky.clone()),
                     ));
                 }
-                CellDetails::Brain(topology) => {
-                    commands.insert((
-                        Name::new("Brain Cell"),
-                        BrainCell::new(topology.deep_clone()),
-                        MeshMaterial2d(assets.pink.clone()),
-                    ));
-                }
+
+                CellDetails::Brain => {
+                    // todo
+                    todo!()
+                } // CellDetails::Brain(topology) => {
+                  //     commands.insert((
+                  //         Name::new("Brain Cell"),
+                  //         BrainCell::new(topology.deep_clone()),
+                  //         MeshMaterial2d(assets.pink.clone()),
+                  //     ));
+                  // }
             }
         }
     }
