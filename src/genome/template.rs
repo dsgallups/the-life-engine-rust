@@ -1,7 +1,3 @@
-use uuid::Uuid;
-
-use crate::genome::{BrainGenome, EyeGenome, LauncherTemplate};
-
 /// A cell will have these number of inputs and outputs.
 pub struct PartialNetworkTemplate {
     input_junctions: usize,
