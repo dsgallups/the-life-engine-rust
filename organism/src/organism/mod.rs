@@ -4,6 +4,18 @@ use crate::{
     genome::Genome,
 };
 use bevy::prelude::*;
+use nora_neat::prelude::NetworkTopology;
+
+#[derive(Component)]
+pub struct OrganismNetwork {
+    topology: NetworkTopology,
+}
+
+impl OrganismNetwork {
+    pub fn new(topology: NetworkTopology) -> Self {
+        Self { topology }
+    }
+}
 
 #[derive(Message)]
 pub struct SpawnOrganism {
@@ -30,6 +42,7 @@ fn spawn_genomes(
         let organism = commands
             .spawn((
                 Name::new("Organism"),
+                OrganismNetwork::new(msg.genome.network().deep_clone()),
                 InheritedVisibility::VISIBLE,
                 msg.genome.clone(),
                 Pickable::default(),

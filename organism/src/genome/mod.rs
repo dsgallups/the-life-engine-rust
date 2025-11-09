@@ -27,4 +27,7 @@ impl Genome {
     pub fn cells(&self) -> impl Iterator<Item = &CellGenome> {
         self.cells.iter()
     }
+    pub fn network(&self) -> &NetworkTopology {
+        &self.network_topology
+    }
 }
