@@ -7,6 +7,9 @@ pub use genome::*;
 mod organism;
 pub use organism::*;
 
+mod network;
+pub use network::*;
+
 use bevy::prelude::*;
 
 pub struct OrganismPlugin;

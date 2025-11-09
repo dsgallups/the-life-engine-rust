@@ -11,7 +11,7 @@ pub use builder::*;
 use bevy::prelude::*;
 use rand::Rng;
 
-use crate::{CellGenome, CellTemplate};
+use crate::{CellGenome, CellTemplate, NetworkComponents};
 
 #[derive(Clone, Component)]
 pub struct Genome {
@@ -29,5 +29,8 @@ impl Genome {
     }
     pub fn network(&self) -> &NetworkTopology {
         &self.network_topology
+    }
+    pub fn to_network_component(&self) -> NetworkComponents {
+        NetworkComponents::new(self)
     }
 }
