@@ -7,7 +7,7 @@ use bevy::{
 
 use crate::{
     camera::{NodeCamera, RenderLayer},
-    organism::{ActiveCell, BrainCell, CellVisual},
+    cell::{ActiveCell, BrainCell, CellVisual},
 };
 
 pub(super) fn plugin(app: &mut App) {

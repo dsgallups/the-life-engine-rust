@@ -4,7 +4,9 @@
 mod dev_tools;
 
 mod camera;
+mod cell;
 mod game;
+mod network;
 mod node_visual;
 mod organism;
 mod settings;
@@ -38,6 +40,7 @@ fn main() {
     });
 
     app.add_plugins((
+        cell::plugin,
         camera::plugin,
         node_visual::plugin,
         settings::plugin,

@@ -9,7 +9,7 @@ use bimap::BiMap;
 
 use crate::{
     camera::RenderLayer,
-    organism::{ActiveCell, BrainCell},
+    cell::{ActiveCell, BrainCell},
 };
 
 const NODE_LAYER: f32 = 1.;
