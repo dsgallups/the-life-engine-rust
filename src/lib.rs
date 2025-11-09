@@ -4,11 +4,8 @@
 mod dev_tools;
 
 pub mod camera;
-pub mod cell;
 pub mod game;
-pub mod genome;
 pub mod node_visual;
-pub mod organism;
 pub mod settings;
 pub mod utils;
 pub mod widgets;

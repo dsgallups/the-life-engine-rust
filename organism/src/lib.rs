@@ -1,3 +1,6 @@
+pub mod cell;
+pub mod genome;
+
 use bevy::prelude::*;
 use rand::{SeedableRng, rngs::StdRng};
 

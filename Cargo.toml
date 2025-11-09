@@ -37,6 +37,9 @@ bitflags = "2.10.0"
 bimap = "0.6.3"
 enum_dispatch = "0.3.13"
 
+#organism
+organism = {path = "organism"}
+
 [profile.dev]
 opt-level = 1
 panic = "abort"  # drop unwinder
@@ -68,7 +71,7 @@ double-parens = "allow"
 
 [workspace]
 resolver = "3"
-members = ["nora_neat"]
+members = ["nora_neat", "organism"]
 
 
 [workspace.dependencies]
