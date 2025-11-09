@@ -1,5 +1,5 @@
 [package]
-name = "life-engine-rs"
+name = "evanescence"
 version = "0.1.0"
 publish = false
 authors = ["Daniel Gallups <dsgallups@protonmail.com>"]

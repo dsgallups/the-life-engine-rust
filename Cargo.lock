@@ -2523,6 +2523,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "evanescence"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy-inspector-egui",
+ "bevy_egui",
+ "bevy_ui_text_input",
+ "bimap",
+ "bitflags 2.10.0",
+ "cosmic-text",
+ "nora_neat",
+ "rand",
+ "uuid",
+]
+
+[[package]]
 name = "event-listener"
 version = "5.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3343,22 +3359,6 @@ checksum = "3c8469b4a23b962c1396b9b451dda50ef5b283e8dd309d69033475fa9b334324"
 dependencies = [
  "libc",
  "pkg-config",
-]
-
-[[package]]
-name = "life-engine-rs"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy-inspector-egui",
- "bevy_egui",
- "bevy_ui_text_input",
- "bimap",
- "bitflags 2.10.0",
- "cosmic-text",
- "nora_neat",
- "rand",
- "uuid",
 ]
 
 [[package]]
