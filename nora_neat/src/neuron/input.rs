@@ -11,7 +11,7 @@ use uuid::Uuid;
 /// - The connection weight
 /// - The exponent applied to the input value
 #[derive(Debug)]
-pub struct NeuronInput<I> {
+pub struct NeuronInput<I = Topology> {
     id: Uuid,
     node: I,
     weight: f32,

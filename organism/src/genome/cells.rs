@@ -1,4 +1,12 @@
-use crate::genome::PartialNetworkTemplate;
+use uuid::Uuid;
+
+use crate::{CellKind, genome::PartialNetworkTemplate};
+
+#[derive(Clone)]
+pub struct PartialCellGenome {
+    pub id: Uuid,
+    pub kind: CellKind,
+}
 
 pub enum CellTemplate {
     Eye(EyeGenome),
@@ -12,6 +20,18 @@ impl CellTemplate {
             Self::Eye(e) => e.template(),
             Self::Launcher(l) => l.template(),
         }
+    }
+
+    pub fn into_genome(self) -> PartialCellGenome {
+        let id = Uuid::new_v4();
+
+        let kind = match self {
+            CellTemplate::Brain(_) => CellKind::Brain,
+            CellTemplate::Eye(_) => CellKind::Eye,
+            CellTemplate::Launcher(_) => CellKind::Launcher,
+        };
+
+        PartialCellGenome { id, kind }
     }
 }
 

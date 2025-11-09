@@ -48,7 +48,7 @@ pub enum PropsType {
 }
 
 #[derive(Clone, Debug)]
-pub struct NeuronProps<I> {
+pub struct NeuronProps<I = Topology> {
     pub(crate) props_type: PropsType,
     pub(crate) inputs: Vec<NeuronInput<I>>,
     bias: f32,
@@ -90,6 +90,10 @@ impl<I> NeuronProps<I> {
     pub fn inputs(&self) -> &[NeuronInput<I>] {
         self.inputs.as_slice()
     }
+
+    // pub fn set_inputs(&mut self, inputs: Vec<NeuronInput<I>>) {
+    //     self.inputs = inputs;
+    // }
 
     pub fn props_type(&self) -> PropsType {
         self.props_type
