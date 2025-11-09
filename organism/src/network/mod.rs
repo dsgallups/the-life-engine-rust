@@ -1,3 +1,6 @@
+mod topology;
+pub use topology::*;
+
 use crate::Genome;
 
 pub struct NetworkComponents {}
