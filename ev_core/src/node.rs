@@ -1,6 +1,6 @@
 use bevy::{camera::visibility::RenderLayers, prelude::*};
 
-use crate::camera::RenderLayer;
+use crate::RenderLayer;
 
 #[derive(Component)]
 #[require(RenderLayers = RenderLayers::from(RenderLayer::NODE_VISUAL))]

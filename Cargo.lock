@@ -2535,6 +2535,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ev_core"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bitflags 2.10.0",
+]
+
+[[package]]
 name = "evanescence"
 version = "0.1.0"
 dependencies = [
@@ -2543,9 +2551,9 @@ dependencies = [
  "bevy_egui",
  "bevy_ui_text_input",
  "bimap",
- "bitflags 2.10.0",
  "cosmic-text",
  "enum_dispatch",
+ "ev_core",
  "nora_neat",
  "organism",
  "rand",
@@ -4081,6 +4089,13 @@ dependencies = [
 [[package]]
 name = "organism"
 version = "0.1.0"
+dependencies = [
+ "bevy",
+ "ev_core",
+ "nora_neat",
+ "rand",
+ "uuid",
+]
 
 [[package]]
 name = "owned_ttf_parser"

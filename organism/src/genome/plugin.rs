@@ -1,7 +1,7 @@
 use crate::{
+    CellOf,
     cell::{BrainCell, Collagen, DataCell, Eye, Launcher},
     genome::{CellDetails, Genome},
-    organism::CellOf,
 };
 use bevy::{
     color::palettes::tailwind::{PINK_400, RED_600, SKY_300, YELLOW_400},
