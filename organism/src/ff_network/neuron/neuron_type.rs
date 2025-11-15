@@ -1,13 +1,35 @@
+use uuid::Uuid;
+
 use crate::ff_network::NeuronTopology;
 
-use super::Inner;
 use std::sync::{Arc, Mutex, Weak};
 
+pub trait TopologyNeuron {
+    fn id(&self) -> Uuid;
+}
+
+pub trait TakesInput: TopologyNeuron {
+    fn new_from_raw_parts(inputs: Vec<NeuronInput>, bias: f32, activation: fn(f32) -> f32) -> Self;
+    fn add_input(&mut self, input: impl Into<NeuronInputType>);
+    fn inputs(&self) -> &[NeuronInput];
+    fn bias(&self) -> f32;
+    fn activation(&self) -> fn(f32) -> f32;
+}
+
 #[derive(Clone)]
-pub struct Input;
+pub struct Input {
+    pub id: Uuid,
+}
+
+impl TopologyNeuron for Input {
+    fn id(&self) -> Uuid {
+        self.id
+    }
+}
 
 #[derive(Clone)]
 pub struct Hidden {
+    pub id: Uuid,
     /**
     Contains
     Vec<{input_type: Input | Hidden, weight}>
@@ -18,6 +40,7 @@ pub struct Hidden {
 }
 #[derive(Clone)]
 pub struct Output {
+    pub id: Uuid,
     pub inputs: Vec<NeuronInput>,
     pub bias: f32,
     pub activation: fn(f32) -> f32,
@@ -32,8 +55,8 @@ pub struct NeuronInput {
 }
 #[derive(Clone)]
 pub enum NeuronInputType {
-    Input(Weak<Mutex<Inner<Input>>>),
-    Hidden(Weak<Mutex<Inner<Hidden>>>),
+    Input(Weak<Mutex<Input>>),
+    Hidden(Weak<Mutex<Hidden>>),
 }
 impl From<&NeuronTopology<Input>> for NeuronInputType {
     fn from(value: &NeuronTopology<Input>) -> Self {
@@ -45,18 +68,16 @@ impl From<&NeuronTopology<Hidden>> for NeuronInputType {
         Self::Hidden(Arc::downgrade(&value.inner))
     }
 }
-
-pub trait TakesInput {
-    fn new_from_raw_parts(inputs: Vec<NeuronInput>, bias: f32, activation: fn(f32) -> f32) -> Self;
-
-    fn add_input(&mut self, input: impl Into<NeuronInputType>);
-    fn inputs(&self) -> &[NeuronInput];
-    fn bias(&self) -> f32;
-    fn activation(&self) -> fn(f32) -> f32;
+impl TopologyNeuron for Hidden {
+    fn id(&self) -> Uuid {
+        self.id
+    }
 }
+
 impl TakesInput for Hidden {
     fn new_from_raw_parts(inputs: Vec<NeuronInput>, bias: f32, activation: fn(f32) -> f32) -> Self {
         Self {
+            id: Uuid::new_v4(),
             inputs,
             bias,
             activation,
@@ -80,9 +101,16 @@ impl TakesInput for Hidden {
     }
 }
 
+impl TopologyNeuron for Output {
+    fn id(&self) -> Uuid {
+        self.id
+    }
+}
+
 impl TakesInput for Output {
     fn new_from_raw_parts(inputs: Vec<NeuronInput>, bias: f32, activation: fn(f32) -> f32) -> Self {
         Self {
+            id: Uuid::new_v4(),
             inputs,
             bias,
             activation,

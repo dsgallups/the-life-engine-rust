@@ -82,30 +82,8 @@ impl Genome {
     }
 
     fn deep_clone(&self) -> Genome {
-        let mut new_cells = Vec::with_capacity(self.cells.len());
-        let mut new_hidden = Vec::with_capacity(self.hidden.len());
-
-        for cell in self.cells.iter() {
-            for output in cell.outputs.iter() {
-                let n_type = output.lock();
-                for input in n_type.inputs() {
-                    match input.input_type {
-                        NeuronInputType::Hidden(_) => {
-                            //todo
-                        }
-                        NeuronInputType::Input(_) => {
-                            //todo
-                        }
-                    }
-                }
-            }
-        }
-
-        Genome {
-            cells: new_cells,
-            hidden: new_hidden,
-            mutation: self.mutation.clone(),
-        }
+        let mut replicator = Replicator::default();
+        replicator.process(self)
     }
 
     fn scramble(&mut self, rng: &mut impl Rng) {

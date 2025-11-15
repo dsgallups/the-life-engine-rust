@@ -1,34 +1,58 @@
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex};
 
 use bevy::platform::collections::HashMap;
 use uuid::Uuid;
 
 use crate::ff_network::{
-    CellGenome, Genome, Hidden, Inner, Input, NeuronInput, NeuronInputType, NeuronTopology, Output,
-    TakesInput,
+    CellGenome, Genome, Hidden, Input, NeuronInput, NeuronInputType, NeuronTopology, TakesInput,
+    TopologyNeuron,
 };
 
 #[derive(Default)]
 pub struct Replicator {
-    new_outputs: HashMap<Uuid, NeuronTopology<Output>>,
     new_hidden: HashMap<Uuid, NeuronTopology<Hidden>>,
     new_inputs: HashMap<Uuid, NeuronTopology<Input>>,
 }
 impl Replicator {
-    pub fn process(&mut self, genome: &Genome) {
-        for cell in genome.cells.iter() {
-            self.replicate_cell(cell);
+    pub fn process(&mut self, genome: &Genome) -> Genome {
+        let mut interior_output_map = HashMap::with_capacity(genome.cells.len());
+        // process all outputs first to populate all the maps
+        for (i, cell) in genome.cells.iter().enumerate() {
+            let mut new_outputs = Vec::with_capacity(cell.outputs.len());
+            for output in cell.outputs.iter() {
+                new_outputs.push(self.new_takes_input_neuron(&*output.lock()));
+            }
+            interior_output_map.insert(i, new_outputs);
         }
 
-        todo!()
-    }
+        let mut new_cells: Vec<CellGenome> = Vec::with_capacity(genome.cells.len());
 
-    fn replicate_cell(&mut self, cell: &CellGenome) {
-        for output in cell.outputs.iter() {
-            //let new_inputs = self.get_inputs(output.lock().inputs());
-            //match
+        for (i, cell) in genome.cells.iter().enumerate() {
+            let outputs = interior_output_map.remove(&i).unwrap();
+            let mut inputs = Vec::with_capacity(cell.inputs.len());
+
+            for input in cell.inputs.iter() {
+                let id = input.id();
+                let input = self.new_inputs.remove(&id).unwrap();
+                inputs.push(input);
+            }
+            new_cells.push(CellGenome {
+                kind: cell.kind,
+                location: cell.location,
+                inputs,
+                outputs,
+            });
+        }
+
+        let new_hidden = self.new_hidden.drain().map(|(_, v)| v).collect();
+
+        Genome {
+            cells: new_cells,
+            hidden: new_hidden,
+            mutation: genome.mutation.clone(),
         }
     }
+
     fn get_inputs(&mut self, neuron_input: &NeuronInput) -> Option<NeuronInput> {
         match &neuron_input.input_type {
             NeuronInputType::Hidden(hidden_neuron_inner) => {
@@ -44,7 +68,7 @@ impl Replicator {
                         weight: neuron_input.weight,
                     }),
                     None => {
-                        let new_hidden_neuron = self.new_takes_input_neuron(hidden_neuron_inner);
+                        let new_hidden_neuron = self.new_takes_input_neuron(&*hidden_neuron_inner);
                         let result = NeuronInput {
                             input_type: NeuronInputType::Hidden(Arc::downgrade(
                                 &new_hidden_neuron.inner,
@@ -67,17 +91,15 @@ impl Replicator {
                         weight: neuron_input.weight,
                     }),
                     None => {
-                        //
-                        // let new_input_neuron = self.new_takes_input_neuron(input_neuron_inner);
-                        // let result = NeuronInput {
-                        //     input_type: NeuronInputType::Input(Arc::downgrade(
-                        //         &new_input_neuron.inner,
-                        //     )),
-                        //     weight: neuron_input.weight,
-                        // };
-                        // self.new_inputs.insert(id, new_input_neuron);
-                        todo!()
-                        //Some(result)
+                        let new_input_neuron = NeuronTopology::input();
+                        let result = NeuronInput {
+                            input_type: NeuronInputType::Input(Arc::downgrade(
+                                &new_input_neuron.inner,
+                            )),
+                            weight: neuron_input.weight,
+                        };
+                        self.new_inputs.insert(id, new_input_neuron);
+                        Some(result)
                     }
                 }
             }
@@ -86,27 +108,17 @@ impl Replicator {
 
     /// creates a new neuron, but doesn't do anything else other than
     /// grab the new inputs.
-    fn new_takes_input_neuron<T: TakesInput>(
-        &mut self,
-        neuron: MutexGuard<'_, super::Inner<T>>,
-    ) -> NeuronTopology<T> {
+    fn new_takes_input_neuron<T: TakesInput>(&mut self, neuron: &T) -> NeuronTopology<T> {
         let mut new_inputs = Vec::new();
         for input in neuron.inputs() {
             if let Some(input) = self.get_inputs(input) {
                 new_inputs.push(input);
             }
         }
+        let new_t = T::new_from_raw_parts(new_inputs, neuron.bias(), neuron.activation());
 
-        let new_inner = Inner {
-            id: Uuid::new_v4(),
-            n_type: T::new_from_raw_parts(
-                new_inputs,
-                neuron.n_type.bias(),
-                neuron.n_type.activation(),
-            ),
-        };
         NeuronTopology {
-            inner: Arc::new(Mutex::new(new_inner)),
+            inner: Arc::new(Mutex::new(new_t)),
         }
     }
 }
