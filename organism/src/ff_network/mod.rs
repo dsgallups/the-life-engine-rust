@@ -12,7 +12,7 @@ use rand::Rng;
 
 pub struct Genome {
     cells: Vec<CellGenome>,
-    neurons: Vec<NeuronTopology>,
+    hidden: Vec<NeuronTopology<Hidden>>,
     mutation: MutationChances,
 }
 impl Genome {
@@ -22,8 +22,6 @@ impl Genome {
             (CellKind::Launcher, IVec2::new(1, 1)),
             (CellKind::Data, IVec2::new(-1, -1)),
         ];
-        let mut inputs: Vec<NeuronTopology> = Vec::new();
-        let mut outputs: Vec<NeuronTopology> = Vec::new();
 
         let mut cells = Vec::new();
         //outputs first
@@ -38,13 +36,11 @@ impl Genome {
             for _ in 0..num_inputs {
                 let new_input = NeuronTopology::input();
                 cell_inputs.push(new_input.clone());
-                inputs.push(new_input);
             }
 
             for _ in 0..num_outputs {
                 let new_output = NeuronTopology::output();
                 cell_outputs.push(new_output.clone());
-                outputs.push(new_output);
             }
             let cell = CellGenome {
                 kind,
@@ -55,20 +51,30 @@ impl Genome {
 
             cells.push(cell);
         }
-        for output in outputs.iter_mut() {
-            output.set_initial_inputs(inputs.clone());
-        }
+        // for output in outputs.iter_mut() {
+        //     output.set_initial_inputs(inputs.clone());
+        // }
 
-        let neurons = inputs.into_iter().chain(outputs).collect();
+        //let neurons = inputs.into_iter().chain(outputs).collect();
 
         Self {
             cells,
-            neurons,
+            hidden: Vec::new(),
             mutation: MutationChances::new(20),
         }
     }
 
     fn scramble(&mut self, rng: &mut impl Rng) {
+        self.mutation.adjust_mutation_chances(rng);
+
+        for action in self.mutation.yield_mutations(rng) {
+            match action {
+                MutationAction::AddCell => {
+                    todo!()
+                }
+                _ => todo!(),
+            }
+        }
 
         //
     }
@@ -77,6 +83,6 @@ impl Genome {
 pub struct CellGenome {
     kind: CellKind,
     location: IVec2,
-    inputs: Vec<NeuronTopology>,
-    outputs: Vec<NeuronTopology>,
+    inputs: Vec<NeuronTopology<Input>>,
+    outputs: Vec<NeuronTopology<Output>>,
 }

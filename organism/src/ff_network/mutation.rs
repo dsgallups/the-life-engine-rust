@@ -85,7 +85,61 @@ impl MutationChances {
 
         self.self_mutation = (self.self_mutation as i8 + rate) as u8;
     }
+    pub fn yield_mutations<'a, R: Rng>(
+        &'a self,
+        rng: &'a mut R,
+    ) -> impl Iterator<Item = MutationAction> + use<'a, R> {
+        MutationIter::new(rng, self)
+    }
 }
+
+pub struct MutationIter<'a, R> {
+    rng: &'a mut R,
+    chances: &'a MutationChances,
+    total: f32,
+    count: usize,
+    keep_yielding: bool,
+}
+impl<'a, R: Rng> MutationIter<'a, R> {
+    fn new(rng: &'a mut R, chances: &'a MutationChances) -> Self {
+        let keep_yielding = rng.random_range(0..=100) > chances.self_mutation;
+
+        let total = chances
+            .chances
+            .iter()
+            .map(|chance| chance.chance)
+            .sum::<f32>();
+        Self {
+            keep_yielding,
+            count: 0,
+            rng,
+            chances,
+            total,
+        }
+    }
+}
+impl<'a, R: Rng> Iterator for MutationIter<'a, R> {
+    type Item = MutationAction;
+    fn next(&mut self) -> Option<Self::Item> {
+        pub const MAX_MUTATIONS: usize = 200;
+        if !self.keep_yielding || self.count > MAX_MUTATIONS {
+            return None;
+        }
+        let mut chance = self.rng.random_range(0_f32..self.total);
+        for mutation_chance in self.chances.chances.iter() {
+            let mut_chance = mutation_chance.chance;
+            if chance > mut_chance {
+                chance -= mut_chance;
+                continue;
+            }
+            self.keep_yielding = self.rng.random_range(0..=100) > self.chances.self_mutation;
+            self.count += 1;
+            return Some(mutation_chance.action);
+        }
+        return None;
+    }
+}
+
 /*
 *
 
