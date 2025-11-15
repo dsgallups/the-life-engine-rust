@@ -1,4 +1,5 @@
 mod mutation;
+
 pub use mutation::*;
 
 mod neuron;
@@ -10,12 +11,12 @@ pub use cells::*;
 mod replicator;
 use replicator::*;
 
-use bevy::math::IVec2;
+use bevy::{math::IVec2, platform::collections::HashMap};
 use rand::{Rng, seq::IteratorRandom};
 use strum::IntoEnumIterator;
 
 pub struct Genome {
-    cells: Vec<CellGenome>,
+    cells: HashMap<IVec2, CellGenome>,
     hidden: Vec<NeuronTopology<Hidden>>,
     mutation: MutationChances,
 }
@@ -27,7 +28,7 @@ impl Genome {
             (CellKind::Data, IVec2::new(-1, -1)),
         ];
 
-        let mut cells = Vec::new();
+        let mut cells = HashMap::new();
         //outputs first
         for (kind, location) in template {
             let mut cell_inputs = Vec::new();
@@ -48,16 +49,14 @@ impl Genome {
             }
             let cell = CellGenome {
                 kind,
-                location,
                 inputs: cell_inputs,
                 outputs: cell_outputs,
             };
-
-            cells.push(cell);
+            cells.insert(location, cell);
         }
         let mut hidden_nodes = Vec::new();
 
-        for cell in cells.iter_mut() {
+        for cell in cells.values_mut() {
             for output in cell.outputs.iter_mut() {
                 //go 1:1 between hidden and output nodes
                 let hidden = NeuronTopology::hidden();
@@ -66,7 +65,7 @@ impl Genome {
             }
         }
 
-        for cell in cells.iter_mut() {
+        for cell in cells.values_mut() {
             for hidden_node in hidden_nodes.iter_mut() {
                 for input in cell.inputs.iter() {
                     hidden_node.add_input(input);
@@ -94,11 +93,14 @@ impl Genome {
             match action {
                 MutationAction::AddCell => {
                     let new_cell_kind = CellKind::iter().choose(rng).unwrap();
+
                     todo!()
                 }
                 MutationAction::DeleteCell => {
                     let rand_index = rng.random_range(0..self.cells.len());
-                    self.cells.swap_remove(rand_index);
+                    let (random_cell_loc, _) = self.cells.iter().skip(rand_index).next().unwrap();
+                    let loc = *random_cell_loc;
+                    self.cells.remove(&loc);
                 }
                 MutationAction::AddConnection => {
                     todo!()
@@ -113,7 +115,6 @@ impl Genome {
 
 pub struct CellGenome {
     kind: CellKind,
-    location: IVec2,
     inputs: Vec<NeuronTopology<Input>>,
     outputs: Vec<NeuronTopology<Output>>,
 }
