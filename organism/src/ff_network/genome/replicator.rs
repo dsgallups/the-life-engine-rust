@@ -8,16 +8,31 @@ use crate::ff_network::{
     TakesInput, TopologyNeuron,
 };
 
-#[derive(Default)]
-pub struct Replicator {
+pub struct Replicator<'a> {
+    genome: &'a Genome,
     new_hidden: HashMap<Uuid, NeuronTopology<Hidden>>,
     new_inputs: HashMap<Uuid, NeuronTopology<Input>>,
 }
-impl Replicator {
-    pub fn process(&mut self, genome: &Genome) -> Genome {
-        let mut interior_output_map = HashMap::with_capacity(genome.cells.len());
+impl<'a> Replicator<'a> {
+    pub fn new(genome: &'a Genome) -> Self {
+        let hidden = genome.hidden.len();
+        let inputs = genome
+            .cells
+            .map()
+            .values()
+            .map(|cell| cell.inputs.len())
+            .sum::<usize>();
+
+        Self {
+            new_hidden: HashMap::with_capacity(hidden),
+            new_inputs: HashMap::with_capacity(inputs),
+            genome,
+        }
+    }
+    pub fn process(mut self) -> Genome {
+        let mut interior_output_map = HashMap::with_capacity(self.genome.cells.len());
         // process all outputs first to populate all the maps
-        for (i, cell) in genome.cells.map().values().enumerate() {
+        for (i, cell) in self.genome.cells.map().values().enumerate() {
             let mut new_outputs = Vec::with_capacity(cell.outputs.len());
             for output in cell.outputs.iter() {
                 new_outputs.push(self.new_takes_input_neuron(&*output.lock()));
@@ -25,9 +40,9 @@ impl Replicator {
             interior_output_map.insert(i, new_outputs);
         }
 
-        let mut new_cells: Cells = Cells::with_capacity(genome.cells.len());
+        let mut new_cells: Cells = Cells::with_capacity(self.genome.cells.len());
 
-        for (i, (cell_loc, cell)) in genome.cells.0.iter().enumerate() {
+        for (i, (cell_loc, cell)) in self.genome.cells.0.iter().enumerate() {
             let outputs = interior_output_map.remove(&i).unwrap();
             let mut inputs = Vec::with_capacity(cell.inputs.len());
 
@@ -51,7 +66,7 @@ impl Replicator {
         Genome {
             cells: new_cells,
             hidden: new_hidden,
-            mutation: genome.mutation.clone(),
+            mutation: self.genome.mutation.clone(),
         }
     }
 

@@ -104,8 +104,8 @@ impl Genome {
     }
 
     fn deep_clone(&self) -> Genome {
-        let mut replicator = Replicator::default();
-        replicator.process(self)
+        let replicator = Replicator::new(self);
+        replicator.process()
     }
 
     fn scramble(&mut self, rng: &mut impl Rng) {
