@@ -28,35 +28,19 @@ impl Genome {
             (CellKind::Data, IVec2::new(-1, -1)),
         ];
 
-        let mut cells = HashMap::new();
+        let mut this = Self {
+            cells: HashMap::new(),
+            hidden: Vec::new(),
+            mutation: MutationChances::new(20),
+        };
+
         //outputs first
         for (kind, location) in template {
-            let mut cell_inputs = Vec::new();
-            let mut cell_outputs = Vec::new();
-            let CellRequirements {
-                num_inputs,
-                num_outputs,
-            } = kind.requirements();
-
-            for _ in 0..num_inputs {
-                let new_input = NeuronTopology::input();
-                cell_inputs.push(new_input.clone());
-            }
-
-            for _ in 0..num_outputs {
-                let new_output = NeuronTopology::output();
-                cell_outputs.push(new_output.clone());
-            }
-            let cell = CellGenome {
-                kind,
-                inputs: cell_inputs,
-                outputs: cell_outputs,
-            };
-            cells.insert(location, cell);
+            this.add_cell(location, kind);
         }
         let mut hidden_nodes = Vec::new();
 
-        for cell in cells.values_mut() {
+        for cell in this.cells.values_mut() {
             for output in cell.outputs.iter_mut() {
                 //go 1:1 between hidden and output nodes
                 let hidden = NeuronTopology::hidden();
@@ -65,7 +49,7 @@ impl Genome {
             }
         }
 
-        for cell in cells.values_mut() {
+        for cell in this.cells.values_mut() {
             for hidden_node in hidden_nodes.iter_mut() {
                 for input in cell.inputs.iter() {
                     hidden_node.add_input(input);
@@ -73,11 +57,7 @@ impl Genome {
             }
         }
 
-        Self {
-            cells,
-            hidden: hidden_nodes,
-            mutation: MutationChances::new(20),
-        }
+        this
     }
 
     fn deep_clone(&self) -> Genome {
@@ -110,6 +90,32 @@ impl Genome {
         }
 
         //
+    }
+
+    // does not check if a cell is here.
+    fn add_cell(&mut self, location: IVec2, cell_kind: CellKind) {
+        let mut cell_inputs = Vec::new();
+        let mut cell_outputs = Vec::new();
+        let CellRequirements {
+            num_inputs,
+            num_outputs,
+        } = cell_kind.requirements();
+        for _ in 0..num_inputs {
+            let new_input = NeuronTopology::input();
+            cell_inputs.push(new_input.clone());
+        }
+
+        for _ in 0..num_outputs {
+            let new_output = NeuronTopology::output();
+            cell_outputs.push(new_output.clone());
+        }
+
+        let cell = CellGenome {
+            kind: cell_kind,
+            inputs: cell_inputs,
+            outputs: cell_outputs,
+        };
+        self.cells.insert(location, cell);
     }
 }
 

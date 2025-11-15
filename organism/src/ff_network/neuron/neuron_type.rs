@@ -18,7 +18,7 @@ pub trait TakesInput: TopologyNeuron {
 
 #[derive(Clone)]
 pub struct Input {
-    pub id: Uuid,
+    id: Uuid,
 }
 
 impl TopologyNeuron for Input {
@@ -29,21 +29,21 @@ impl TopologyNeuron for Input {
 
 #[derive(Clone)]
 pub struct Hidden {
-    pub id: Uuid,
+    id: Uuid,
     /**
     Contains
     Vec<{input_type: Input | Hidden, weight}>
     */
-    pub inputs: Vec<NeuronInput>,
-    pub bias: f32,
-    pub activation: fn(f32) -> f32,
+    inputs: Vec<NeuronInput>,
+    bias: f32,
+    activation: fn(f32) -> f32,
 }
 #[derive(Clone)]
 pub struct Output {
-    pub id: Uuid,
-    pub inputs: Vec<NeuronInput>,
-    pub bias: f32,
-    pub activation: fn(f32) -> f32,
+    id: Uuid,
+    inputs: Vec<NeuronInput>,
+    bias: f32,
+    activation: fn(f32) -> f32,
 }
 
 impl Output {}
