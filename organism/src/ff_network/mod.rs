@@ -1,8 +1,8 @@
 mod mutation;
 pub use mutation::*;
 
-mod topology;
-pub use topology::*;
+mod neuron;
+pub use neuron::*;
 
 mod cells;
 pub use cells::*;
@@ -51,15 +51,31 @@ impl Genome {
 
             cells.push(cell);
         }
-        // for output in outputs.iter_mut() {
-        //     output.set_initial_inputs(inputs.clone());
-        // }
+        let mut hidden_nodes = Vec::new();
 
-        //let neurons = inputs.into_iter().chain(outputs).collect();
+        for cell in cells.iter_mut() {
+            for output in cell.outputs.iter_mut() {
+                //go 1:1 between hidden and output nodes
+                let hidden = NeuronTopology::hidden();
+                output.add_input(&hidden);
+                hidden_nodes.push(hidden);
+            }
+        }
+
+        for cell in cells.iter_mut() {
+            //go 1:m for input and hidden nodes
+            //
+
+            for hidden_node in hidden_nodes.iter_mut() {
+                for input in cell.inputs.iter() {
+                    hidden_node.add_input(input);
+                }
+            }
+        }
 
         Self {
             cells,
-            hidden: Vec::new(),
+            hidden: hidden_nodes,
             mutation: MutationChances::new(20),
         }
     }
