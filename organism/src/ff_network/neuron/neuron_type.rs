@@ -13,9 +13,14 @@ pub trait TopologyNeuron {
     fn id(&self) -> Uuid;
 }
 
+pub trait CanBeInput {
+    fn to_input_type(&self) -> NeuronInputType;
+}
+
 pub trait TakesInput: TopologyNeuron {
     fn new_from_raw_parts(inputs: Vec<NeuronInput>, bias: f32, activation: fn(f32) -> f32) -> Self;
-    fn add_input(&mut self, input: impl Into<NeuronInputType>);
+    fn add_input(&mut self, input: &impl CanBeInput);
+    fn remove_input(&mut self, input: &impl CanBeInput);
     fn inputs(&self) -> &[NeuronInput];
     fn bias(&self) -> f32;
     fn activation(&self) -> fn(f32) -> f32;
@@ -69,16 +74,18 @@ pub enum NeuronInputType {
     Input(Weak<Mutex<Input>>),
     Hidden(Weak<Mutex<Hidden>>),
 }
-impl From<&NeuronTopology<Input>> for NeuronInputType {
-    fn from(value: &NeuronTopology<Input>) -> Self {
-        Self::Input(Arc::downgrade(&value.inner))
+
+impl CanBeInput for NeuronTopology<Input> {
+    fn to_input_type(&self) -> NeuronInputType {
+        NeuronInputType::Input(Arc::downgrade(&self.inner))
     }
 }
-impl From<&NeuronTopology<Hidden>> for NeuronInputType {
-    fn from(value: &NeuronTopology<Hidden>) -> Self {
-        Self::Hidden(Arc::downgrade(&value.inner))
+impl CanBeInput for NeuronTopology<Hidden> {
+    fn to_input_type(&self) -> NeuronInputType {
+        NeuronInputType::Hidden(Arc::downgrade(&self.inner))
     }
 }
+
 impl TopologyNeuron for Hidden {
     fn id(&self) -> Uuid {
         self.id
@@ -94,11 +101,15 @@ impl TakesInput for Hidden {
             activation,
         }
     }
-    fn add_input(&mut self, input: impl Into<NeuronInputType>) {
+    fn add_input(&mut self, input: &impl CanBeInput) {
         self.inputs.push(NeuronInput {
-            input_type: input.into(),
+            input_type: input.to_input_type(),
             weight: 1.,
         })
+    }
+    fn remove_input(&mut self, input: &impl CanBeInput) {
+        let neuron_input_type: NeuronInputType = input.to_input_type();
+        todo!()
     }
 
     fn inputs(&self) -> &[NeuronInput] {
@@ -133,11 +144,14 @@ impl TakesInput for Output {
         }
     }
 
-    fn add_input(&mut self, input: impl Into<NeuronInputType>) {
+    fn add_input(&mut self, input: &impl CanBeInput) {
         self.inputs.push(NeuronInput {
-            input_type: input.into(),
+            input_type: input.to_input_type(),
             weight: 1.,
         })
+    }
+    fn remove_input(&mut self, input: &impl CanBeInput) {
+        todo!()
     }
 
     fn inputs(&self) -> &[NeuronInput] {

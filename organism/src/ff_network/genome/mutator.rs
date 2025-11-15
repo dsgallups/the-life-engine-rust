@@ -1,6 +1,6 @@
 use rand::Rng;
 
-use crate::ff_network::{CellMap, Hidden, NeuronInputType, NeuronTopology, TakesInput};
+use crate::ff_network::{CanBeInput, CellMap, Hidden, NeuronInputType, NeuronTopology, TakesInput};
 
 pub struct Mutator<'a> {
     cells: &'a CellMap,
@@ -151,15 +151,19 @@ pub enum ThingToDo {
 impl ThingToDo {
     fn do_thing<'i, Input, Output>(
         &self,
-        input: &'i NeuronTopology<Input>,
+        input: &NeuronTopology<Input>,
         output: &NeuronTopology<Output>,
     ) where
-        &'i NeuronTopology<Input>: Into<NeuronInputType>,
+        NeuronTopology<Input>: CanBeInput,
         Output: TakesInput,
     {
         match self {
             Self::Add => output.add_input(input),
             Self::Split => {
+                let new_hidden_neuron = NeuronTopology::hidden();
+
+                output.remove_input(input);
+
                 //todo
                 todo!()
             }
