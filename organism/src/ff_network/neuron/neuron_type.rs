@@ -8,55 +8,70 @@ pub struct Input;
 
 #[derive(Clone)]
 pub struct Hidden {
-    pub(super) inputs: Vec<NeuronInputTop>,
-    pub(super) bias: f32,
-    pub(super) activation: fn(f32) -> f32,
+    /**
+    Contains
+    Vec<{input_type: Input | Hidden, weight}>
+    */
+    pub inputs: Vec<NeuronInput>,
+    pub bias: f32,
+    pub activation: fn(f32) -> f32,
 }
 #[derive(Clone)]
 pub struct Output {
-    pub(super) inputs: Vec<NeuronInputTop>,
-    pub(super) bias: f32,
-    pub(super) activation: fn(f32) -> f32,
+    pub inputs: Vec<NeuronInput>,
+    pub bias: f32,
+    pub activation: fn(f32) -> f32,
 }
 
+impl Output {}
+
 #[derive(Clone)]
-pub struct NeuronInputTop {
-    neuron: NeuronInputTopNeuron,
-    weight: f32,
+pub struct NeuronInput {
+    pub input_type: NeuronInputType,
+    pub weight: f32,
 }
 #[derive(Clone)]
-pub enum NeuronInputTopNeuron {
+pub enum NeuronInputType {
     Input(Weak<Mutex<Inner<Input>>>),
     Hidden(Weak<Mutex<Inner<Hidden>>>),
 }
-impl From<&NeuronTopology<Input>> for NeuronInputTopNeuron {
+impl From<&NeuronTopology<Input>> for NeuronInputType {
     fn from(value: &NeuronTopology<Input>) -> Self {
         Self::Input(Arc::downgrade(&value.inner))
     }
 }
-impl From<&NeuronTopology<Hidden>> for NeuronInputTopNeuron {
+impl From<&NeuronTopology<Hidden>> for NeuronInputType {
     fn from(value: &NeuronTopology<Hidden>) -> Self {
         Self::Hidden(Arc::downgrade(&value.inner))
     }
 }
 
 pub trait TakesInput {
-    fn add_input(&mut self, input: impl Into<NeuronInputTopNeuron>);
+    fn add_input(&mut self, input: impl Into<NeuronInputType>);
+    fn inputs(&self) -> &[NeuronInput];
 }
 impl TakesInput for Hidden {
-    fn add_input(&mut self, input: impl Into<NeuronInputTopNeuron>) {
-        self.inputs.push(NeuronInputTop {
-            neuron: input.into(),
+    fn add_input(&mut self, input: impl Into<NeuronInputType>) {
+        self.inputs.push(NeuronInput {
+            input_type: input.into(),
             weight: 1.,
         })
+    }
+
+    fn inputs(&self) -> &[NeuronInput] {
+        &self.inputs
     }
 }
 
 impl TakesInput for Output {
-    fn add_input(&mut self, input: impl Into<NeuronInputTopNeuron>) {
-        self.inputs.push(NeuronInputTop {
-            neuron: input.into(),
+    fn add_input(&mut self, input: impl Into<NeuronInputType>) {
+        self.inputs.push(NeuronInput {
+            input_type: input.into(),
             weight: 1.,
         })
+    }
+
+    fn inputs(&self) -> &[NeuronInput] {
+        &self.inputs
     }
 }

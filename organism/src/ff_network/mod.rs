@@ -7,6 +7,9 @@ pub use neuron::*;
 mod cells;
 pub use cells::*;
 
+mod replicator;
+use replicator::*;
+
 use bevy::math::IVec2;
 use rand::{Rng, seq::IteratorRandom};
 use strum::IntoEnumIterator;
@@ -78,6 +81,33 @@ impl Genome {
         }
     }
 
+    fn deep_clone(&self) -> Genome {
+        let mut new_cells = Vec::with_capacity(self.cells.len());
+        let mut new_hidden = Vec::with_capacity(self.hidden.len());
+
+        for cell in self.cells.iter() {
+            for output in cell.outputs.iter() {
+                let n_type = output.lock();
+                for input in n_type.inputs() {
+                    match input.input_type {
+                        NeuronInputType::Hidden(_) => {
+                            //todo
+                        }
+                        NeuronInputType::Input(_) => {
+                            //todo
+                        }
+                    }
+                }
+            }
+        }
+
+        Genome {
+            cells: new_cells,
+            hidden: new_hidden,
+            mutation: self.mutation.clone(),
+        }
+    }
+
     fn scramble(&mut self, rng: &mut impl Rng) {
         self.mutation.adjust_mutation_chances(rng);
         let mut mutation_iter = self.mutation.yield_mutations(rng);
@@ -85,7 +115,14 @@ impl Genome {
         while let Some(action) = mutation_iter.next(rng) {
             match action {
                 MutationAction::AddCell => {
-                    let new_cell_kind = CellKind::iter().choose(rng);
+                    let new_cell_kind = CellKind::iter().choose(rng).unwrap();
+                    todo!()
+                }
+                MutationAction::DeleteCell => {
+                    let rand_index = rng.random_range(0..self.cells.len());
+                    self.cells.swap_remove(rand_index);
+                }
+                MutationAction::AddConnection => {
                     todo!()
                 }
                 _ => todo!(),
