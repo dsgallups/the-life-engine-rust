@@ -1,3 +1,4 @@
+use bevy::ecs::system::In;
 use uuid::Uuid;
 
 use crate::ff_network::NeuronTopology;
@@ -19,6 +20,11 @@ pub trait TakesInput: TopologyNeuron {
 #[derive(Clone)]
 pub struct Input {
     id: Uuid,
+}
+impl Default for Input {
+    fn default() -> Self {
+        Self { id: Uuid::new_v4() }
+    }
 }
 
 impl TopologyNeuron for Input {

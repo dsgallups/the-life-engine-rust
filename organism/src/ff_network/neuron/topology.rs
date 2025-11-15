@@ -19,7 +19,7 @@ impl<T> NeuronTopology<T> {
 impl NeuronTopology<Input> {
     pub fn input() -> Self {
         Self {
-            inner: Arc::new(Mutex::new(Input { id: Uuid::new_v4() })),
+            inner: Arc::new(Mutex::new(Input::default())),
         }
     }
 }
@@ -41,7 +41,7 @@ impl<T: TopologyNeuron> NeuronTopology<T> {
 }
 
 impl<T: TakesInput> NeuronTopology<T> {
-    pub fn add_input(&mut self, input: impl Into<NeuronInputType>) {
+    pub fn add_input(&self, input: impl Into<NeuronInputType>) {
         self.lock().add_input(input);
     }
 }

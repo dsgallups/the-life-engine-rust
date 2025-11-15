@@ -1,13 +1,23 @@
 mod replicator;
+use std::collections::HashSet;
+
 use replicator::*;
 
+mod mutator;
+
+mod direction;
+pub use direction::*;
+
 use bevy::{math::IVec2, platform::collections::HashMap};
-use rand::{Rng, seq::IteratorRandom};
+use rand::{
+    Rng,
+    seq::{IteratorRandom, SliceRandom},
+};
 use strum::IntoEnumIterator;
 
 use crate::ff_network::{
     CellKind, CellRequirements, Hidden, Input, MutationAction, MutationChances, NeuronTopology,
-    Output,
+    Output, genome::mutator::Mutator,
 };
 
 #[derive(Default)]
@@ -27,6 +37,36 @@ impl Cells {
     }
     pub fn map_mut(&mut self) -> &mut HashMap<IVec2, CellGenome> {
         &mut self.0
+    }
+    pub fn find_free_spot(&self, rng: &mut impl Rng) -> IVec2 {
+        let mut cursor = IVec2::ZERO;
+
+        if self.get(&cursor).is_none() {
+            return cursor;
+        }
+
+        let mut directions = Direction::random_order(rng);
+        let mut checking_cursor = cursor;
+        loop {
+            for direction in &directions {
+                checking_cursor = cursor + direction.vec();
+                if self.get(&checking_cursor).is_none() {
+                    return checking_cursor;
+                }
+            }
+            cursor = checking_cursor;
+            directions.shuffle(rng);
+        }
+    }
+
+    pub fn num_inputs_outputs(&self) -> (usize, usize) {
+        self.map().values().fold((0_usize, 0_usize), |acc, val| {
+            (acc.0 + val.inputs.len(), acc.1 + val.outputs.len())
+        })
+    }
+
+    pub fn get(&self, loc: &IVec2) -> Option<&CellGenome> {
+        self.0.get(loc)
     }
     // does not check if a cell is here.
     fn add_cell(&mut self, location: IVec2, cell_kind: CellKind) {
@@ -116,16 +156,17 @@ impl Genome {
             match action {
                 MutationAction::AddCell => {
                     let new_cell_kind = CellKind::iter().choose(rng).unwrap();
-                    self.cells.add_cell(IVec2::ZERO, new_cell_kind);
+                    let new_spot = self.cells.find_free_spot(rng);
+                    self.cells.add_cell(new_spot, new_cell_kind);
                 }
                 MutationAction::DeleteCell => {
                     let rand_index = rng.random_range(0..self.cells.0.len());
-                    let (random_cell_loc, _) = self.cells.0.iter().skip(rand_index).next().unwrap();
+                    let random_cell_loc = self.cells.0.keys().skip(rand_index).next().unwrap();
                     let loc = *random_cell_loc;
                     self.cells.remove(&loc);
                 }
                 MutationAction::AddConnection => {
-                    todo!()
+                    Mutator::new(&self.cells, &self.hidden).add_connection(rng);
                 }
                 _ => todo!(),
             }
