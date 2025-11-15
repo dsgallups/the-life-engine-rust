@@ -1,11 +1,11 @@
 use std::sync::{Arc, Mutex};
 
-use bevy::{math::IVec2, platform::collections::HashMap};
+use bevy::platform::collections::HashMap;
 use uuid::Uuid;
 
 use crate::ff_network::{
-    CellGenome, Genome, Hidden, Input, NeuronInput, NeuronInputType, NeuronTopology, TakesInput,
-    TopologyNeuron,
+    CellGenome, Cells, Genome, Hidden, Input, NeuronInput, NeuronInputType, NeuronTopology,
+    TakesInput, TopologyNeuron,
 };
 
 #[derive(Default)]
@@ -17,7 +17,7 @@ impl Replicator {
     pub fn process(&mut self, genome: &Genome) -> Genome {
         let mut interior_output_map = HashMap::with_capacity(genome.cells.len());
         // process all outputs first to populate all the maps
-        for (i, cell) in genome.cells.values().enumerate() {
+        for (i, cell) in genome.cells.map().values().enumerate() {
             let mut new_outputs = Vec::with_capacity(cell.outputs.len());
             for output in cell.outputs.iter() {
                 new_outputs.push(self.new_takes_input_neuron(&*output.lock()));
@@ -25,9 +25,9 @@ impl Replicator {
             interior_output_map.insert(i, new_outputs);
         }
 
-        let mut new_cells: HashMap<IVec2, CellGenome> = HashMap::with_capacity(genome.cells.len());
+        let mut new_cells: Cells = Cells::with_capacity(genome.cells.len());
 
-        for (i, (cell_loc, cell)) in genome.cells.iter().enumerate() {
+        for (i, (cell_loc, cell)) in genome.cells.0.iter().enumerate() {
             let outputs = interior_output_map.remove(&i).unwrap();
             let mut inputs = Vec::with_capacity(cell.inputs.len());
 
@@ -36,7 +36,7 @@ impl Replicator {
                 let input = self.new_inputs.remove(&id).unwrap();
                 inputs.push(input);
             }
-            new_cells.insert(
+            new_cells.map_mut().insert(
                 *cell_loc,
                 CellGenome {
                     kind: cell.kind,
