@@ -1,6 +1,8 @@
 use rand::Rng;
 
-use crate::ff_network::{CanBeInput, CellMap, Hidden, NeuronInputType, NeuronTopology, TakesInput};
+use crate::ff_network::{
+    CanBeInput, CellMap, Hidden, NeuronInputType, NeuronTopology, TakesInput, genome::activations,
+};
 
 pub struct Mutator<'a> {
     cells: &'a CellMap,
@@ -184,6 +186,7 @@ impl ConnectionTask {
 pub enum OutputTask {
     MutateWeight,
     Split,
+    MutateActivation,
 }
 
 impl OutputTask {
@@ -202,13 +205,19 @@ impl OutputTask {
                 });
                 OutputTaskReturn::None
             }
+            OutputTask::MutateActivation => {
+                output.with_lock(|lock| {
+                    lock.set_activation(activations::random_activation(rng));
+                });
+                OutputTaskReturn::None
+            }
             OutputTask::Split => {
-                let Some(removed_input) = output.for_inputs(|inputs| {
-                    if inputs.is_empty() {
+                let Some(removed_input) = output.with_lock(|lock| {
+                    if lock.inputs().is_empty() {
                         return None;
                     }
-                    let remove = rng.random_range(0..inputs.len());
-                    Some(inputs.swap_remove(remove))
+                    let remove = rng.random_range(0..lock.inputs().len());
+                    Some(lock.inputs_mut().swap_remove(remove))
                 }) else {
                     return OutputTaskReturn::None;
                 };

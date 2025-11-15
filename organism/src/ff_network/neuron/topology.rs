@@ -53,29 +53,24 @@ impl<T: TakesInput> NeuronTopology<T> {
     pub fn for_random_input<'rng, R, F, V>(&self, rng: &'rng mut R, func: F) -> Option<V>
     where
         R: Rng,
-        F: for<'a> FnOnce(&'a mut NeuronInput, &'rng mut R) -> V,
+        F: FnOnce(&mut NeuronInput, &'rng mut R) -> V,
     {
-        let mut lock = self.lock();
-        if let Some(rand_input) = lock.random_input(rng) {
-            return Some(func(rand_input, rng));
-        } else {
-            return None;
-        }
+        self.with_lock(|lock| {
+            if let Some(rand_input) = lock.random_input(rng) {
+                return Some(func(rand_input, rng));
+            } else {
+                return None;
+            }
+        })
     }
 
-    pub fn for_inputs<F, V>(&self, func: F) -> V
+    pub fn with_lock<F, V>(&self, func: F) -> V
     where
-        F: FnOnce(&mut Vec<NeuronInput>) -> V,
+        F: FnOnce(&mut T) -> V,
     {
         let mut lock = self.lock();
-        let inputs = lock.inputs_mut();
-        func(inputs)
+        func(&mut *lock)
     }
-
-    // /// returns true if the input existed prior to this operation
-    // pub fn remove_input(&self, input: &impl CanBeInput) -> Option<NeuronInput> {
-    //     self.lock().remove_input(input)
-    // }
 }
 impl NeuronTopology<Output> {
     pub fn output() -> Self {

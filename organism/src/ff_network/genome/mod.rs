@@ -1,3 +1,5 @@
+mod activations;
+
 mod replicator;
 use replicator::*;
 
@@ -116,7 +118,10 @@ impl Genome {
                     Mutator::new(&self.cells, &mut self.hidden)
                         .with_random_output(rng, OutputTask::MutateWeight);
                 }
-                _ => todo!(),
+                MutationAction::MutateActivation => {
+                    Mutator::new(&self.cells, &mut self.hidden)
+                        .with_random_output(rng, OutputTask::MutateActivation);
+                }
             }
         }
 

@@ -22,8 +22,13 @@ pub trait TakesInput: TopologyNeuron {
     //fn remove_input(&mut self, input: &impl CanBeInput) -> Option<NeuronInput>;
     fn inputs(&self) -> &[NeuronInput];
     fn inputs_mut(&mut self) -> &mut Vec<NeuronInput>;
+
     fn bias(&self) -> f32;
+    fn bias_mut(&mut self) -> &mut f32;
+
     fn activation(&self) -> fn(f32) -> f32;
+    fn set_activation(&mut self, activation: fn(f32) -> f32);
+
     fn random_input<'a>(&mut self, rng: &'a mut impl Rng) -> Option<&mut NeuronInput> {
         self.inputs_mut().choose_mut(rng)
     }
@@ -152,9 +157,16 @@ impl TakesInput for Hidden {
     fn bias(&self) -> f32 {
         self.bias
     }
+    fn bias_mut(&mut self) -> &mut f32 {
+        &mut self.bias
+    }
     fn activation(&self) -> fn(f32) -> f32 {
         self.activation
     }
+    fn set_activation(&mut self, activation: fn(f32) -> f32) {
+        self.activation = activation;
+    }
+
     fn random_input(&mut self, rng: &mut impl Rng) -> Option<&mut NeuronInput> {
         self.inputs.choose_mut(rng)
 
@@ -201,6 +213,12 @@ impl TakesInput for Output {
     //         None
     //     }
     // }
+    fn bias_mut(&mut self) -> &mut f32 {
+        &mut self.bias
+    }
+    fn set_activation(&mut self, activation: fn(f32) -> f32) {
+        self.activation = activation;
+    }
 
     fn inputs(&self) -> &[NeuronInput] {
         &self.inputs
