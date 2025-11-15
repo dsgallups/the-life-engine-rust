@@ -8,7 +8,8 @@ mod cells;
 pub use cells::*;
 
 use bevy::math::IVec2;
-use rand::Rng;
+use rand::{Rng, seq::IteratorRandom};
+use strum::IntoEnumIterator;
 
 pub struct Genome {
     cells: Vec<CellGenome>,
@@ -63,9 +64,6 @@ impl Genome {
         }
 
         for cell in cells.iter_mut() {
-            //go 1:m for input and hidden nodes
-            //
-
             for hidden_node in hidden_nodes.iter_mut() {
                 for input in cell.inputs.iter() {
                     hidden_node.add_input(input);
@@ -82,10 +80,12 @@ impl Genome {
 
     fn scramble(&mut self, rng: &mut impl Rng) {
         self.mutation.adjust_mutation_chances(rng);
+        let mut mutation_iter = self.mutation.yield_mutations(rng);
 
-        for action in self.mutation.yield_mutations(rng) {
+        while let Some(action) = mutation_iter.next(rng) {
             match action {
                 MutationAction::AddCell => {
+                    let new_cell_kind = CellKind::iter().choose(rng);
                     todo!()
                 }
                 _ => todo!(),

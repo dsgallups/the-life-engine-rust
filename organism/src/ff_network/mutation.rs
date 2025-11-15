@@ -85,23 +85,19 @@ impl MutationChances {
 
         self.self_mutation = (self.self_mutation as i8 + rate) as u8;
     }
-    pub fn yield_mutations<'a, R: Rng>(
-        &'a self,
-        rng: &'a mut R,
-    ) -> impl Iterator<Item = MutationAction> + use<'a, R> {
+    pub fn yield_mutations(&self, rng: &mut impl Rng) -> MutationIter<'_> {
         MutationIter::new(rng, self)
     }
 }
 
-pub struct MutationIter<'a, R> {
-    rng: &'a mut R,
+pub struct MutationIter<'a> {
     chances: &'a MutationChances,
     total: f32,
     count: usize,
     keep_yielding: bool,
 }
-impl<'a, R: Rng> MutationIter<'a, R> {
-    fn new(rng: &'a mut R, chances: &'a MutationChances) -> Self {
+impl<'a> MutationIter<'a> {
+    fn new(rng: &mut impl Rng, chances: &'a MutationChances) -> Self {
         let keep_yielding = rng.random_range(0..=100) > chances.self_mutation;
 
         let total = chances
@@ -112,27 +108,24 @@ impl<'a, R: Rng> MutationIter<'a, R> {
         Self {
             keep_yielding,
             count: 0,
-            rng,
             chances,
             total,
         }
     }
-}
-impl<'a, R: Rng> Iterator for MutationIter<'a, R> {
-    type Item = MutationAction;
-    fn next(&mut self) -> Option<Self::Item> {
+
+    pub fn next(&mut self, rng: &mut impl Rng) -> Option<MutationAction> {
         pub const MAX_MUTATIONS: usize = 200;
         if !self.keep_yielding || self.count > MAX_MUTATIONS {
             return None;
         }
-        let mut chance = self.rng.random_range(0_f32..self.total);
+        let mut chance = rng.random_range(0_f32..self.total);
         for mutation_chance in self.chances.chances.iter() {
             let mut_chance = mutation_chance.chance;
             if chance > mut_chance {
                 chance -= mut_chance;
                 continue;
             }
-            self.keep_yielding = self.rng.random_range(0..=100) > self.chances.self_mutation;
+            self.keep_yielding = rng.random_range(0..=100) > self.chances.self_mutation;
             self.count += 1;
             return Some(mutation_chance.action);
         }
