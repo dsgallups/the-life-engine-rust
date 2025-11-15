@@ -1,14 +1,14 @@
 use rand::Rng;
 
-use crate::ff_network::{Cells, Hidden, NeuronTopology};
+use crate::ff_network::{CellMap, Hidden, NeuronTopology};
 
 pub struct Mutator<'a> {
-    cells: &'a Cells,
+    cells: &'a CellMap,
     hidden: &'a [NeuronTopology<Hidden>],
 }
 
 impl<'a> Mutator<'a> {
-    pub fn new(cells: &'a Cells, hidden: &'a [NeuronTopology<Hidden>]) -> Self {
+    pub fn new(cells: &'a CellMap, hidden: &'a [NeuronTopology<Hidden>]) -> Self {
         Self { cells, hidden }
     }
 
@@ -71,8 +71,44 @@ impl<'a> Mutator<'a> {
                     }
                 }
             }
+            (false, false) => {
+                let input_neuron_i = input_neuron;
+                let output_neuron_i = output_neuron;
 
-            _ => todo!(),
+                let mut found_input_neuron = None;
+                let mut found_output_neuron = None;
+
+                let mut input_index = 0;
+                let mut output_index = 0;
+                for cell in self.cells.map().values() {
+                    if found_input_neuron.is_some() && found_output_neuron.is_some() {
+                        break;
+                    }
+                    if found_input_neuron.is_none() {
+                        for input_neuron in cell.inputs.iter() {
+                            if input_index == input_neuron_i {
+                                found_input_neuron = Some(input_neuron);
+                                break;
+                            }
+                            input_index += 1;
+                        }
+                    }
+                    if found_output_neuron.is_none() {
+                        for output_neuron in cell.outputs.iter() {
+                            if output_index == output_neuron_i {
+                                found_output_neuron = Some(output_neuron);
+                                break;
+                            }
+                            output_index += 1;
+                        }
+                    }
+                }
+                if let Some(input_neuron) = found_input_neuron
+                    && let Some(output_neuron) = found_output_neuron
+                {
+                    output_neuron.add_input(input_neuron);
+                }
+            }
         }
     }
 }

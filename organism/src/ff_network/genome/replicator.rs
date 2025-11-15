@@ -4,7 +4,7 @@ use bevy::platform::collections::HashMap;
 use uuid::Uuid;
 
 use crate::ff_network::{
-    CellGenome, Cells, Genome, Hidden, Input, NeuronInput, NeuronInputType, NeuronTopology,
+    CellGenome, CellMap, Genome, Hidden, Input, NeuronInput, NeuronInputType, NeuronTopology,
     TakesInput, TopologyNeuron,
 };
 
@@ -40,9 +40,9 @@ impl<'a> Replicator<'a> {
             interior_output_map.insert(i, new_outputs);
         }
 
-        let mut new_cells: Cells = Cells::with_capacity(self.genome.cells.len());
+        let mut new_cells: CellMap = CellMap::with_capacity(self.genome.cells.len());
 
-        for (i, (cell_loc, cell)) in self.genome.cells.0.iter().enumerate() {
+        for (i, (cell_loc, cell)) in self.genome.cells.map().iter().enumerate() {
             let outputs = interior_output_map.remove(&i).unwrap();
             let mut inputs = Vec::with_capacity(cell.inputs.len());
 
