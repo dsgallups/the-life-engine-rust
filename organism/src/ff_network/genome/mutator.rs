@@ -1,18 +1,18 @@
 use rand::Rng;
 
-use crate::ff_network::{CanBeInput, CellMap, Hidden, NeuronTopology, TakesInput};
+use crate::ff_network::{CanBeInput, CellMap, Hidden, NeuronInputType, NeuronTopology, TakesInput};
 
 pub struct Mutator<'a> {
     cells: &'a CellMap,
-    hidden: &'a [NeuronTopology<Hidden>],
+    hidden: &'a mut Vec<NeuronTopology<Hidden>>,
 }
 
 impl<'a> Mutator<'a> {
-    pub fn new(cells: &'a CellMap, hidden: &'a [NeuronTopology<Hidden>]) -> Self {
+    pub fn new(cells: &'a CellMap, hidden: &'a mut Vec<NeuronTopology<Hidden>>) -> Self {
         Self { cells, hidden }
     }
 
-    pub fn with_random_output(&self, rng: &mut impl Rng, task: OutputTask) {
+    pub fn with_random_output(&mut self, rng: &mut impl Rng, task: OutputTask) {
         let (_, num_outputs) = self.cells.num_inputs_outputs();
         let neurons_capable_of_taking_input = num_outputs + self.hidden.len();
         if neurons_capable_of_taking_input == 0 {
@@ -21,22 +21,31 @@ impl<'a> Mutator<'a> {
         let output_neuron = rng.random_range(0..neurons_capable_of_taking_input);
 
         let output_is_hidden = output_neuron >= num_outputs;
-        if output_is_hidden {
+        let returned = if output_is_hidden {
             let output_neuron_i = output_neuron - num_outputs;
             let output_neuron = &self.hidden[output_neuron_i];
-            task.do_thing(rng, output_neuron);
+            task.do_thing(rng, output_neuron)
         } else {
             let output_neuron_i = output_neuron;
             let mut i = 0;
-            for cell in self.cells.map().values() {
+            let mut returned = OutputTaskReturn::None;
+            'outer: for cell in self.cells.map().values() {
                 for output_neuron in cell.outputs.iter() {
                     if i == output_neuron_i {
-                        task.do_thing(rng, output_neuron);
-                        return;
+                        returned = task.do_thing(rng, output_neuron);
+                        break 'outer;
                     }
                     i += 1;
                 }
             }
+            returned
+        };
+
+        match returned {
+            OutputTaskReturn::NewHiddenNode(hidden_node) => {
+                self.hidden.push(hidden_node);
+            }
+            OutputTaskReturn::None => {}
         }
     }
 
@@ -174,19 +183,63 @@ impl ConnectionTask {
 
 pub enum OutputTask {
     MutateWeight,
+    Split,
 }
 
 impl OutputTask {
-    fn do_thing<'i, Output>(&self, rng: &mut impl Rng, output: &NeuronTopology<Output>)
+    fn do_thing<'i, Output>(
+        &self,
+        rng: &mut impl Rng,
+        output: &NeuronTopology<Output>,
+    ) -> OutputTaskReturn
     where
         Output: TakesInput,
     {
         match self {
             OutputTask::MutateWeight => {
-                output.on_random_input(rng, |input, rng| {
+                output.for_random_input(rng, |input, rng| {
                     input.weight += rng.random_range(-1.0..=1.0);
                 });
+                OutputTaskReturn::None
+            }
+            OutputTask::Split => {
+                let Some(removed_input) = output.for_inputs(|inputs| {
+                    if inputs.is_empty() {
+                        return None;
+                    }
+                    let remove = rng.random_range(0..inputs.len());
+                    Some(inputs.swap_remove(remove))
+                }) else {
+                    return OutputTaskReturn::None;
+                };
+
+                let new_hidden_node = NeuronTopology::hidden();
+                match removed_input.input_type {
+                    NeuronInputType::Hidden(input_for_neuron) => {
+                        if let Some(hidden) = input_for_neuron.upgrade() {
+                            let hidden = NeuronTopology::from_inner(hidden);
+                            new_hidden_node.add_input(&hidden);
+                        } else {
+                            return OutputTaskReturn::None;
+                        }
+                    }
+                    NeuronInputType::Input(input_for_neuron) => {
+                        if let Some(hidden) = input_for_neuron.upgrade() {
+                            let hidden = NeuronTopology::from_inner(hidden);
+                            new_hidden_node.add_input(&hidden);
+                        } else {
+                            return OutputTaskReturn::None;
+                        }
+                    }
+                }
+
+                output.add_input(&new_hidden_node);
+                OutputTaskReturn::NewHiddenNode(new_hidden_node)
             }
         }
     }
+}
+enum OutputTaskReturn {
+    None,
+    NewHiddenNode(NeuronTopology<Hidden>),
 }

@@ -18,12 +18,15 @@ pub trait CanBeInput {
 pub trait TakesInput: TopologyNeuron {
     fn new_from_raw_parts(inputs: Vec<NeuronInput>, bias: f32, activation: fn(f32) -> f32) -> Self;
     fn add_input(&mut self, input: &impl CanBeInput);
-    /// returns true if the input was an input of this type prior to removing it
-    fn remove_input(&mut self, input: &impl CanBeInput) -> bool;
+    // returns true if the input was an input of this type prior to removing it
+    //fn remove_input(&mut self, input: &impl CanBeInput) -> Option<NeuronInput>;
     fn inputs(&self) -> &[NeuronInput];
+    fn inputs_mut(&mut self) -> &mut Vec<NeuronInput>;
     fn bias(&self) -> f32;
     fn activation(&self) -> fn(f32) -> f32;
-    fn random_input<'a>(&mut self, rng: &'a mut impl Rng) -> Option<&mut NeuronInput>;
+    fn random_input<'a>(&mut self, rng: &'a mut impl Rng) -> Option<&mut NeuronInput> {
+        self.inputs_mut().choose_mut(rng)
+    }
 }
 
 #[derive(Clone)]
@@ -128,18 +131,20 @@ impl TakesInput for Hidden {
             weight: 1.,
         })
     }
-    fn remove_input(&mut self, input_to_remove: &impl CanBeInput) -> bool {
-        if let Some(position) = self
-            .inputs
-            .iter()
-            .position(|input| input_to_remove.equals(&input.input_type))
-        {
-            self.inputs.swap_remove(position);
-            true
-        } else {
-            false
-        }
+    fn inputs_mut(&mut self) -> &mut Vec<NeuronInput> {
+        &mut self.inputs
     }
+    // fn remove_input(&mut self, input_to_remove: &impl CanBeInput) -> Option<NeuronInput> {
+    //     if let Some(position) = self
+    //         .inputs
+    //         .iter()
+    //         .position(|input| input_to_remove.equals(&input.input_type))
+    //     {
+    //         Some(self.inputs.swap_remove(position))
+    //     } else {
+    //         None
+    //     }
+    // }
 
     fn inputs(&self) -> &[NeuronInput] {
         &self.inputs
@@ -181,18 +186,21 @@ impl TakesInput for Output {
             weight: 1.,
         })
     }
-    fn remove_input(&mut self, input_to_remove: &impl CanBeInput) -> bool {
-        if let Some(position) = self
-            .inputs
-            .iter()
-            .position(|input| input_to_remove.equals(&input.input_type))
-        {
-            self.inputs.swap_remove(position);
-            true
-        } else {
-            false
-        }
+
+    fn inputs_mut(&mut self) -> &mut Vec<NeuronInput> {
+        &mut self.inputs
     }
+    // fn remove_input(&mut self, input_to_remove: &impl CanBeInput) -> Option<NeuronInput> {
+    //     if let Some(position) = self
+    //         .inputs
+    //         .iter()
+    //         .position(|input| input_to_remove.equals(&input.input_type))
+    //     {
+    //         Some(self.inputs.swap_remove(position))
+    //     } else {
+    //         None
+    //     }
+    // }
 
     fn inputs(&self) -> &[NeuronInput] {
         &self.inputs

@@ -88,10 +88,6 @@ impl Genome {
                     let loc = *random_cell_loc;
                     self.cells.remove(&loc);
                 }
-                MutationAction::AddConnection => {
-                    Mutator::new(&self.cells, &self.hidden)
-                        .with_random_input_and_output(rng, ConnectionTask::Add);
-                }
                 MutationAction::MutateCell => {
                     if self.cells.is_empty() {
                         continue;
@@ -101,9 +97,13 @@ impl Genome {
                     let random_cell_loc = self.cells.map().keys().skip(rand_index).next().unwrap();
                     self.cells.add_cell(*random_cell_loc, new_cell_kind);
                 }
-                MutationAction::MutateWeight => {
-                    Mutator::new(&self.cells, &self.hidden)
-                        .with_random_output(rng, OutputTask::MutateWeight);
+                MutationAction::AddConnection => {
+                    Mutator::new(&self.cells, &mut self.hidden)
+                        .with_random_input_and_output(rng, ConnectionTask::Add);
+                }
+                MutationAction::SplitConnection => {
+                    Mutator::new(&self.cells, &mut self.hidden)
+                        .with_random_output(rng, OutputTask::Split);
                 }
                 MutationAction::RemoveNeuron => {
                     if self.hidden.is_empty() {
@@ -112,9 +112,9 @@ impl Genome {
                     let random_index = rng.random_range(0..self.hidden.len());
                     self.hidden.swap_remove(random_index);
                 }
-                MutationAction::SplitConnection => {
-                    // Mutator::new(&self.cells, &self.hidden)
-                    //     .with_random_input_and_output(rng, ConnectionTask::Split);
+                MutationAction::MutateWeight => {
+                    Mutator::new(&self.cells, &mut self.hidden)
+                        .with_random_output(rng, OutputTask::MutateWeight);
                 }
                 _ => todo!(),
             }

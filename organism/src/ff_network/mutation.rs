@@ -3,13 +3,14 @@ use strum::{EnumCount, EnumIter, IntoEnumIterator};
 
 #[derive(Copy, Clone, Debug, EnumIter, EnumCount, PartialEq, Eq)]
 pub enum MutationAction {
-    DeleteCell,
     AddCell,
+    DeleteCell,
     MutateCell,
-    SplitConnection,
     AddConnection,
+    SplitConnection,
     RemoveNeuron,
     MutateWeight,
+    MutateActivation,
 }
 #[derive(Clone, Debug, PartialEq)]
 pub struct MutationChance {
@@ -27,8 +28,6 @@ impl MutationChance {
 }
 
 pub const MAX_MUTATIONS: u8 = 200;
-
-const M: usize = 7;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MutationChances {
