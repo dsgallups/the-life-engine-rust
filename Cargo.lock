@@ -4124,6 +4124,7 @@ dependencies = [
  "ev_core",
  "nora_neat",
  "rand",
+ "strum",
  "uuid",
 ]
 

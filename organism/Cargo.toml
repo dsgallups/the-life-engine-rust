@@ -10,3 +10,4 @@ nora_neat.workspace = true
 uuid.workspace = true
 ev_core.workspace = true
 bus.workspace = true
+strum.workspace = true

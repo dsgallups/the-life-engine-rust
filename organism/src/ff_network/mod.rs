@@ -1,14 +1,19 @@
+mod mutation;
+pub use mutation::*;
+
 mod topology;
+pub use topology::*;
 
 mod cells;
-use bevy::math::IVec2;
 pub use cells::*;
 
-pub use topology::*;
+use bevy::math::IVec2;
+use rand::Rng;
 
 pub struct Genome {
     cells: Vec<CellGenome>,
     neurons: Vec<NeuronTopology>,
+    mutation: MutationChances,
 }
 impl Genome {
     pub fn sandbox() -> Self {
@@ -54,10 +59,18 @@ impl Genome {
             output.set_initial_inputs(inputs.clone());
         }
 
+        let neurons = inputs.into_iter().chain(outputs).collect();
+
         Self {
             cells,
-            neurons: Vec::new(),
+            neurons,
+            mutation: MutationChances::new(20),
         }
+    }
+
+    fn scramble(&mut self, rng: &mut impl Rng) {
+
+        //
     }
 }
 
