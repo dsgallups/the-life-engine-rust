@@ -15,7 +15,7 @@ use strum::IntoEnumIterator;
 
 use crate::ff_network::{
     CellKind, Hidden, Input, MutationAction, MutationChances, NeuronTopology, Output,
-    genome::mutator::{Mutator, ThingToDo},
+    genome::mutator::{ConnectionTask, Mutator, OutputTask},
 };
 
 pub struct Genome {
@@ -90,7 +90,7 @@ impl Genome {
                 }
                 MutationAction::AddConnection => {
                     Mutator::new(&self.cells, &self.hidden)
-                        .with_two_random_connections(rng, ThingToDo::Add);
+                        .with_random_input_and_output(rng, ConnectionTask::Add);
                 }
                 MutationAction::MutateCell => {
                     if self.cells.is_empty() {
@@ -102,7 +102,8 @@ impl Genome {
                     self.cells.add_cell(*random_cell_loc, new_cell_kind);
                 }
                 MutationAction::MutateWeight => {
-                    Mutator::new(&self.cells, &self.hidden).mutate_weight(rng);
+                    Mutator::new(&self.cells, &self.hidden)
+                        .with_random_output(rng, OutputTask::MutateWeight);
                 }
                 MutationAction::RemoveNeuron => {
                     if self.hidden.is_empty() {
@@ -112,8 +113,8 @@ impl Genome {
                     self.hidden.swap_remove(random_index);
                 }
                 MutationAction::SplitConnection => {
-                    Mutator::new(&self.cells, &self.hidden)
-                        .with_two_random_connections(rng, ThingToDo::Split);
+                    // Mutator::new(&self.cells, &self.hidden)
+                    //     .with_random_input_and_output(rng, ConnectionTask::Split);
                 }
                 _ => todo!(),
             }

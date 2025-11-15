@@ -1,6 +1,6 @@
 use rand::Rng;
 
-use crate::ff_network::{CanBeInput, CellMap, Hidden, NeuronInputType, NeuronTopology, TakesInput};
+use crate::ff_network::{CanBeInput, CellMap, Hidden, NeuronTopology, TakesInput};
 
 pub struct Mutator<'a> {
     cells: &'a CellMap,
@@ -12,7 +12,7 @@ impl<'a> Mutator<'a> {
         Self { cells, hidden }
     }
 
-    pub fn mutate_weight(&self, rng: &mut impl Rng) {
+    pub fn with_random_output(&self, rng: &mut impl Rng, task: OutputTask) {
         let (_, num_outputs) = self.cells.num_inputs_outputs();
         let neurons_capable_of_taking_input = num_outputs + self.hidden.len();
         if neurons_capable_of_taking_input == 0 {
@@ -24,15 +24,15 @@ impl<'a> Mutator<'a> {
         if output_is_hidden {
             let output_neuron_i = output_neuron - num_outputs;
             let output_neuron = &self.hidden[output_neuron_i];
-            output_neuron.mutate_random_weight(rng);
+            task.do_thing(rng, output_neuron);
         } else {
             let output_neuron_i = output_neuron;
             let mut i = 0;
-            'outer: for cell in self.cells.map().values() {
+            for cell in self.cells.map().values() {
                 for output_neuron in cell.outputs.iter() {
                     if i == output_neuron_i {
-                        output_neuron.mutate_random_weight(rng);
-                        break 'outer;
+                        task.do_thing(rng, output_neuron);
+                        return;
                     }
                     i += 1;
                 }
@@ -40,7 +40,7 @@ impl<'a> Mutator<'a> {
         }
     }
 
-    pub fn with_two_random_connections(&self, rng: &mut impl Rng, thing_to_do: ThingToDo) {
+    pub fn with_random_input_and_output(&self, rng: &mut impl Rng, thing_to_do: ConnectionTask) {
         let (num_inputs, num_outputs) = self.cells.num_inputs_outputs();
         let neurons_capable_of_taking_input = num_outputs + self.hidden.len();
         let neurons_capable_of_being_input = num_inputs + self.hidden.len();
@@ -143,12 +143,11 @@ impl<'a> Mutator<'a> {
         }
     }
 }
-pub enum ThingToDo {
+pub enum ConnectionTask {
     Add,
-    Split,
 }
 
-impl ThingToDo {
+impl ConnectionTask {
     fn do_thing<'i, Input, Output>(
         &self,
         input: &NeuronTopology<Input>,
@@ -159,13 +158,34 @@ impl ThingToDo {
     {
         match self {
             Self::Add => output.add_input(input),
-            Self::Split => {
-                let new_hidden_neuron = NeuronTopology::hidden();
+            // Self::Split => {
+            //     let new_hidden_neuron = NeuronTopology::hidden();
+            //     // huh. So the idea would be that you
+            //     if !output.remove_input(input) {
+            //         return;
+            //     };
 
-                output.remove_input(input);
+            //     //todo
+            //     todo!()
+            // }
+        }
+    }
+}
 
-                //todo
-                todo!()
+pub enum OutputTask {
+    MutateWeight,
+}
+
+impl OutputTask {
+    fn do_thing<'i, Output>(&self, rng: &mut impl Rng, output: &NeuronTopology<Output>)
+    where
+        Output: TakesInput,
+    {
+        match self {
+            OutputTask::MutateWeight => {
+                output.on_random_input(rng, |input, rng| {
+                    input.weight += rng.random_range(-1.0..=1.0);
+                });
             }
         }
     }

@@ -18,11 +18,12 @@ pub trait CanBeInput {
 pub trait TakesInput: TopologyNeuron {
     fn new_from_raw_parts(inputs: Vec<NeuronInput>, bias: f32, activation: fn(f32) -> f32) -> Self;
     fn add_input(&mut self, input: &impl CanBeInput);
-    fn remove_input(&mut self, input: &impl CanBeInput);
+    /// returns true if the input was an input of this type prior to removing it
+    fn remove_input(&mut self, input: &impl CanBeInput) -> bool;
     fn inputs(&self) -> &[NeuronInput];
     fn bias(&self) -> f32;
     fn activation(&self) -> fn(f32) -> f32;
-    fn mutate_random_weight(&mut self, rng: &mut impl Rng);
+    fn random_input<'a>(&mut self, rng: &'a mut impl Rng) -> Option<&mut NeuronInput>;
 }
 
 #[derive(Clone)]
@@ -127,13 +128,16 @@ impl TakesInput for Hidden {
             weight: 1.,
         })
     }
-    fn remove_input(&mut self, input_to_remove: &impl CanBeInput) {
+    fn remove_input(&mut self, input_to_remove: &impl CanBeInput) -> bool {
         if let Some(position) = self
             .inputs
             .iter()
             .position(|input| input_to_remove.equals(&input.input_type))
         {
             self.inputs.swap_remove(position);
+            true
+        } else {
+            false
         }
     }
 
@@ -146,10 +150,12 @@ impl TakesInput for Hidden {
     fn activation(&self) -> fn(f32) -> f32 {
         self.activation
     }
-    fn mutate_random_weight(&mut self, rng: &mut impl Rng) {
-        if let Some(input) = self.inputs.choose_mut(rng) {
-            input.weight += rng.random_range(-1.0..=1.0);
-        }
+    fn random_input(&mut self, rng: &mut impl Rng) -> Option<&mut NeuronInput> {
+        self.inputs.choose_mut(rng)
+
+        // if let Some(input) = self.inputs.choose_mut(rng) {
+        //     input.weight += rng.random_range(-1.0..=1.0);
+        // }
     }
 }
 
@@ -175,13 +181,16 @@ impl TakesInput for Output {
             weight: 1.,
         })
     }
-    fn remove_input(&mut self, input_to_remove: &impl CanBeInput) {
+    fn remove_input(&mut self, input_to_remove: &impl CanBeInput) -> bool {
         if let Some(position) = self
             .inputs
             .iter()
             .position(|input| input_to_remove.equals(&input.input_type))
         {
             self.inputs.swap_remove(position);
+            true
+        } else {
+            false
         }
     }
 
@@ -197,9 +206,11 @@ impl TakesInput for Output {
         self.activation
     }
 
-    fn mutate_random_weight(&mut self, rng: &mut impl Rng) {
-        if let Some(input) = self.inputs.choose_mut(rng) {
-            input.weight += rng.random_range(-1.0..=1.0);
-        }
+    fn random_input(&mut self, rng: &mut impl Rng) -> Option<&mut NeuronInput> {
+        self.inputs.choose_mut(rng)
+
+        // if let Some(input) = self.inputs.choose_mut(rng) {
+        //     input.weight += rng.random_range(-1.0..=1.0);
+        // }
     }
 }

@@ -3,7 +3,9 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use rand::Rng;
 use uuid::Uuid;
 
-use crate::ff_network::{CanBeInput, Hidden, Input, Output, TakesInput, TopologyNeuron};
+use crate::ff_network::{
+    CanBeInput, Hidden, Input, NeuronInput, Output, TakesInput, TopologyNeuron,
+};
 
 #[derive(Clone)]
 pub struct NeuronTopology<Type> {
@@ -45,11 +47,20 @@ impl<T: TakesInput> NeuronTopology<T> {
     pub fn add_input(&self, input: &impl CanBeInput) {
         self.lock().add_input(input);
     }
-    pub fn mutate_random_weight(&self, rng: &mut impl Rng) {
-        self.lock().mutate_random_weight(rng);
+    pub fn on_random_input<'a, F, R>(&self, rng: &'a mut R, func: F)
+    where
+        R: Rng,
+        F: FnOnce(&mut NeuronInput, &'a mut R),
+    {
+        let mut lock = self.lock();
+        if let Some(rand_input) = lock.random_input(rng) {
+            func(rand_input, rng);
+        }
     }
-    pub fn remove_input(&self, input: &impl CanBeInput) {
-        self.lock().remove_input(input);
+
+    /// returns true if the input existed prior to this operation
+    pub fn remove_input(&self, input: &impl CanBeInput) -> bool {
+        self.lock().remove_input(input)
     }
 }
 impl NeuronTopology<Output> {
