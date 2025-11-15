@@ -2,15 +2,15 @@ mod cell;
 pub use cell::*;
 
 mod old_genome;
-pub use old_genome::*;
+//pub use old_genome::*;
 
 pub mod genome;
 
 mod organism;
 pub use organism::*;
 
-mod network;
-pub use network::*;
+mod ff_network;
+//pub use ff_network::*;
 
 use bevy::prelude::*;
 
