@@ -1,7 +1,7 @@
 use bevy::math::IVec2;
 use uuid::Uuid;
 
-use crate::{CellKind, genome::PartialNetworkTemplate};
+use crate::{CellKind, old_genome::PartialNetworkTemplate};
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub struct PartialCellGenome {

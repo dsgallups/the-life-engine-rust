@@ -1,7 +1,7 @@
 use crate::{
     CellAssets, CellDetails, CellOf,
     cell::{Collagen, DataCell, Eye, Launcher},
-    genome::Genome,
+    old_genome::Genome,
 };
 use bevy::prelude::*;
 use nora_neat::prelude::NetworkTopology;

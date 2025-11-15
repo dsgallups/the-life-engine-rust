@@ -1,8 +1,10 @@
 mod cell;
 pub use cell::*;
 
-mod genome;
-pub use genome::*;
+mod old_genome;
+pub use old_genome::*;
+
+pub mod genome;
 
 mod organism;
 pub use organism::*;
