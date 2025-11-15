@@ -47,10 +47,21 @@ impl From<&NeuronTopology<Hidden>> for NeuronInputType {
 }
 
 pub trait TakesInput {
+    fn new_from_raw_parts(inputs: Vec<NeuronInput>, bias: f32, activation: fn(f32) -> f32) -> Self;
+
     fn add_input(&mut self, input: impl Into<NeuronInputType>);
     fn inputs(&self) -> &[NeuronInput];
+    fn bias(&self) -> f32;
+    fn activation(&self) -> fn(f32) -> f32;
 }
 impl TakesInput for Hidden {
+    fn new_from_raw_parts(inputs: Vec<NeuronInput>, bias: f32, activation: fn(f32) -> f32) -> Self {
+        Self {
+            inputs,
+            bias,
+            activation,
+        }
+    }
     fn add_input(&mut self, input: impl Into<NeuronInputType>) {
         self.inputs.push(NeuronInput {
             input_type: input.into(),
@@ -60,10 +71,24 @@ impl TakesInput for Hidden {
 
     fn inputs(&self) -> &[NeuronInput] {
         &self.inputs
+    }
+    fn bias(&self) -> f32 {
+        self.bias
+    }
+    fn activation(&self) -> fn(f32) -> f32 {
+        self.activation
     }
 }
 
 impl TakesInput for Output {
+    fn new_from_raw_parts(inputs: Vec<NeuronInput>, bias: f32, activation: fn(f32) -> f32) -> Self {
+        Self {
+            inputs,
+            bias,
+            activation,
+        }
+    }
+
     fn add_input(&mut self, input: impl Into<NeuronInputType>) {
         self.inputs.push(NeuronInput {
             input_type: input.into(),
@@ -73,5 +98,13 @@ impl TakesInput for Output {
 
     fn inputs(&self) -> &[NeuronInput] {
         &self.inputs
+    }
+
+    fn bias(&self) -> f32 {
+        self.bias
+    }
+
+    fn activation(&self) -> fn(f32) -> f32 {
+        self.activation
     }
 }
