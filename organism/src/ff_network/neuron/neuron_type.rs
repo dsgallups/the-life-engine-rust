@@ -1,4 +1,8 @@
 use bevy::ecs::system::In;
+use rand::{
+    Rng,
+    seq::{IndexedMutRandom, IndexedRandom},
+};
 use uuid::Uuid;
 
 use crate::ff_network::NeuronTopology;
@@ -15,6 +19,7 @@ pub trait TakesInput: TopologyNeuron {
     fn inputs(&self) -> &[NeuronInput];
     fn bias(&self) -> f32;
     fn activation(&self) -> fn(f32) -> f32;
+    fn mutate_random_weight(&mut self, rng: &mut impl Rng);
 }
 
 #[derive(Clone)]
@@ -105,6 +110,11 @@ impl TakesInput for Hidden {
     fn activation(&self) -> fn(f32) -> f32 {
         self.activation
     }
+    fn mutate_random_weight(&mut self, rng: &mut impl Rng) {
+        if let Some(input) = self.inputs.choose_mut(rng) {
+            input.weight += rng.random_range(-1.0..=1.0);
+        }
+    }
 }
 
 impl TopologyNeuron for Output {
@@ -140,5 +150,11 @@ impl TakesInput for Output {
 
     fn activation(&self) -> fn(f32) -> f32 {
         self.activation
+    }
+
+    fn mutate_random_weight(&mut self, rng: &mut impl Rng) {
+        if let Some(input) = self.inputs.choose_mut(rng) {
+            input.weight += rng.random_range(-1.0..=1.0);
+        }
     }
 }

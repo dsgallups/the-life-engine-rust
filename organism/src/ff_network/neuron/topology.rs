@@ -1,5 +1,6 @@
 use std::sync::{Arc, Mutex, MutexGuard};
 
+use rand::Rng;
 use uuid::Uuid;
 
 use crate::ff_network::{Hidden, Input, NeuronInputType, Output, TakesInput, TopologyNeuron};
@@ -43,6 +44,9 @@ impl<T: TopologyNeuron> NeuronTopology<T> {
 impl<T: TakesInput> NeuronTopology<T> {
     pub fn add_input(&self, input: impl Into<NeuronInputType>) {
         self.lock().add_input(input);
+    }
+    pub fn mutate_random_weight(&self, rng: &mut impl Rng) {
+        self.lock().mutate_random_weight(rng);
     }
 }
 impl NeuronTopology<Output> {

@@ -15,7 +15,7 @@ use strum::IntoEnumIterator;
 
 use crate::ff_network::{
     CellKind, Hidden, Input, MutationAction, MutationChances, NeuronTopology, Output,
-    genome::mutator::Mutator,
+    genome::mutator::{Mutator, ThingToDo},
 };
 
 pub struct Genome {
@@ -80,19 +80,40 @@ impl Genome {
                     self.cells.add_cell(new_spot, new_cell_kind);
                 }
                 MutationAction::DeleteCell => {
+                    if self.cells.is_empty() {
+                        continue;
+                    }
                     let rand_index = rng.random_range(0..self.cells.len());
                     let random_cell_loc = self.cells.map().keys().skip(rand_index).next().unwrap();
                     let loc = *random_cell_loc;
                     self.cells.remove(&loc);
                 }
                 MutationAction::AddConnection => {
-                    Mutator::new(&self.cells, &self.hidden).add_connection(rng);
+                    Mutator::new(&self.cells, &self.hidden)
+                        .with_two_random_connections(rng, ThingToDo::Add);
                 }
                 MutationAction::MutateCell => {
+                    if self.cells.is_empty() {
+                        continue;
+                    }
                     let new_cell_kind = CellKind::iter().choose(rng).unwrap();
                     let rand_index = rng.random_range(0..self.cells.len());
                     let random_cell_loc = self.cells.map().keys().skip(rand_index).next().unwrap();
                     self.cells.add_cell(*random_cell_loc, new_cell_kind);
+                }
+                MutationAction::MutateWeight => {
+                    Mutator::new(&self.cells, &self.hidden).mutate_weight(rng);
+                }
+                MutationAction::RemoveNeuron => {
+                    if self.hidden.is_empty() {
+                        continue;
+                    }
+                    let random_index = rng.random_range(0..self.hidden.len());
+                    self.hidden.swap_remove(random_index);
+                }
+                MutationAction::SplitConnection => {
+                    Mutator::new(&self.cells, &self.hidden)
+                        .with_two_random_connections(rng, ThingToDo::Split);
                 }
                 _ => todo!(),
             }
