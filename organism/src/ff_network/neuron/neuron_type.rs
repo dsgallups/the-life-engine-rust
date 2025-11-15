@@ -1,8 +1,4 @@
-use bevy::ecs::system::In;
-use rand::{
-    Rng,
-    seq::{IndexedMutRandom, IndexedRandom},
-};
+use rand::{Rng, seq::IndexedMutRandom};
 use uuid::Uuid;
 
 use crate::ff_network::NeuronTopology;
@@ -15,6 +11,8 @@ pub trait TopologyNeuron {
 
 pub trait CanBeInput {
     fn to_input_type(&self) -> NeuronInputType;
+
+    fn equals(&self, other: &NeuronInputType) -> bool;
 }
 
 pub trait TakesInput: TopologyNeuron {
@@ -79,10 +77,32 @@ impl CanBeInput for NeuronTopology<Input> {
     fn to_input_type(&self) -> NeuronInputType {
         NeuronInputType::Input(Arc::downgrade(&self.inner))
     }
+    fn equals(&self, other: &NeuronInputType) -> bool {
+        match other {
+            NeuronInputType::Input(other) => {
+                let Some(input) = other.upgrade() else {
+                    return false;
+                };
+                Arc::ptr_eq(&self.inner, &input)
+            }
+            NeuronInputType::Hidden(_) => false,
+        }
+    }
 }
 impl CanBeInput for NeuronTopology<Hidden> {
     fn to_input_type(&self) -> NeuronInputType {
         NeuronInputType::Hidden(Arc::downgrade(&self.inner))
+    }
+    fn equals(&self, other: &NeuronInputType) -> bool {
+        match other {
+            NeuronInputType::Hidden(other) => {
+                let Some(input) = other.upgrade() else {
+                    return false;
+                };
+                Arc::ptr_eq(&self.inner, &input)
+            }
+            NeuronInputType::Input(_) => false,
+        }
     }
 }
 
@@ -107,9 +127,14 @@ impl TakesInput for Hidden {
             weight: 1.,
         })
     }
-    fn remove_input(&mut self, input: &impl CanBeInput) {
-        let neuron_input_type: NeuronInputType = input.to_input_type();
-        todo!()
+    fn remove_input(&mut self, input_to_remove: &impl CanBeInput) {
+        if let Some(position) = self
+            .inputs
+            .iter()
+            .position(|input| input_to_remove.equals(&input.input_type))
+        {
+            self.inputs.swap_remove(position);
+        }
     }
 
     fn inputs(&self) -> &[NeuronInput] {
@@ -150,8 +175,14 @@ impl TakesInput for Output {
             weight: 1.,
         })
     }
-    fn remove_input(&mut self, input: &impl CanBeInput) {
-        todo!()
+    fn remove_input(&mut self, input_to_remove: &impl CanBeInput) {
+        if let Some(position) = self
+            .inputs
+            .iter()
+            .position(|input| input_to_remove.equals(&input.input_type))
+        {
+            self.inputs.swap_remove(position);
+        }
     }
 
     fn inputs(&self) -> &[NeuronInput] {
