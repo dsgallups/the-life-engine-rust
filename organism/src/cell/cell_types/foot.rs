@@ -5,4 +5,4 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 #[derive(Component, Default)]
-pub struct Collagen {}
+pub struct Foot {}

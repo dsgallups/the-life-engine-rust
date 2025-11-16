@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    CellAssets, CellKind, CellOf, Collagen, DataCell, Eye, Launcher, Organism, genome::Genome,
+    CellAssets, CellKind, CellOf, DataCell, Eye, Foot, Launcher, Organism, genome::Genome,
 };
 
 #[derive(Message)]
@@ -52,7 +52,7 @@ fn spawn_genomes(
                 CellKind::Foot => {
                     commands.insert((
                         Name::new("Collagen"),
-                        Collagen::default(),
+                        Foot::default(),
                         MeshMaterial2d(assets.white.clone()),
                     ));
                 }

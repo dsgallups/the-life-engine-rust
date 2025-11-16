@@ -4,8 +4,8 @@
 mod data;
 pub use data::*;
 
-mod collagen;
-pub use collagen::*;
+mod foot;
+pub use foot::*;
 
 mod launcher;
 pub use launcher::*;
@@ -16,10 +16,5 @@ pub use eye::*;
 use bevy::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_plugins((
-        data::plugin,
-        collagen::plugin,
-        launcher::plugin,
-        eye::plugin,
-    ));
+    app.add_plugins((data::plugin, foot::plugin, launcher::plugin, eye::plugin));
 }
