@@ -68,7 +68,7 @@ impl Genome {
 
     pub fn deep_clone(&self) -> Genome {
         let replicator = Replicator::new(self);
-        replicator.process()
+        replicator.replicate()
     }
 
     pub fn scramble(&mut self, rng: &mut impl Rng) {

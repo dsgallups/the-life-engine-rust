@@ -27,7 +27,7 @@ impl<'a> Replicator<'a> {
             genome,
         }
     }
-    pub fn process(mut self) -> Genome {
+    pub fn replicate(mut self) -> Genome {
         let mut interior_output_map = HashMap::with_capacity(self.genome.cells.len());
         // process all outputs first to populate all the maps
         for (i, cell) in self.genome.cells.map().values().enumerate() {
@@ -38,6 +38,18 @@ impl<'a> Replicator<'a> {
             interior_output_map.insert(i, new_outputs);
         }
 
+        // some hidden nodes may not have been traversed, since they don't actually end up
+        // in any outputs.
+        // I think it is worth to keep these artifacts around, as they could provide
+        // value to the topology in future generations.
+        for hidden_node in self.genome.hidden.iter() {
+            let id = hidden_node.id();
+            if !self.new_hidden.contains_key(&id) {
+                let new_node = self.new_takes_input_neuron(&*hidden_node.read());
+                self.new_hidden.insert(id, new_node);
+            }
+        }
+
         let mut new_cells: CellMap = CellMap::with_capacity(self.genome.cells.len());
 
         for (i, (cell_loc, cell)) in self.genome.cells.map().iter().enumerate() {
@@ -46,7 +58,11 @@ impl<'a> Replicator<'a> {
 
             for input in cell.inputs.iter() {
                 let id = input.id();
-                let input = self.new_inputs.remove(&id).unwrap();
+                // this can be none IF the input isn't linked to any output.
+                let input = match self.new_inputs.remove(&id) {
+                    Some(input) => input,
+                    None => NeuronTopology::input(),
+                };
                 inputs.push(input);
             }
             new_cells.map_mut().insert(
@@ -131,7 +147,7 @@ impl<'a> Replicator<'a> {
 
 #[cfg(test)]
 use {
-    crate::ff_network::*,
+    crate::ff_network::{decycler::Cleaner, *},
     bevy::math::IVec2,
     pretty_assertions::assert_eq,
     rand::{SeedableRng, rngs::StdRng},
@@ -472,6 +488,8 @@ fn test_replication_with_cycles() {
 
     genome.hidden.push(hidden1);
     genome.hidden.push(hidden2);
+
+    Cleaner::new(&mut genome).clean();
 
     // Replication should handle potential cycles
     let cloned = genome.deep_clone();

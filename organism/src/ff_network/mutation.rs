@@ -160,7 +160,7 @@ pub struct MutationIter<'a> {
 }
 impl<'a> MutationIter<'a> {
     fn new(rng: &mut impl Rng, chances: &'a MutationChances) -> Self {
-        let keep_yielding = rng.random_range(0..=100) > chances.self_mutation;
+        let keep_yielding = rng.random_range(0..=100) <= chances.self_mutation;
 
         let total = chances
             .chances
@@ -187,7 +187,7 @@ impl<'a> MutationIter<'a> {
                 chance -= mut_chance;
                 continue;
             }
-            self.keep_yielding = rng.random_range(0..=100) > self.chances.self_mutation;
+            self.keep_yielding = rng.random_range(0..=100) <= self.chances.self_mutation;
             self.count += 1;
             return Some(mutation_chance.action);
         }
