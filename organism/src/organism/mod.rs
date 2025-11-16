@@ -36,12 +36,8 @@ pub fn plugin(app: &mut App) {
     app.add_systems(PostUpdate, reset_cells);
 }
 
-fn reset_cells(
-    cells: Query<&Cell>,
-    // cell_outputs: Query<&CellOutput>,
-    // cell_inputs: Query<&mut CellInput>,
-) {
-    for cell in cells {
+fn reset_cells(cells: Query<&Cell>) {
+    cells.par_iter().for_each(|cell| {
         cell.reset();
-    }
+    });
 }

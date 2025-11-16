@@ -61,7 +61,7 @@ impl CpuNeuron {
                 running_sum += value * *weight;
             }
 
-            (neuron_inputs.activation)(running_sum)
+            (neuron_inputs.activation)(running_sum) + neuron_inputs.bias
         };
 
         {
