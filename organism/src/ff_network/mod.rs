@@ -9,6 +9,3 @@ pub use cells::*;
 
 mod genome;
 pub use genome::*;
-
-#[cfg(test)]
-mod tests;

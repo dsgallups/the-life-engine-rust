@@ -61,7 +61,7 @@ pub struct Hidden {
     bias: f32,
     activation: fn(f32) -> f32,
 }
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Output {
     id: Uuid,
     inputs: Vec<NeuronInput>,
