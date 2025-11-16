@@ -1,5 +1,4 @@
 mod mutation;
-
 pub use mutation::*;
 
 mod neuron;

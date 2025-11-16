@@ -1,5 +1,13 @@
-use rand::{Rng, seq::IndexedMutRandom};
+use rand::{
+    Rng,
+    seq::{IndexedMutRandom, IteratorRandom},
+};
 use strum::{EnumCount, EnumIter, IntoEnumIterator};
+
+use crate::ff_network::{
+    CellKind, CellMap, Hidden, NeuronTopology,
+    mutator::{ConnectionTask, Mutator, OutputTask},
+};
 
 #[derive(Copy, Clone, Debug, EnumIter, EnumCount, PartialEq, Eq)]
 pub enum MutationAction {
@@ -12,6 +20,61 @@ pub enum MutationAction {
     MutateWeight,
     MutateActivation,
 }
+
+impl MutationAction {
+    pub fn perform(
+        &self,
+        cells: &mut CellMap,
+        hidden: &mut Vec<NeuronTopology<Hidden>>,
+        rng: &mut impl Rng,
+    ) {
+        match self {
+            MutationAction::AddCell => {
+                let new_cell_kind = CellKind::iter().choose(rng).unwrap();
+                let new_spot = cells.find_free_spot(rng);
+                cells.add_cell(new_spot, new_cell_kind);
+            }
+            MutationAction::DeleteCell => {
+                if cells.is_empty() {
+                    return;
+                }
+                let rand_index = rng.random_range(0..cells.len());
+                let random_cell_loc = cells.map().keys().nth(rand_index).unwrap();
+                let loc = *random_cell_loc;
+                cells.remove(&loc);
+            }
+            MutationAction::MutateCell => {
+                if cells.is_empty() {
+                    return;
+                }
+                let new_cell_kind = CellKind::iter().choose(rng).unwrap();
+                let rand_index = rng.random_range(0..cells.len());
+                let random_cell_loc = cells.map().keys().nth(rand_index).unwrap();
+                cells.add_cell(*random_cell_loc, new_cell_kind);
+            }
+            MutationAction::AddConnection => {
+                Mutator::new(cells, hidden).with_random_input_and_output(rng, ConnectionTask::Add);
+            }
+            MutationAction::SplitConnection => {
+                Mutator::new(cells, hidden).with_random_output(rng, OutputTask::Split);
+            }
+            MutationAction::RemoveNeuron => {
+                if hidden.is_empty() {
+                    return;
+                }
+                let random_index = rng.random_range(0..hidden.len());
+                hidden.swap_remove(random_index);
+            }
+            MutationAction::MutateWeight => {
+                Mutator::new(cells, hidden).with_random_output(rng, OutputTask::MutateWeight);
+            }
+            MutationAction::MutateActivation => {
+                Mutator::new(cells, hidden).with_random_output(rng, OutputTask::MutateActivation);
+            }
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct MutationChance {
     action: MutationAction,

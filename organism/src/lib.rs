@@ -9,7 +9,7 @@ pub mod genome;
 mod organism;
 pub use organism::*;
 
-mod ff_network;
+pub mod ff_network;
 //pub use ff_network::*;
 
 use bevy::prelude::*;

@@ -6,23 +6,18 @@ use replicator::*;
 mod cell_map;
 pub use cell_map::*;
 
-mod mutator;
+pub mod mutator;
 
-mod decycler;
+pub mod decycler;
 
 mod direction;
 pub use direction::*;
 
 use bevy::math::IVec2;
-use rand::{Rng, seq::IteratorRandom};
-use strum::IntoEnumIterator;
+use rand::Rng;
 
 use crate::ff_network::{
-    CellKind, Hidden, Input, MutationAction, MutationChances, NeuronTopology, Output,
-    genome::{
-        decycler::Cleaner,
-        mutator::{ConnectionTask, Mutator, OutputTask},
-    },
+    CellKind, Hidden, Input, MutationChances, NeuronTopology, Output, genome::decycler::Cleaner,
 };
 
 pub struct Genome {
@@ -70,64 +65,17 @@ impl Genome {
         this
     }
 
-    fn deep_clone(&self) -> Genome {
+    pub fn deep_clone(&self) -> Genome {
         let replicator = Replicator::new(self);
         replicator.process()
     }
 
-    fn scramble(&mut self, rng: &mut impl Rng) {
+    pub fn scramble(&mut self, rng: &mut impl Rng) {
         self.mutation.adjust_mutation_chances(rng);
         let mut mutation_iter = self.mutation.yield_mutations(rng);
 
         while let Some(action) = mutation_iter.next(rng) {
-            match action {
-                MutationAction::AddCell => {
-                    let new_cell_kind = CellKind::iter().choose(rng).unwrap();
-                    let new_spot = self.cells.find_free_spot(rng);
-                    self.cells.add_cell(new_spot, new_cell_kind);
-                }
-                MutationAction::DeleteCell => {
-                    if self.cells.is_empty() {
-                        continue;
-                    }
-                    let rand_index = rng.random_range(0..self.cells.len());
-                    let random_cell_loc = self.cells.map().keys().skip(rand_index).next().unwrap();
-                    let loc = *random_cell_loc;
-                    self.cells.remove(&loc);
-                }
-                MutationAction::MutateCell => {
-                    if self.cells.is_empty() {
-                        continue;
-                    }
-                    let new_cell_kind = CellKind::iter().choose(rng).unwrap();
-                    let rand_index = rng.random_range(0..self.cells.len());
-                    let random_cell_loc = self.cells.map().keys().skip(rand_index).next().unwrap();
-                    self.cells.add_cell(*random_cell_loc, new_cell_kind);
-                }
-                MutationAction::AddConnection => {
-                    Mutator::new(&self.cells, &mut self.hidden)
-                        .with_random_input_and_output(rng, ConnectionTask::Add);
-                }
-                MutationAction::SplitConnection => {
-                    Mutator::new(&self.cells, &mut self.hidden)
-                        .with_random_output(rng, OutputTask::Split);
-                }
-                MutationAction::RemoveNeuron => {
-                    if self.hidden.is_empty() {
-                        continue;
-                    }
-                    let random_index = rng.random_range(0..self.hidden.len());
-                    self.hidden.swap_remove(random_index);
-                }
-                MutationAction::MutateWeight => {
-                    Mutator::new(&self.cells, &mut self.hidden)
-                        .with_random_output(rng, OutputTask::MutateWeight);
-                }
-                MutationAction::MutateActivation => {
-                    Mutator::new(&self.cells, &mut self.hidden)
-                        .with_random_output(rng, OutputTask::MutateActivation);
-                }
-            }
+            action.perform(&mut self.cells, &mut self.hidden, rng);
         }
 
         Cleaner::new(self).clean();
