@@ -13,8 +13,8 @@ pub struct DataCell {
     data: [f32; 4],
 }
 
-fn update_outputs(data_cells: Query<(&DataCell, &mut Cell)>) {
-    for (cell, mut outputs) in data_cells {
+fn update_outputs(data_cells: Query<(&DataCell, &Cell)>) {
+    for (cell, outputs) in data_cells {
         outputs.set(0, cell.data[0]);
         outputs.set(1, cell.data[0]);
         outputs.set(2, cell.data[0]);

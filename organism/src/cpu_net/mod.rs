@@ -6,6 +6,9 @@ use std::{
 use bevy::prelude::*;
 use uuid::Uuid;
 
+mod neuron;
+use neuron::*;
+
 use crate::{
     CellKind,
     genome::{Genome, NeuronInputType, NeuronTopology, TakesInput},
@@ -17,6 +20,23 @@ pub struct Cell {
     inputs: Vec<CpuNeuron>,
     outputs: Vec<CpuNeuron>,
 }
+
+impl Cell {
+    pub fn kind(&self) -> CellKind {
+        self.kind
+    }
+    pub fn set(&self, index: usize, value: f32) {
+        let input = &self.inputs[index];
+        let mut inner = input.inner.write().unwrap();
+
+        inner.value = Some(value);
+    }
+    pub fn get(&self, index: usize) -> f32 {
+        let output = &self.outputs[index];
+        output.process()
+    }
+}
+
 pub struct CpuNetwork {
     pub cells: HashMap<IVec2, Cell>,
 }
@@ -61,8 +81,7 @@ impl CpuNetwork {
                 },
             );
         }
-
-        todo!()
+        Self { cells }
     }
 }
 
@@ -125,31 +144,4 @@ fn process_topology<T: TakesInput>(
     CpuNeuron {
         inner: Arc::new(RwLock::new(inner)),
     }
-}
-
-#[derive(Clone)]
-pub struct CpuNeuron {
-    inner: Arc<RwLock<CpuNeuronInner>>,
-}
-
-impl CpuNeuron {
-    pub fn input() -> Self {
-        Self {
-            inner: Arc::new(RwLock::new(CpuNeuronInner {
-                inputs: None,
-                value: None,
-            })),
-        }
-    }
-}
-
-pub struct CpuNeuronInputs {
-    pub(crate) inputs: Vec<(CpuNeuron, f32)>,
-    bias: f32,
-    activation: fn(f32) -> f32,
-}
-
-struct CpuNeuronInner {
-    inputs: Option<CpuNeuronInputs>,
-    value: Option<f32>,
 }
