@@ -1,13 +1,25 @@
 mod edge;
+use std::collections::HashMap;
+
 pub use edge::*;
 
 mod node;
-use ev_core::RenderLayer;
 pub use node::*;
 
-use bevy::{asset::uuid::Uuid, camera::visibility::RenderLayers, prelude::*};
+use bevy::{
+    asset::uuid::Uuid,
+    camera::visibility::RenderLayers,
+    color::palettes::tailwind::{BLUE_400, GREEN_400, RED_400},
+    prelude::*,
+};
 use bimap::BiMap;
-use organism::{ActiveCell, BrainCell};
+
+use crate::{
+    camera::RenderLayer,
+    cell::Cells,
+    cpu_net::{Cell, CpuNeuron},
+    organism::ActiveOrganism,
+};
 
 const NODE_LAYER: f32 = 1.;
 const EDGE_LAYER: f32 = 0.;
@@ -17,6 +29,8 @@ const MIN_DISTANCE: f32 = 140.;
 #[derive(Resource, Default)]
 pub struct EntityGraphMap {
     entity_map: BiMap<Entity, Uuid>,
+    /// contains the (sender, receiver), edge id
+    connections: HashMap<(Uuid, Uuid), Uuid>, //connection_map
 }
 impl EntityGraphMap {
     pub fn insert(&mut self, entity: Entity, id: Uuid) {
@@ -34,6 +48,14 @@ impl EntityGraphMap {
     fn clear(&mut self) {
         self.entity_map.clear();
     }
+    pub fn get(&self, sender: Uuid, receiver: Uuid) -> Option<Uuid> {
+        self.connections.get(&(sender, receiver)).copied()
+    }
+    pub fn insert_conn(&mut self, sender: Uuid, receiver: Uuid) -> Uuid {
+        let id = Uuid::new_v4();
+        self.connections.insert((sender, receiver), id);
+        id
+    }
 }
 
 #[derive(Component)]
@@ -44,116 +66,179 @@ pub(super) fn plugin(app: &mut App) {
     app.init_resource::<EntityGraphMap>();
 
     app.add_systems(PreUpdate, spawn_new_nodes);
-
-    app.add_systems(PostUpdate, (despawn_dead_nodes, despawn_dead_edges).chain());
 }
 
 fn spawn_new_nodes(
     mut commands: Commands,
-    cell: Single<&BrainCell, With<ActiveCell>>,
+    organism: Single<&Cells, With<ActiveOrganism>>,
+    cells: Query<&Cell>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut map: ResMut<EntityGraphMap>,
 ) {
-    let brain = cell.network();
-
     let circle = meshes.add(Circle::new(NODE_RADIUS));
 
     let mut x = 0.;
     let mut y = -20.;
 
-    for neuron in brain.neurons() {
-        if map.get_entity(&neuron.id()).is_none() {
-            let neuron_entity = commands
-                .spawn((
-                    GraphComponent,
-                    RenderLayers::from(RenderLayer::NODE_VISUAL),
-                    Nid(neuron.id()),
-                    Mesh2d(circle.clone()),
-                    MeshMaterial2d(materials.add(Color::WHITE)),
-                    Transform::from_xyz(x, y, NODE_LAYER),
-                ))
-                .id();
-
-            map.insert(neuron_entity, neuron.id());
-
-            commands.spawn((
-                Text2d::new(neuron.name()),
-                RenderLayers::from(RenderLayer::NODE_VISUAL),
-                TextColor(Color::BLACK),
-                ChildOf(neuron_entity),
-            ));
-            x += 12.;
-            y *= -1.;
+    for cell in organism.cells() {
+        let Ok(cell) = cells.get(*cell) else {
+            warn!("CELL MISSING CELL");
+            continue;
+        };
+        for (i, neuron) in cell.output_neurons().iter().enumerate() {
+            let name = format!("{:?} Output {i}", cell.kind());
+            neuron_spawner(
+                commands.reborrow(),
+                &circle,
+                materials.as_mut(),
+                &mut x,
+                &mut y,
+                map.as_mut(),
+                neuron,
+                name,
+            );
         }
     }
 
-    for neuron in brain.neurons() {
-        let neuron_e = *map.get_entity(&neuron.id()).unwrap();
-
-        let mut new_edges = Vec::new();
-
-        let inner = neuron.read();
-
-        let Some(inputs) = inner.inputs() else {
+    for cell in organism.cells() {
+        let Ok(cell) = cells.get(*cell) else {
             continue;
         };
 
-        for input in inputs {
-            if map.get_entity(&input.id()).is_none() {
-                let connected_to = input.node().id();
-                let Some(receives_from) = map.get_entity(&connected_to) else {
-                    continue;
-                };
-
-                let edge = commands
-                    .spawn((
-                        GraphComponent,
-                        RenderLayers::from(RenderLayer::NODE_VISUAL),
-                        Edge::new(input.id(), *receives_from, neuron_e),
-                        Mesh2d(meshes.add(Rectangle::new(LINE_MESH_X, LINE_MESH_Y))),
-                        MeshMaterial2d(materials.add(Color::WHITE)),
-                        Transform::from_xyz(0., 0., EDGE_LAYER),
-                    ))
-                    .id();
-
-                map.insert(edge, input.id());
-
-                new_edges.push(edge);
-            }
-        }
-    }
-
-    //
-}
-
-fn despawn_dead_nodes(
-    mut commands: Commands,
-    cell: Single<&BrainCell, With<ActiveCell>>,
-    nodes: Query<(Entity, &Nid)>,
-    mut map: ResMut<EntityGraphMap>,
-) {
-    let brain = cell.network();
-
-    for (node, id) in nodes {
-        if brain.get_neuron(id.0).is_none() {
-            map.remove(&node);
-            commands.entity(node).despawn();
+        for neuron in cell.output_neurons() {
+            edge_spawner(
+                commands.reborrow(),
+                meshes.as_mut(),
+                materials.as_mut(),
+                map.as_mut(),
+                neuron,
+            );
         }
     }
 }
 
-fn despawn_dead_edges(
+fn neuron_spawner(
     mut commands: Commands,
-    edges: Query<(Entity, &Edge)>,
-    cell: Single<&BrainCell, With<ActiveCell>>,
-    mut map: ResMut<EntityGraphMap>,
+    circle: &Handle<Mesh>,
+    materials: &mut Assets<ColorMaterial>,
+    x: &mut f32,
+    y: &mut f32,
+    map: &mut EntityGraphMap,
+    neuron: &CpuNeuron,
+    name: String,
 ) {
-    let brain = cell.network();
-    for (entity, edge) in edges {
-        if !brain.has_input(edge.id()) {
-            map.remove(&entity);
-            commands.entity(entity).despawn();
+    let id = neuron.id();
+    if map.get_entity(&id).is_none() {
+        let neuron_entity = commands
+            .spawn((
+                GraphComponent,
+                RenderLayers::from(RenderLayer::NODE_VISUAL),
+                Nid(id),
+                Mesh2d(circle.clone()),
+                MeshMaterial2d(materials.add(Color::WHITE)),
+                Transform::from_xyz(*x, *y, NODE_LAYER),
+            ))
+            .id();
+
+        map.insert(neuron_entity, id);
+
+        let name = commands
+            .spawn((
+                Text2d::new(name),
+                RenderLayers::from(RenderLayer::NODE_VISUAL),
+                TextColor(RED_400.into()),
+                ChildOf(neuron_entity),
+            ))
+            .id();
+
+        let value = commands
+            .spawn((
+                Text2d::new("VALUE"),
+                RenderLayers::from(RenderLayer::NODE_VISUAL),
+                Transform::from_xyz(0., -20., 0.),
+                TextColor(BLUE_400.into()),
+                ChildOf(neuron_entity),
+            ))
+            .id();
+
+        commands
+            .entity(neuron_entity)
+            .insert(NodeValueText { name, value });
+        *x += 12.;
+        if *y > 0. {
+            *y += 6.;
+        } else {
+            *y -= 6.;
         }
+        *y *= -1.;
     }
+
+    neuron.on_inputs(|input_neuron| {
+        neuron_spawner(
+            commands.reborrow(),
+            circle,
+            materials,
+            x,
+            y,
+            map,
+            input_neuron,
+            "Node".to_string(),
+        );
+    });
+}
+
+fn edge_spawner(
+    mut commands: Commands,
+    meshes: &mut Assets<Mesh>,
+    materials: &mut Assets<ColorMaterial>,
+    map: &mut EntityGraphMap,
+    neuron: &CpuNeuron,
+) {
+    let neuron_id = neuron.id();
+    let neuron_e = *map.get_entity(&neuron.id()).unwrap();
+
+    let mut new_edges = Vec::new();
+    neuron.on_inputs(|input_neuron| {
+        let receives_from_id = input_neuron.id();
+        if map.get(receives_from_id, neuron_id).is_none() {
+            let Some(receives_from) = map.get_entity(&receives_from_id).copied() else {
+                return;
+            };
+            let connection_id = map.insert_conn(receives_from_id, neuron_id);
+
+            let edge = commands
+                .spawn((
+                    GraphComponent,
+                    RenderLayers::from(RenderLayer::NODE_VISUAL),
+                    Edge::new(connection_id, receives_from, neuron_e),
+                    // Mesh2d(meshes.add(Rectangle::new(LINE_MESH_X, LINE_MESH_Y))),
+                    // MeshMaterial2d(materials.add(Color::WHITE)),
+                    Transform::from_xyz(0., 0., EDGE_LAYER),
+                    InheritedVisibility::VISIBLE,
+                ))
+                .id();
+
+            commands.spawn((
+                EdgeRectangleOf(edge),
+                RenderLayers::from(RenderLayer::NODE_VISUAL),
+                Mesh2d(meshes.add(Rectangle::new(LINE_MESH_X, LINE_MESH_Y))),
+                MeshMaterial2d(materials.add(Color::WHITE)),
+                ChildOf(edge),
+            ));
+            commands.spawn((
+                EdgeCircleOf(edge),
+                RenderLayers::from(RenderLayer::NODE_VISUAL),
+                Mesh2d(meshes.add(Circle::new(10.))),
+                MeshMaterial2d(materials.add(Color::from(GREEN_400))),
+                ChildOf(edge),
+            ));
+
+            map.insert(edge, connection_id);
+
+            new_edges.push(edge);
+        }
+
+        edge_spawner(commands.reborrow(), meshes, materials, map, input_neuron);
+    });
 }

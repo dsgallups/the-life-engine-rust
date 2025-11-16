@@ -1,6 +1,8 @@
 use bevy::{color::palettes::tailwind::RED_400, platform::collections::HashMap, prelude::*};
 use uuid::Uuid;
 
+use crate::node_visual::Nid;
+
 #[derive(Component, Reflect)]
 pub struct Edge {
     id: Uuid,
@@ -29,6 +31,22 @@ impl Edge {
     }
 }
 
+#[derive(Component)]
+#[relationship_target(relationship = EdgeRectangleOf)]
+pub struct EdgeRectangle(Entity);
+
+#[derive(Component)]
+#[relationship(relationship_target = EdgeRectangle)]
+pub struct EdgeRectangleOf(pub Entity);
+
+#[derive(Component)]
+#[relationship_target(relationship = EdgeCircleOf)]
+pub struct EdgeCircle(Entity);
+
+#[derive(Component)]
+#[relationship(relationship_target = EdgeCircle)]
+pub struct EdgeCircleOf(pub Entity);
+
 #[derive(Message)]
 pub struct EdgeUpdates {
     map: HashMap<Uuid, i32>,
@@ -52,18 +70,35 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 fn update_edge_transforms(
-    edges: Query<(&mut Transform, &Edge)>,
-    nodes: Query<&Transform, Without<Edge>>,
+    edges: Query<
+        (&mut Transform, &Edge, &EdgeRectangle, &EdgeCircle),
+        (Without<EdgeRectangleOf>, Without<EdgeCircleOf>),
+    >,
+    mut rectangles: Query<&mut Transform, (With<EdgeRectangleOf>, Without<Edge>, Without<Nid>)>,
+    mut circles: Query<
+        &mut Transform,
+        (
+            With<EdgeCircleOf>,
+            Without<EdgeRectangleOf>,
+            Without<Edge>,
+            Without<Nid>,
+        ),
+    >,
+    nodes: Query<&Transform, (With<Nid>, Without<Edge>, Without<EdgeCircleOf>)>,
 ) {
-    for (mut transform, edge) in edges {
+    for (mut transform, edge, rectangle, circle) in edges {
         if let Ok(sender_trns) = nodes.get(edge.sender())
             && let Ok(recv_trns) = nodes.get(edge.receiver())
+            && let Ok(mut rectangle_trns) = rectangles.get_mut(rectangle.0)
+            && let Ok(mut circle_trns) = circles.get_mut(circle.0)
         {
             let val = (recv_trns.translation.xy() - sender_trns.translation.xy());
             let length = val.length();
             if length > 0. {
-                transform.scale.x = length;
+                rectangle_trns.scale.x = length;
+                circle_trns.translation.x = length * 0.5 - 5.;
             }
+
             transform.translation = sender_trns.translation + (Vec3::new(val.x, val.y, 0.) * 0.5);
 
             let angle = val.y.atan2(val.x);
