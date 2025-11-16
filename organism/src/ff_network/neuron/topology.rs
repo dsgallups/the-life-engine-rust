@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use rand::Rng;
 use uuid::Uuid;
@@ -10,14 +10,20 @@ use crate::ff_network::{
 #[derive(Clone, Debug)]
 pub struct NeuronTopology<Type> {
     /// None is an input node, Some is hidden or output
-    pub inner: Arc<Mutex<Type>>,
+    pub inner: Arc<RwLock<Type>>,
 }
 
 impl<T> NeuronTopology<T> {
-    pub fn lock(&self) -> MutexGuard<'_, T> {
-        self.inner.lock().unwrap()
+    pub fn new(neuron_type: T) -> Self {
+        Self::from_inner(Arc::new(RwLock::new(neuron_type)))
     }
-    pub fn from_inner(inner: Arc<Mutex<T>>) -> Self {
+    pub fn read(&self) -> RwLockReadGuard<'_, T> {
+        self.inner.read().unwrap()
+    }
+    pub fn write(&self) -> RwLockWriteGuard<'_, T> {
+        self.inner.write().unwrap()
+    }
+    pub fn from_inner(inner: Arc<RwLock<T>>) -> Self {
         Self { inner }
     }
 }
@@ -25,14 +31,14 @@ impl<T> NeuronTopology<T> {
 impl NeuronTopology<Input> {
     pub fn input() -> Self {
         Self {
-            inner: Arc::new(Mutex::new(Input::default())),
+            inner: Arc::new(RwLock::new(Input::default())),
         }
     }
 }
 impl NeuronTopology<Hidden> {
     pub fn hidden() -> Self {
         Self {
-            inner: Arc::new(Mutex::new(Hidden::new_from_raw_parts(
+            inner: Arc::new(RwLock::new(Hidden::new_from_raw_parts(
                 Vec::new(),
                 0.,
                 |_| 0.,
@@ -42,13 +48,13 @@ impl NeuronTopology<Hidden> {
 }
 impl<T: TopologyNeuron> NeuronTopology<T> {
     pub fn id(&self) -> Uuid {
-        self.lock().id()
+        self.read().id()
     }
 }
 
 impl<T: TakesInput> NeuronTopology<T> {
     pub fn add_input(&self, input: &impl CanBeInput) {
-        self.lock().add_input(input);
+        self.write().add_input(input);
     }
     pub fn for_random_input<'rng, R, F, V>(&self, rng: &'rng mut R, func: F) -> Option<V>
     where
@@ -65,7 +71,7 @@ impl<T: TakesInput> NeuronTopology<T> {
     where
         F: FnOnce(&T) -> V,
     {
-        let lock = self.lock();
+        let lock = self.read();
         func(&*lock)
     }
 
@@ -73,14 +79,14 @@ impl<T: TakesInput> NeuronTopology<T> {
     where
         F: FnOnce(&mut T) -> V,
     {
-        let mut lock = self.lock();
+        let mut lock = self.write();
         func(&mut *lock)
     }
 }
 impl NeuronTopology<Output> {
     pub fn output() -> Self {
         Self {
-            inner: Arc::new(Mutex::new(Output::new_from_raw_parts(
+            inner: Arc::new(RwLock::new(Output::new_from_raw_parts(
                 Vec::new(),
                 0.,
                 |_| 0.,

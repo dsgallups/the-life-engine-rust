@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::ff_network::NeuronTopology;
 
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::{Arc, RwLock, Weak};
 
 pub trait TopologyNeuron {
     fn id(&self) -> Uuid;
@@ -99,7 +99,7 @@ impl NeuronInput {
 }
 
 #[derive(Clone, Debug)]
-pub struct NeuronInputInner<T>(Weak<Mutex<T>>);
+pub struct NeuronInputInner<T>(Weak<RwLock<T>>);
 impl<T> NeuronInputInner<T> {
     /// Attempts to upgrade this inner type to the associated neuron topology, if the link is still valid.
     pub fn upgrade(&self) -> Option<NeuronTopology<T>> {

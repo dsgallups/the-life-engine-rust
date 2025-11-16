@@ -89,6 +89,7 @@ fn dfs<T: TakesInput>(
     visited: &mut HashSet<Uuid>,
 ) -> RemoveFrom {
     let node_id = node.id();
+    println!("Searching depth for {node_id}");
     visited.insert(node_id);
 
     let mut total_remove = RemoveFrom::default();
@@ -102,10 +103,13 @@ fn dfs<T: TakesInput>(
                 NeuronInputType::Hidden(hidden) => {
                     if let Some(neuron_input) = hidden.upgrade() {
                         let input_id = neuron_input.id();
+                        println!("Checking input {input_id} for node {node_id}");
                         if !visited.contains(&input_id) {
+                            println!("Not visited");
                             let child_result = dfs(&neuron_input, stack, visited);
                             total_remove.0.extend(child_result.0);
                         } else if stack.contains(&input_id) {
+                            println!("Stack contains");
                             self_remove.insert(input_id);
                         }
                     }

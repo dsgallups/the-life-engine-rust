@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use bevy::platform::collections::HashMap;
 use uuid::Uuid;
 
@@ -35,7 +33,7 @@ impl<'a> Replicator<'a> {
         for (i, cell) in self.genome.cells.map().values().enumerate() {
             let mut new_outputs = Vec::with_capacity(cell.outputs.len());
             for output in cell.outputs.iter() {
-                new_outputs.push(self.new_takes_input_neuron(&*output.lock()));
+                new_outputs.push(self.new_takes_input_neuron(&*output.read()));
             }
             interior_output_map.insert(i, new_outputs);
         }
@@ -83,7 +81,7 @@ impl<'a> Replicator<'a> {
                     }),
                     None => {
                         let new_hidden_neuron =
-                            self.new_takes_input_neuron(&*hidden_neuron_inner.lock());
+                            self.new_takes_input_neuron(&*hidden_neuron_inner.read());
                         let result = NeuronInput {
                             input_type: NeuronInputType::hidden(&new_hidden_neuron),
                             weight: neuron_input.weight,
@@ -127,9 +125,7 @@ impl<'a> Replicator<'a> {
         }
         let new_t = T::new_from_raw_parts(new_inputs, neuron.bias(), neuron.activation());
 
-        NeuronTopology {
-            inner: Arc::new(Mutex::new(new_t)),
-        }
+        NeuronTopology::new(new_t)
     }
 }
 
