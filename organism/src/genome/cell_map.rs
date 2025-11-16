@@ -6,7 +6,7 @@ use crate::{
     genome::{Direction, NeuronTopology},
 };
 
-#[derive(Default, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct CellMap(HashMap<IVec2, CellGenome>);
 impl CellMap {
     pub fn with_capacity(cap: usize) -> Self {

@@ -12,8 +12,8 @@ pub use genome::*;
 
 use bevy::{color::palettes::tailwind::*, prelude::*};
 
-#[derive(Component, Reflect)]
-pub struct ActiveCell;
+// #[derive(Component, Reflect)]
+// pub struct ActiveCell;
 
 #[derive(Component, Reflect)]
 #[relationship_target(relationship = CellOf)]

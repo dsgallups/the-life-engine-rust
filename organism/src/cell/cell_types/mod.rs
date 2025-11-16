@@ -1,5 +1,5 @@
-mod brain;
-pub use brain::*;
+// mod brain;
+// pub use brain::*;
 
 mod data;
 pub use data::*;
@@ -17,9 +17,9 @@ use bevy::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins((
-        brain::plugin,
         data::plugin,
         collagen::plugin,
         launcher::plugin,
+        eye::plugin,
     ));
 }

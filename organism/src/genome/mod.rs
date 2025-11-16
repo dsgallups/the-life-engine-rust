@@ -22,7 +22,7 @@ pub use direction::*;
 use bevy::prelude::*;
 use rand::Rng;
 
-#[derive(Debug, Component)]
+#[derive(Debug, Clone)]
 pub struct Genome {
     pub(crate) cells: CellMap,
     pub(crate) hidden: Vec<NeuronTopology<Hidden>>,
@@ -67,6 +67,9 @@ impl Genome {
         this.hidden = hidden_nodes;
 
         this
+    }
+    pub fn cells(&self) -> &CellMap {
+        &self.cells
     }
 
     pub fn deep_clone(&self) -> Genome {
@@ -151,12 +154,6 @@ impl Genome {
         self.hidden.len()
     }
 
-    /// Get cells for testing
-    #[cfg(test)]
-    pub fn cells(&self) -> &CellMap {
-        &self.cells
-    }
-
     /// Get hidden neurons for testing
     #[cfg(test)]
     pub fn hidden_neurons(&self) -> &[NeuronTopology<Hidden>] {
@@ -174,7 +171,6 @@ use crate::{CellKind, genome::decycler::Cleaner};
 
 #[cfg(test)]
 use {
-    bevy::prelude::*,
     pretty_assertions::assert_eq,
     rand::{SeedableRng, rngs::StdRng},
 };

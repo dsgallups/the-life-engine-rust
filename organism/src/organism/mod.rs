@@ -1,18 +1,37 @@
 use crate::{
     CellAssets,
-    //old_genome::Genome,
+    CellKind,
+    CellOf,
+    Collagen,
+    DataCell,
+    Eye,
+    Launcher,
+    genome::Genome, //old_genome::Genome,
 };
 use bevy::prelude::*;
 
+#[derive(Component, Reflect)]
+pub struct ActiveOrganism;
+
+#[derive(Component)]
+pub struct Organism {
+    genome: Genome,
+}
+impl Organism {
+    pub fn new(genome: Genome) -> Self {
+        Self { genome }
+    }
+}
+
 #[derive(Message)]
 pub struct SpawnOrganism {
-    //genome: Genome,
+    genome: Genome,
     location: Vec2,
 }
 impl SpawnOrganism {
-    pub fn new<T>(genome: T, location: Vec2) -> Self {
-        //Self { genome, location }
-        Self { location }
+    /// The receiving system will create offspring from this genome.
+    pub fn new(genome: Genome, location: Vec2) -> Self {
+        Self { genome, location }
     }
 }
 
@@ -26,69 +45,58 @@ fn spawn_genomes(
     mut commands: Commands,
     assets: Res<CellAssets>,
 ) {
-    // for msg in msgs.read() {
-    //     let organism = commands
-    //         .spawn((
-    //             Name::new("Organism"),
-    //             OrganismNetwork::new(msg.genome.network().deep_clone()),
-    //             InheritedVisibility::VISIBLE,
-    //             msg.genome.clone(),
-    //             Pickable::default(),
-    //             Transform::from_xyz(msg.location.x, msg.location.y, 0.),
-    //         ))
-    //         .id();
+    for msg in msgs.read() {
+        let mut organism_genome = msg.genome.deep_clone();
+        organism_genome.scramble(&mut rand::rng());
+        let organism = commands
+            .spawn((
+                Name::new("Organism"),
+                Organism::new(msg.genome.clone()),
+                InheritedVisibility::VISIBLE,
+                Pickable::default(),
+                Transform::from_xyz(msg.location.x, msg.location.y, 0.),
+            ))
+            .id();
 
-    //     for cell in msg.genome.cells() {
-    //         let location = cell.location();
-    //         let mut commands = commands.spawn((
-    //             cell.details().cell_type(),
-    //             ChildOf(organism),
-    //             CellOf(organism),
-    //             Pickable::default(),
-    //             Transform::from_xyz(location.x as f32, location.y as f32, 0.),
-    //             Mesh2d(assets.cell.clone()),
-    //         ));
-    //         match cell.details() {
-    //             CellDetails::Collagen => {
-    //                 commands.insert((
-    //                     Name::new("Collagen"),
-    //                     Collagen::default(),
-    //                     MeshMaterial2d(assets.white.clone()),
-    //                 ));
-    //             }
-    //             CellDetails::Data => {
-    //                 commands.insert((
-    //                     Name::new("Data Cell"),
-    //                     DataCell::default(),
-    //                     MeshMaterial2d(assets.yellow.clone()),
-    //                 ));
-    //             }
-    //             CellDetails::Launcher => {
-    //                 commands.insert((
-    //                     Name::new("Launcher Cell"),
-    //                     Launcher::default(),
-    //                     MeshMaterial2d(assets.red.clone()),
-    //                 ));
-    //             }
-    //             CellDetails::Eye => {
-    //                 commands.insert((
-    //                     Name::new("Eye Cell"),
-    //                     Eye::default(),
-    //                     MeshMaterial2d(assets.sky.clone()),
-    //                 ));
-    //             }
-
-    //             CellDetails::Brain => {
-    //                 // todo
-    //                 todo!()
-    //             } // CellDetails::Brain(topology) => {
-    //               //     commands.insert((
-    //               //         Name::new("Brain Cell"),
-    //               //         BrainCell::new(topology.deep_clone()),
-    //               //         MeshMaterial2d(assets.pink.clone()),
-    //               //     ));
-    //               // }
-    //         }
-    //     }
-    // }
+        for (location, cell) in msg.genome.cells().map() {
+            let mut commands = commands.spawn((
+                cell.kind,
+                ChildOf(organism),
+                CellOf(organism),
+                Pickable::default(),
+                Transform::from_xyz(location.x as f32, location.y as f32, 0.),
+                Mesh2d(assets.cell.clone()),
+            ));
+            match cell.kind {
+                CellKind::Collagen => {
+                    commands.insert((
+                        Name::new("Collagen"),
+                        Collagen::default(),
+                        MeshMaterial2d(assets.white.clone()),
+                    ));
+                }
+                CellKind::Data => {
+                    commands.insert((
+                        Name::new("Data Cell"),
+                        DataCell::default(),
+                        MeshMaterial2d(assets.yellow.clone()),
+                    ));
+                }
+                CellKind::Launcher => {
+                    commands.insert((
+                        Name::new("Launcher Cell"),
+                        Launcher::default(),
+                        MeshMaterial2d(assets.red.clone()),
+                    ));
+                }
+                CellKind::Eye => {
+                    commands.insert((
+                        Name::new("Eye Cell"),
+                        Eye::default(),
+                        MeshMaterial2d(assets.sky.clone()),
+                    ));
+                }
+            }
+        }
+    }
 }
