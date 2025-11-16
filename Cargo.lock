@@ -4122,7 +4122,6 @@ dependencies = [
  "bevy",
  "bus",
  "ev_core",
- "nora_neat",
  "pretty_assertions",
  "rand",
  "strum",

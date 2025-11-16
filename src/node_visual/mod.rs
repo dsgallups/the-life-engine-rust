@@ -7,7 +7,6 @@ pub use node::*;
 
 use bevy::{asset::uuid::Uuid, camera::visibility::RenderLayers, prelude::*};
 use bimap::BiMap;
-use organism::{ActiveCell, BrainCell};
 
 const NODE_LAYER: f32 = 1.;
 const EDGE_LAYER: f32 = 0.;
@@ -50,7 +49,7 @@ pub(super) fn plugin(app: &mut App) {
 
 fn spawn_new_nodes(
     mut commands: Commands,
-    cell: Single<&BrainCell, With<ActiveCell>>,
+    //cell: Single<&BrainCell, With<ActiveCell>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut map: ResMut<EntityGraphMap>,

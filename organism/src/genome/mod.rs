@@ -267,7 +267,7 @@ fn test_genome_from_cells_construction() {
         (CellKind::Eye, IVec2::new(5, 5)),
         (CellKind::Launcher, IVec2::new(-3, 2)),
         (CellKind::Data, IVec2::new(0, 0)),
-        (CellKind::Collagen, IVec2::new(10, -10)),
+        (CellKind::Foot, IVec2::new(10, -10)),
     ];
 
     let genome = Genome::from_cells(cells);
@@ -294,7 +294,7 @@ fn test_genome_from_cells_construction() {
     );
     assert_eq!(
         genome.cells().get(&IVec2::new(10, -10)).unwrap().kind,
-        CellKind::Collagen
+        CellKind::Foot
     );
 }
 
@@ -331,7 +331,7 @@ fn test_cell_map_find_free_spot_multiple() {
     for x in -1..=1 {
         for y in -1..=1 {
             if x != 0 || y != 0 {
-                genome.cells.add_cell(IVec2::new(x, y), CellKind::Collagen);
+                genome.cells.add_cell(IVec2::new(x, y), CellKind::Foot);
             }
         }
     }
@@ -351,7 +351,7 @@ fn test_cell_map_num_inputs_outputs() {
         (CellKind::Eye, IVec2::new(0, 0)),      // 2 inputs, 0 outputs
         (CellKind::Launcher, IVec2::new(1, 0)), // 0 inputs, 3 outputs
         (CellKind::Data, IVec2::new(2, 0)),     // 4 inputs, 4 outputs
-        (CellKind::Collagen, IVec2::new(3, 0)), // 0 inputs, 0 outputs
+        (CellKind::Foot, IVec2::new(3, 0)),     // 0 inputs, 0 outputs
     ]);
 
     let (num_inputs, num_outputs) = genome.cells.num_inputs_outputs();
@@ -412,7 +412,7 @@ fn test_cell_requirements() {
     assert_eq!(launcher_req.num_inputs, 0);
     assert_eq!(launcher_req.num_outputs, 3);
 
-    let collagen_req = CellKind::Collagen.requirements();
+    let collagen_req = CellKind::Foot.requirements();
     assert_eq!(collagen_req.num_inputs, 0);
     assert_eq!(collagen_req.num_outputs, 0);
 
@@ -429,7 +429,7 @@ fn test_cell_creation_respects_requirements() {
     genome.cells.add_cell(IVec2::new(0, 0), CellKind::Eye);
     genome.cells.add_cell(IVec2::new(1, 0), CellKind::Launcher);
     genome.cells.add_cell(IVec2::new(2, 0), CellKind::Data);
-    genome.cells.add_cell(IVec2::new(3, 0), CellKind::Collagen);
+    genome.cells.add_cell(IVec2::new(3, 0), CellKind::Foot);
 
     // Check Eye
     let eye = genome.cells.get(&IVec2::new(0, 0)).unwrap();
@@ -585,7 +585,7 @@ fn test_large_genome_construction() {
                 0 => CellKind::Eye,
                 1 => CellKind::Launcher,
                 2 => CellKind::Data,
-                _ => CellKind::Collagen,
+                _ => CellKind::Foot,
             };
             cells.push((kind, IVec2::new(x, y)));
         }

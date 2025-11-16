@@ -49,7 +49,7 @@ fn spawn_genomes(
                 Mesh2d(assets.cell.clone()),
             ));
             match cell.kind {
-                CellKind::Collagen => {
+                CellKind::Foot => {
                     commands.insert((
                         Name::new("Collagen"),
                         Collagen::default(),

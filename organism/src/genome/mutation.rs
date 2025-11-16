@@ -270,7 +270,7 @@ fn test_mutation_action_mutate_cell() {
     // Just verify we still have a valid cell
     assert!(matches!(
         cell.kind,
-        CellKind::Eye | CellKind::Launcher | CellKind::Data | CellKind::Collagen
+        CellKind::Eye | CellKind::Launcher | CellKind::Data | CellKind::Foot
     ));
 }
 
@@ -502,7 +502,7 @@ fn test_mutations_preserve_cell_requirements() {
     let cell_types = [
         CellKind::Eye,
         CellKind::Launcher,
-        CellKind::Collagen,
+        CellKind::Foot,
         CellKind::Data,
     ];
 

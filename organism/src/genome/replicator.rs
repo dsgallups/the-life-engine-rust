@@ -222,7 +222,7 @@ fn test_cell_positions_preserved() {
         (CellKind::Eye, IVec2::new(0, 0)),
         (CellKind::Launcher, IVec2::new(5, 5)),
         (CellKind::Data, IVec2::new(-3, 2)),
-        (CellKind::Collagen, IVec2::new(10, -10)),
+        (CellKind::Foot, IVec2::new(10, -10)),
     ]);
 
     let cloned = genome.deep_clone();
@@ -260,7 +260,7 @@ fn test_cell_positions_preserved() {
     );
     assert_eq!(
         cloned.cells.get(&IVec2::new(10, -10)).unwrap().kind,
-        CellKind::Collagen
+        CellKind::Foot
     );
 }
 
@@ -559,7 +559,7 @@ fn test_cell_input_output_counts_preserved() {
         (CellKind::Eye, IVec2::new(0, 0)),      // 2 inputs, 0 outputs
         (CellKind::Launcher, IVec2::new(1, 0)), // 0 inputs, 3 outputs
         (CellKind::Data, IVec2::new(2, 0)),     // 4 inputs, 4 outputs
-        (CellKind::Collagen, IVec2::new(3, 0)), // 0 inputs, 0 outputs
+        (CellKind::Foot, IVec2::new(3, 0)),     // 0 inputs, 0 outputs
     ]);
 
     let cloned = genome.deep_clone();
@@ -607,7 +607,7 @@ fn test_large_genome_replication_performance() {
                 0 => CellKind::Eye,
                 1 => CellKind::Launcher,
                 2 => CellKind::Data,
-                _ => CellKind::Collagen,
+                _ => CellKind::Foot,
             };
             genome.cells.add_cell(IVec2::new(i, j), cell_kind);
         }

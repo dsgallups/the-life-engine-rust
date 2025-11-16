@@ -5,7 +5,7 @@ use strum::EnumIter;
 pub enum CellKind {
     Launcher,
     Eye,
-    Collagen,
+    Foot,
     Data,
 }
 impl CellKind {
@@ -14,13 +14,13 @@ impl CellKind {
         let num_inputs = match self {
             Launcher => 0,
             Eye => 2,
-            Collagen => 0,
+            Foot => 0,
             Data => 4,
         };
         let num_outputs = match self {
             Launcher => 3,
             Eye => 0,
-            Collagen => 0,
+            Foot => 2,
             Data => 4,
         };
         CellRequirements {
