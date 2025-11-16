@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use strum::EnumIter;
 
-#[derive(Component, Reflect, Clone, Copy, PartialEq, Eq, Hash, EnumIter)]
+#[derive(Component, Reflect, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
 pub enum CellKind {
     Launcher,
     Eye,

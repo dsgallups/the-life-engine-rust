@@ -7,7 +7,7 @@ use crate::ff_network::{
     CanBeInput, Hidden, Input, NeuronInput, Output, TakesInput, TopologyNeuron,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NeuronTopology<Type> {
     /// None is an input node, Some is hidden or output
     pub inner: Arc<Mutex<Type>>,

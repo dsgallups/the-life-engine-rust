@@ -3,7 +3,7 @@ use rand::{Rng, seq::SliceRandom};
 
 use crate::ff_network::{CellGenome, CellKind, CellRequirements, Direction, NeuronTopology};
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct CellMap(HashMap<IVec2, CellGenome>);
 impl CellMap {
     pub fn with_capacity(cap: usize) -> Self {

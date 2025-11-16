@@ -34,7 +34,7 @@ pub trait TakesInput: TopologyNeuron {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Input {
     id: Uuid,
 }
@@ -50,7 +50,7 @@ impl TopologyNeuron for Input {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Hidden {
     id: Uuid,
     /**
@@ -71,7 +71,7 @@ pub struct Output {
 
 impl Output {}
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NeuronInput {
     pub input_type: NeuronInputType,
     pub weight: f32,
@@ -98,7 +98,7 @@ impl NeuronInput {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NeuronInputInner<T>(Weak<Mutex<T>>);
 impl<T> NeuronInputInner<T> {
     /// Attempts to upgrade this inner type to the associated neuron topology, if the link is still valid.
@@ -108,7 +108,7 @@ impl<T> NeuronInputInner<T> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum NeuronInputType {
     Input(NeuronInputInner<Input>),
     Hidden(NeuronInputInner<Hidden>),

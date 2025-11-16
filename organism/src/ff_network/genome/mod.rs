@@ -20,10 +20,11 @@ use crate::ff_network::{
     CellKind, Hidden, Input, MutationChances, NeuronTopology, Output, genome::decycler::Cleaner,
 };
 
+#[derive(Debug)]
 pub struct Genome {
-    cells: CellMap,
-    hidden: Vec<NeuronTopology<Hidden>>,
-    mutation: MutationChances,
+    pub(crate) cells: CellMap,
+    pub(crate) hidden: Vec<NeuronTopology<Hidden>>,
+    pub(crate) mutation: MutationChances,
 }
 impl Genome {
     pub fn sandbox() -> Self {
@@ -80,10 +81,95 @@ impl Genome {
 
         Cleaner::new(self).clean();
     }
+
+    /// Create an empty genome for testing
+    #[cfg(test)]
+    pub fn empty() -> Self {
+        Self {
+            cells: CellMap::default(),
+            hidden: Vec::new(),
+            mutation: MutationChances::new(50),
+        }
+    }
+
+    /// Create a simple linear genome with one input cell, one hidden, and one output cell
+    #[cfg(test)]
+    pub fn simple_linear() -> Self {
+        let mut genome = Self::empty();
+
+        // Add an Eye cell (input)
+        genome.cells.add_cell(IVec2::new(0, 0), CellKind::Eye);
+
+        // Add a Launcher cell (output)
+        genome.cells.add_cell(IVec2::new(1, 0), CellKind::Launcher);
+
+        // Connect them through a hidden neuron
+        let hidden = NeuronTopology::hidden();
+
+        // Connect input to hidden
+        if let Some(eye_cell) = genome.cells.map_mut().get_mut(&IVec2::new(0, 0)) {
+            for input in &eye_cell.inputs {
+                hidden.add_input(input);
+            }
+        }
+
+        // Connect hidden to output
+        if let Some(launcher_cell) = genome.cells.map_mut().get_mut(&IVec2::new(1, 0)) {
+            for output in &launcher_cell.outputs {
+                output.add_input(&hidden);
+            }
+        }
+
+        genome.hidden.push(hidden);
+        genome
+    }
+
+    /// Create a genome with custom cells at specific positions
+    #[cfg(test)]
+    pub fn from_cells(cells: Vec<(CellKind, IVec2)>) -> Self {
+        let mut genome = Self::empty();
+
+        for (kind, location) in cells {
+            genome.cells.add_cell(location, kind);
+        }
+
+        genome
+    }
+
+    /// Get the number of cells
+    #[cfg(test)]
+    pub fn cell_count(&self) -> usize {
+        self.cells.len()
+    }
+
+    /// Get the number of hidden neurons
+    #[cfg(test)]
+    pub fn hidden_count(&self) -> usize {
+        self.hidden.len()
+    }
+
+    /// Get cells for testing
+    #[cfg(test)]
+    pub fn cells(&self) -> &CellMap {
+        &self.cells
+    }
+
+    /// Get hidden neurons for testing
+    #[cfg(test)]
+    pub fn hidden_neurons(&self) -> &[NeuronTopology<Hidden>] {
+        &self.hidden
+    }
+
+    /// Get mutable hidden neurons for testing
+    #[cfg(test)]
+    pub fn hidden_neurons_mut(&mut self) -> &mut Vec<NeuronTopology<Hidden>> {
+        &mut self.hidden
+    }
 }
 
+#[derive(Debug)]
 pub struct CellGenome {
-    kind: CellKind,
-    inputs: Vec<NeuronTopology<Input>>,
-    outputs: Vec<NeuronTopology<Output>>,
+    pub kind: CellKind,
+    pub inputs: Vec<NeuronTopology<Input>>,
+    pub outputs: Vec<NeuronTopology<Output>>,
 }
