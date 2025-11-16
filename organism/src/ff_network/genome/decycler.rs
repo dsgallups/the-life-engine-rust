@@ -30,7 +30,7 @@ impl<'a> Cleaner<'a> {
         }
     }
 
-    pub fn clean(mut self) {
+    pub fn clean(&mut self) {
         self.remove_dead_connections();
         self.decycle();
     }

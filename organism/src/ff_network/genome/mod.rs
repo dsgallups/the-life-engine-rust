@@ -19,7 +19,10 @@ use strum::IntoEnumIterator;
 
 use crate::ff_network::{
     CellKind, Hidden, Input, MutationAction, MutationChances, NeuronTopology, Output,
-    genome::mutator::{ConnectionTask, Mutator, OutputTask},
+    genome::{
+        decycler::Cleaner,
+        mutator::{ConnectionTask, Mutator, OutputTask},
+    },
 };
 
 pub struct Genome {
@@ -127,7 +130,7 @@ impl Genome {
             }
         }
 
-        //
+        Cleaner::new(self).clean();
     }
 }
 
