@@ -4,9 +4,11 @@ use bevy::{
     prelude::*,
     render::render_resource::{TextureDimension, TextureFormat, TextureUsages},
 };
-use ev_core::{NodeCamera, RenderLayer};
 
-use crate::organism::ActiveOrganism;
+use crate::{
+    camera::{NodeCamera, RenderLayer},
+    organism::ActiveOrganism,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_observer(spawn_organism_ui);

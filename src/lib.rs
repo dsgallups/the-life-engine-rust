@@ -18,7 +18,6 @@ pub mod utils;
 pub mod widgets;
 
 use bevy::{prelude::*, window::WindowResolution};
-use ev_core::CorePlugin;
 
 pub fn plugin(app: &mut App) {
     app.add_plugins((
@@ -41,8 +40,6 @@ pub fn plugin(app: &mut App) {
     app.insert_resource(UiPickingSettings {
         require_markers: true,
     });
-
-    app.add_plugins(CorePlugin);
 
     app.add_plugins((
         camera::plugin,

@@ -4,7 +4,6 @@ use std::collections::HashMap;
 pub use edge::*;
 
 mod node;
-use ev_core::RenderLayer;
 pub use node::*;
 
 use bevy::{
@@ -16,6 +15,7 @@ use bevy::{
 use bimap::BiMap;
 
 use crate::{
+    camera::RenderLayer,
     cell::Cells,
     cpu_net::{Cell, CpuNeuron},
     organism::ActiveOrganism,

@@ -2205,25 +2205,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "crossbeam-deque"
-version = "0.8.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9dd111b7b7f7d55b72c0a6ae361660ee5853c9af73f70c3c2ef6858b950e2e51"
-dependencies = [
- "crossbeam-epoch",
- "crossbeam-utils",
-]
-
-[[package]]
-name = "crossbeam-epoch"
-version = "0.9.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b82ac4a3c2ca9c3460964f020e1402edd5753411d7737aa39c3714ad1b5420e"
-dependencies = [
- "crossbeam-utils",
-]
-
-[[package]]
 name = "crossbeam-queue"
 version = "0.3.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2535,14 +2516,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ev_core"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bitflags 2.10.0",
-]
-
-[[package]]
 name = "evanescence"
 version = "0.1.0"
 dependencies = [
@@ -2551,9 +2524,9 @@ dependencies = [
  "bevy_egui",
  "bevy_ui_text_input",
  "bimap",
+ "bitflags 2.10.0",
  "cosmic-text",
  "enum_dispatch",
- "ev_core",
  "pretty_assertions",
  "rand",
  "strum",
@@ -3637,28 +3610,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "610a5acd306ec67f907abe5567859a3c693fb9886eb1f012ab8f2a47bef3db51"
 
 [[package]]
-name = "nora"
-version = "0.1.0"
-dependencies = [
- "rand",
- "trotcast",
-]
-
-[[package]]
-name = "nora_neat"
-version = "0.1.0"
-dependencies = [
- "fnv",
- "pretty_assertions",
- "rand",
- "rayon",
- "strum",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
 name = "normpath"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4412,26 +4363,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20675572f6f24e9e76ef639bc5552774ed45f1c30e2951e1e99c59888861c539"
 
 [[package]]
-name = "rayon"
-version = "1.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "368f01d005bf8fd9b1206fb6fa653e6c4a81ceb1466406b81792d87c5677a58f"
-dependencies = [
- "either",
- "rayon-core",
-]
-
-[[package]]
-name = "rayon-core"
-version = "1.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22e18b0f0062d30d4230b2e85ff77fdfe4326feb054b9783a3460d8435c8ab91"
-dependencies = [
- "crossbeam-deque",
- "crossbeam-utils",
-]
-
-[[package]]
 name = "read-fonts"
 version = "0.35.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4810,7 +4741,6 @@ version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d5fe4ccb98d9c292d56fec89a5e07da7fc4cf0dc11e156b41793132775d3e591"
 dependencies = [
- "lock_api",
  "portable-atomic",
 ]
 
@@ -5187,15 +5117,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "trotcast"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61e0ceee0e2fa8cfed894a7d5663c4c4c4f4dda5ff436fc030300becccd701d3"
-dependencies = [
- "spin",
 ]
 
 [[package]]

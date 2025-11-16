@@ -20,12 +20,12 @@ dev = [
 ]
 
 [dependencies]
-bevy.workspace = true
+bevy = { version = "0.17", features = ["experimental_bevy_feathers"] }
 bevy_ui_text_input = { git = "https://github.com/dsgallups/bevy_ui_text_input.git", branch = "dsgallups/disable-default" }
 cosmic-text = "0.14"
-uuid.workspace = true
-rand.workspace = true
-ev_core.workspace = true
+
+uuid = { version = "1.10", features = ["rng", "serde", "v4"] }
+rand = "0.9.2"
 
 
 # dev
@@ -36,7 +36,8 @@ bevy_egui = { version = "0.38", features = ["bevy_ui"], optional = true }
 # nora_neat.workspace = true
 bimap = "0.6.3"
 enum_dispatch = "0.3.13"
-strum.workspace = true
+strum = {version = "0.27.2", features = ["derive"] }
+bitflags = "2.10.0"
 
 
 [profile.dev]
@@ -67,26 +68,23 @@ type_complexity = "allow"
 nonstandard_macro_braces = "warn"
 double-parens = "allow"
 
-[workspace]
-resolver = "3"
-members = ["ev_core", "nora","nora_neat"]
 
 
-[workspace.dependencies]
-ev_core = {path="ev_core"}
-nora_neat = {path = "nora_neat"}
-bevy = { version = "0.17", features = ["experimental_bevy_feathers"] }
-uuid = { version = "1.10", features = ["rng", "serde", "v4"] }
-rand = "0.9.2"
-rayon = "1.11.0"
-burn = { version = "0.17.1", features = ["ndarray", "cuda", "wgpu"] }
-fnv = "1.0"
-tracing = "0.1.41"
-tracing-subscriber = "0.3.20"
-pretty_assertions = "1.4.1"
-strum = {version = "0.27.2", features = ["derive"] }
-bus = "2.4"
-trotcast = "0.5.0"
+# [workspace.dependencies]
+# ev_core = {path="ev_core"}
+# nora_neat = {path = "nora_neat"}
+# bevy = { version = "0.17", features = ["experimental_bevy_feathers"] }
+# uuid = { version = "1.10", features = ["rng", "serde", "v4"] }
+# rand = "0.9.2"
+# rayon = "1.11.0"
+# burn = { version = "0.17.1", features = ["ndarray", "cuda", "wgpu"] }
+# fnv = "1.0"
+# tracing = "0.1.41"
+# tracing-subscriber = "0.3.20"
+# pretty_assertions = "1.4.1"
+# strum = {version = "0.27.2", features = ["derive"] }
+# bus = "2.4"
+# trotcast = "0.5.0"
 
 [dev-dependencies]
-pretty_assertions.workspace = true
+pretty_assertions = "1.4"

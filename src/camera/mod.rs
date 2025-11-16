@@ -3,7 +3,9 @@ use bevy::{
     input::mouse::{AccumulatedMouseScroll, MouseScrollUnit},
     prelude::*,
 };
-use ev_core::RenderLayer;
+
+mod render_layers;
+pub use render_layers::*;
 
 use crate::settings::Keybinds;
 
@@ -11,6 +13,10 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(Startup, setup_cameras);
     app.add_systems(Update, (update_zoom, move_camera));
 }
+
+#[derive(Component)]
+#[require(RenderLayers = RenderLayers::from(RenderLayer::NODE_VISUAL))]
+pub struct NodeCamera;
 
 #[derive(Component)]
 pub struct WorldCamera;
