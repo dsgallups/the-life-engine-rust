@@ -44,7 +44,7 @@ impl<'a> Cleaner<'a> {
 
             'cells: for cell in self.genome.cells.map_mut().values_mut() {
                 for output in &cell.outputs {
-                    let to_remove = dfs(&output, &mut stack, &mut visited);
+                    let to_remove = dfs(output, &mut stack, &mut visited);
 
                     if !to_remove.0.is_empty() {
                         remove_queue = to_remove;

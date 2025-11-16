@@ -29,7 +29,7 @@ pub trait TakesInput: TopologyNeuron {
     fn activation(&self) -> fn(f32) -> f32;
     fn set_activation(&mut self, activation: fn(f32) -> f32);
 
-    fn random_input<'a>(&mut self, rng: &'a mut impl Rng) -> Option<&mut NeuronInput> {
+    fn random_input(&mut self, rng: &mut impl Rng) -> Option<&mut NeuronInput> {
         self.inputs_mut().choose_mut(rng)
     }
 }

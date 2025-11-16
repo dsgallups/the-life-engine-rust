@@ -159,7 +159,7 @@ pub enum ConnectionTask {
 }
 
 impl ConnectionTask {
-    fn do_thing<'i, Input, Output>(
+    fn do_thing<Input, Output>(
         &self,
         input: &NeuronTopology<Input>,
         output: &NeuronTopology<Output>,
@@ -169,16 +169,6 @@ impl ConnectionTask {
     {
         match self {
             Self::Add => output.add_input(input),
-            // Self::Split => {
-            //     let new_hidden_neuron = NeuronTopology::hidden();
-            //     // huh. So the idea would be that you
-            //     if !output.remove_input(input) {
-            //         return;
-            //     };
-
-            //     //todo
-            //     todo!()
-            // }
         }
     }
 }
@@ -190,7 +180,7 @@ pub enum OutputTask {
 }
 
 impl OutputTask {
-    fn do_thing<'i, Output>(
+    fn do_thing<Output>(
         &self,
         rng: &mut impl Rng,
         output: &NeuronTopology<Output>,

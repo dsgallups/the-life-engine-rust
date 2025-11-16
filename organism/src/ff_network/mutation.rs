@@ -191,7 +191,7 @@ impl<'a> MutationIter<'a> {
             self.count += 1;
             return Some(mutation_chance.action);
         }
-        return None;
+        None
     }
 }
 
