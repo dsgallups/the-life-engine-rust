@@ -9,9 +9,6 @@ pub mod genome;
 mod organism;
 pub use organism::*;
 
-pub mod ff_network;
-//pub use ff_network::*;
-
 use bevy::prelude::*;
 
 pub struct OrganismPlugin;

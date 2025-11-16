@@ -1,23 +1,8 @@
 use crate::{
     CellAssets,
-    CellDetails,
-    CellOf,
-    cell::{Collagen, DataCell, Eye, Launcher},
     //old_genome::Genome,
 };
 use bevy::prelude::*;
-use nora_neat::prelude::NetworkTopology;
-
-#[derive(Component)]
-pub struct OrganismNetwork {
-    topology: NetworkTopology,
-}
-
-impl OrganismNetwork {
-    pub fn new(topology: NetworkTopology) -> Self {
-        Self { topology }
-    }
-}
 
 #[derive(Message)]
 pub struct SpawnOrganism {

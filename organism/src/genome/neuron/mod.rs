@@ -1,5 +1,4 @@
 mod topology;
-
 pub use topology::*;
 
 mod neuron_type;
@@ -224,7 +223,7 @@ fn test_activation_function_setting() {
 
     // Set different activation functions
     hidden.with_mut(|neuron| {
-        neuron.set_activation(crate::ff_network::genome::activations::sigmoid);
+        neuron.set_activation(crate::genome::activations::sigmoid);
     });
 
     // Verify activation function works
@@ -244,7 +243,7 @@ fn test_activation_function_setting() {
 
     // Change to relu
     hidden.with_mut(|neuron| {
-        neuron.set_activation(crate::ff_network::genome::activations::relu);
+        neuron.set_activation(crate::genome::activations::relu);
     });
 
     hidden.with_ref(|neuron| {
@@ -255,7 +254,7 @@ fn test_activation_function_setting() {
 
     // Change to linear
     hidden.with_mut(|neuron| {
-        neuron.set_activation(crate::ff_network::genome::activations::linear_activation);
+        neuron.set_activation(crate::genome::activations::linear_activation);
     });
 
     hidden.with_ref(|neuron| {
@@ -501,8 +500,7 @@ fn test_new_from_raw_parts() {
         },
     ];
 
-    let hidden =
-        Hidden::new_from_raw_parts(inputs, 1.5, crate::ff_network::genome::activations::sigmoid);
+    let hidden = Hidden::new_from_raw_parts(inputs, 1.5, crate::genome::activations::sigmoid);
 
     assert_eq!(hidden.inputs().len(), 2);
     assert_eq!(hidden.inputs()[0].weight, 0.5);

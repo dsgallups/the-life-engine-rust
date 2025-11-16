@@ -1,9 +1,11 @@
 use bevy::platform::collections::HashMap;
 use uuid::Uuid;
 
-use crate::ff_network::{
-    CellGenome, CellMap, Genome, Hidden, Input, NeuronInput, NeuronInputType, NeuronTopology,
-    TakesInput,
+use crate::{
+    CellGenome,
+    genome::{
+        CellMap, Genome, Hidden, Input, NeuronInput, NeuronInputType, NeuronTopology, TakesInput,
+    },
 };
 
 pub struct Replicator<'a> {
@@ -147,7 +149,7 @@ impl<'a> Replicator<'a> {
 
 #[cfg(test)]
 use {
-    crate::ff_network::{decycler::Cleaner, *},
+    crate::genome::{decycler::Cleaner, *},
     bevy::math::IVec2,
     pretty_assertions::assert_eq,
     rand::{SeedableRng, rngs::StdRng},

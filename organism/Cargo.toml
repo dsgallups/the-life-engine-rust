@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 bevy.workspace = true
 rand.workspace = true
-nora_neat.workspace = true
+# nora_neat.workspace = true
 uuid.workspace = true
 ev_core.workspace = true
 bus.workspace = true

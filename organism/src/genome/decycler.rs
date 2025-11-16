@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use bevy::platform::collections::HashMap;
 use uuid::Uuid;
 
-use crate::ff_network::{Genome, NeuronInputType, NeuronTopology, TakesInput};
+use crate::genome::{Genome, NeuronInputType, NeuronTopology, TakesInput};
 
 pub struct Cleaner<'a> {
     // stack: HashSet<Uuid>,
@@ -155,7 +155,7 @@ fn dfs<T: TakesInput>(
 
 #[cfg(test)]
 use {
-    crate::ff_network::CellKind,
+    crate::CellKind,
     bevy::prelude::*,
     pretty_assertions::assert_eq,
     rand::{SeedableRng, rngs::StdRng},

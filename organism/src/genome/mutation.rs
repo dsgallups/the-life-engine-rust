@@ -4,7 +4,7 @@ use rand::{
 };
 use strum::{EnumCount, EnumIter, IntoEnumIterator};
 
-use crate::ff_network::{
+use crate::genome::{
     CellKind, CellMap, Hidden, NeuronTopology,
     mutator::{ConnectionTask, Mutator, OutputTask},
 };
@@ -196,7 +196,7 @@ impl<'a> MutationIter<'a> {
 
 #[cfg(test)]
 use {
-    crate::ff_network::*,
+    crate::genome::*,
     bevy::math::IVec2,
     pretty_assertions::assert_eq,
     rand::{SeedableRng, rngs::StdRng},

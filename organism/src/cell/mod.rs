@@ -1,8 +1,8 @@
 mod cell_types;
 pub use cell_types::*;
 
-mod details;
-pub use details::*;
+mod kind;
+pub use kind::*;
 
 mod genome;
 pub use genome::*;

@@ -1,7 +1,7 @@
 use rand::Rng;
 
-use crate::ff_network::{
-    CanBeInput, CellMap, Hidden, NeuronInputType, NeuronTopology, TakesInput, genome::activations,
+use crate::genome::{
+    CanBeInput, CellMap, Hidden, NeuronInputType, NeuronTopology, TakesInput, activations,
 };
 
 pub struct Mutator<'a> {

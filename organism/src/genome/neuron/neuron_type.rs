@@ -1,9 +1,7 @@
+use super::NeuronTopology;
 use rand::{Rng, seq::IndexedMutRandom};
-use uuid::Uuid;
-
-use crate::ff_network::NeuronTopology;
-
 use std::sync::{Arc, RwLock, Weak};
+use uuid::Uuid;
 
 pub trait TopologyNeuron {
     fn id(&self) -> Uuid;

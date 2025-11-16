@@ -3,8 +3,8 @@ use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use rand::Rng;
 use uuid::Uuid;
 
-use crate::ff_network::{
-    CanBeInput, Hidden, Input, NeuronInput, Output, TakesInput, TopologyNeuron,
+use crate::genome::{
+    CanBeInput, Hidden, Input, NeuronInput, Output, TopologyNeuron, neuron::TakesInput,
 };
 
 #[derive(Clone, Debug)]

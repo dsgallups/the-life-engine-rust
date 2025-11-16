@@ -1,7 +1,10 @@
 use bevy::{math::IVec2, platform::collections::HashMap};
 use rand::{Rng, seq::SliceRandom};
 
-use crate::ff_network::{CellGenome, CellKind, CellRequirements, Direction, NeuronTopology};
+use crate::{
+    CellGenome, CellKind, CellRequirements,
+    genome::{Direction, NeuronTopology},
+};
 
 #[derive(Default, Debug)]
 pub struct CellMap(HashMap<IVec2, CellGenome>);
