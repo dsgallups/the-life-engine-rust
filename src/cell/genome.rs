@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    CellKind,
+    cell::CellKind,
     genome::{Input, NeuronTopology, Output},
 };
 

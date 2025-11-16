@@ -10,7 +10,7 @@ mod neuron;
 pub use neuron::*;
 
 use crate::{
-    CellKind,
+    cell::CellKind,
     genome::{Genome, NeuronInputType, NeuronTopology, TakesInput},
 };
 

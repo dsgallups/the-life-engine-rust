@@ -10,16 +10,15 @@ pub use node::*;
 use bevy::{
     asset::uuid::Uuid,
     camera::visibility::RenderLayers,
-    color::palettes::{
-        css::BLUE,
-        tailwind::{BLUE_400, RED_400},
-    },
+    color::palettes::tailwind::{BLUE_400, RED_400},
     prelude::*,
 };
 use bimap::BiMap;
-use organism::{
-    ActiveOrganism, Cells,
+
+use crate::{
+    cell::Cells,
     cpu_net::{Cell, CpuNeuron},
+    organism::ActiveOrganism,
 };
 
 const NODE_LAYER: f32 = 1.;

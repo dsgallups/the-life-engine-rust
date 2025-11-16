@@ -2,7 +2,7 @@ use bevy::platform::collections::HashMap;
 use uuid::Uuid;
 
 use crate::{
-    CellGenome,
+    cell::CellGenome,
     genome::{
         CellMap, Genome, Hidden, Input, NeuronInput, NeuronInputType, NeuronTopology, TakesInput,
     },

@@ -1,8 +1,10 @@
 use bevy::{color::palettes::tailwind::RED_400, platform::collections::HashMap, prelude::*};
-use organism::cpu_net::Cell;
 use uuid::Uuid;
 
-use crate::node_visual::{Edge, EntityGraphMap};
+use crate::{
+    cpu_net::Cell,
+    node_visual::{Edge, EntityGraphMap},
+};
 
 #[derive(Component, Reflect)]
 pub struct Nid(pub Uuid);

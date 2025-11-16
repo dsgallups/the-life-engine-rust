@@ -169,7 +169,7 @@ impl Genome {
     }
 }
 
-use crate::{CellKind, genome::decycler::Cleaner};
+use crate::{cell::CellKind, genome::decycler::Cleaner};
 
 #[cfg(test)]
 use {

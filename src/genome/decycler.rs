@@ -155,7 +155,7 @@ fn dfs<T: TakesInput>(
 
 #[cfg(test)]
 use {
-    crate::CellKind,
+    crate::cell::CellKind,
     bevy::prelude::*,
     pretty_assertions::assert_eq,
     rand::{SeedableRng, rngs::StdRng},

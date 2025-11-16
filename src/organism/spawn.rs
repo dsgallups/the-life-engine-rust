@@ -1,8 +1,10 @@
 use bevy::prelude::*;
 
 use crate::{
-    CellAssets, CellKind, CellOf, DataCell, Eye, Foot, Launcher, Organism, cpu_net::CpuNetwork,
+    cell::{CellAssets, CellKind, CellOf, DataCell, Eye, Foot, Launcher},
+    cpu_net::CpuNetwork,
     genome::Genome,
+    organism::Organism,
 };
 
 #[derive(Message)]

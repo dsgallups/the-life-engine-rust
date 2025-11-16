@@ -2,7 +2,7 @@ use bevy::{math::IVec2, platform::collections::HashMap};
 use rand::{Rng, seq::SliceRandom};
 
 use crate::{
-    CellGenome, CellKind, CellRequirements,
+    cell::{CellGenome, CellKind, CellRequirements},
     genome::{Direction, NeuronTopology},
 };
 

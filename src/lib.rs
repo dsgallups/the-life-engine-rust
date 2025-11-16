@@ -3,6 +3,13 @@
 #[cfg(feature = "dev")]
 mod dev_tools;
 
+pub mod cell;
+
+pub mod cpu_net;
+pub mod genome;
+
+pub mod organism;
+
 pub mod camera;
 pub mod game;
 pub mod node_visual;
@@ -12,7 +19,6 @@ pub mod widgets;
 
 use bevy::{prelude::*, window::WindowResolution};
 use ev_core::CorePlugin;
-use organism::OrganismPlugin;
 
 pub fn plugin(app: &mut App) {
     app.add_plugins((
@@ -36,10 +42,12 @@ pub fn plugin(app: &mut App) {
         require_markers: true,
     });
 
-    app.add_plugins((CorePlugin, OrganismPlugin));
+    app.add_plugins(CorePlugin);
 
     app.add_plugins((
         camera::plugin,
+        cell::plugin,
+        organism::plugin,
         node_visual::plugin,
         settings::plugin,
         utils::plugin,

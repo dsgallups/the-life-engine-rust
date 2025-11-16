@@ -33,12 +33,11 @@ bevy-inspector-egui = {version = "0.35", optional = true }
 bevy_egui = { version = "0.38", features = ["bevy_ui"], optional = true }
 
 #nora
-nora_neat.workspace = true
+# nora_neat.workspace = true
 bimap = "0.6.3"
 enum_dispatch = "0.3.13"
+strum.workspace = true
 
-#organism
-organism = {path = "organism"}
 
 [profile.dev]
 opt-level = 1
@@ -70,7 +69,7 @@ double-parens = "allow"
 
 [workspace]
 resolver = "3"
-members = ["ev_core", "nora","nora_neat", "organism"]
+members = ["ev_core", "nora","nora_neat"]
 
 
 [workspace.dependencies]
@@ -88,3 +87,6 @@ pretty_assertions = "1.4.1"
 strum = {version = "0.27.2", features = ["derive"] }
 bus = "2.4"
 trotcast = "0.5.0"
+
+[dev-dependencies]
+pretty_assertions.workspace = true

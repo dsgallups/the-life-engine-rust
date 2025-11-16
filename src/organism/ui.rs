@@ -6,7 +6,7 @@ use bevy::{
 };
 use ev_core::{NodeCamera, RenderLayer};
 
-use crate::ActiveOrganism;
+use crate::organism::ActiveOrganism;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_observer(spawn_organism_ui);

@@ -2,8 +2,9 @@ mod grid;
 mod ui;
 
 use bevy::prelude::*;
-use organism::{SpawnOrganism, genome::Genome};
 use rand::{SeedableRng, rngs::StdRng};
+
+use crate::{genome::Genome, organism::SpawnOrganism};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins((grid::plugin, ui::plugin));

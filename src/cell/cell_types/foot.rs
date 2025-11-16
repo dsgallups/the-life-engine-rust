@@ -1,6 +1,10 @@
 use bevy::prelude::*;
 
-use crate::{CellOf, Cells, OrganismSet, cpu_net::Cell};
+use crate::{
+    cell::{CellOf, Cells},
+    cpu_net::Cell,
+    organism::OrganismSet,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, update_inputs.in_set(OrganismSet::ProcessOutput));
