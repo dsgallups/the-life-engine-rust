@@ -54,10 +54,6 @@ impl<T: TopologyNeuron> NeuronTopology<T> {
 
 impl<T: TakesInput> NeuronTopology<T> {
     pub fn add_input(&self, input: &impl CanBeInput) {
-        // stops any inputs from being self-referencing.
-        if self.id() == input.id() {
-            return;
-        }
         self.write().add_input(input);
     }
     pub fn for_random_input<'rng, R, F, V>(&self, rng: &'rng mut R, func: F) -> Option<V>
