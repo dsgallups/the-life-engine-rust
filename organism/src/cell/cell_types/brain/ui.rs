@@ -1,14 +1,11 @@
+use crate::cell::{ActiveCell, BrainCell, CellVisual};
 use bevy::{
     asset::RenderAssetUsages,
     camera::visibility::RenderLayers,
     prelude::*,
     render::render_resource::{TextureDimension, TextureFormat, TextureUsages},
 };
-
-use crate::{
-    camera::{NodeCamera, RenderLayer},
-    organism::{ActiveCell, BrainCell, CellVisual},
-};
+use ev_core::{NodeCamera, RenderLayer};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_observer(on_click_brain_cell);

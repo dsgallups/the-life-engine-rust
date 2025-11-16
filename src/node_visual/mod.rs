@@ -2,15 +2,12 @@ mod edge;
 pub use edge::*;
 
 mod node;
+use ev_core::RenderLayer;
 pub use node::*;
 
 use bevy::{asset::uuid::Uuid, camera::visibility::RenderLayers, prelude::*};
 use bimap::BiMap;
-
-use crate::{
-    camera::RenderLayer,
-    organism::{ActiveCell, BrainCell},
-};
+use organism::{ActiveCell, BrainCell};
 
 const NODE_LAYER: f32 = 1.;
 const EDGE_LAYER: f32 = 0.;

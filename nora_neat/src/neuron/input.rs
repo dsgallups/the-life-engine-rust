@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock, Weak};
+use std::sync::Weak;
 
 use crate::prelude::*;
 use rand::Rng;
@@ -11,7 +11,7 @@ use uuid::Uuid;
 /// - The connection weight
 /// - The exponent applied to the input value
 #[derive(Debug)]
-pub struct NeuronInput<I> {
+pub struct NeuronInput<I = Topology> {
     id: Uuid,
     node: I,
     weight: f32,
@@ -62,11 +62,11 @@ impl<I> NeuronInput<I> {
 }
 
 impl NeuronInput<Topology> {
-    pub fn neuron(&self) -> Option<Arc<RwLock<NeuronTopology>>> {
-        Weak::upgrade(self.node().handle())
+    pub fn neuron(&self) -> Option<NeuronTopology> {
+        Weak::upgrade(self.node().handle()).map(NeuronTopology::from_inner)
     }
 
-    pub fn downgrade(input: &Arc<RwLock<NeuronTopology>>, weight: f32) -> Self {
+    pub fn downgrade(input: &NeuronTopology, weight: f32) -> Self {
         Self::new(Topology::new(input), weight)
     }
 }

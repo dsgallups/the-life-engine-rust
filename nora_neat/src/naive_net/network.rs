@@ -44,7 +44,7 @@ impl NaiveNetwork {
         let mut output_layer: Vec<NaiveNeuron> = Vec::new();
 
         for neuron_replicant in topology.neurons() {
-            let neuron = neuron_replicant.read().unwrap();
+            let neuron = neuron_replicant.read();
 
             to_neuron(&neuron, &mut neurons);
             let neuron = neurons.iter().find(|n| n.id() == neuron.id()).unwrap();

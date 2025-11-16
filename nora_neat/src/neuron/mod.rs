@@ -5,7 +5,7 @@ mod input;
 pub use input::*;
 use rand::Rng;
 
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use uuid::Uuid;
 
@@ -16,11 +16,67 @@ use uuid::Uuid;
 /// Its props are its inputs.
 #[derive(Clone, Debug)]
 pub struct NeuronTopology {
+    inner: Arc<RwLock<NeuronTopologyInner>>,
+}
+
+impl NeuronTopology {
+    pub fn from_inner(inner: Arc<RwLock<NeuronTopologyInner>>) -> Self {
+        Self { inner }
+    }
+    pub fn input(id: Uuid) -> Self {
+        Self {
+            inner: Arc::new(RwLock::new(NeuronTopologyInner::input(id))),
+        }
+    }
+    pub fn hidden(id: Uuid, inputs: Vec<NeuronInput<Topology>>, rng: &mut impl Rng) -> Self {
+        Self {
+            inner: Arc::new(RwLock::new(NeuronTopologyInner::hidden(id, inputs, rng))),
+        }
+    }
+    pub fn inner(&self) -> &Arc<RwLock<NeuronTopologyInner>> {
+        &self.inner
+    }
+
+    pub fn output(id: Uuid, inputs: Vec<NeuronInput<Topology>>, rng: &mut impl Rng) -> Self {
+        Self {
+            inner: Arc::new(RwLock::new(NeuronTopologyInner::output(id, inputs, rng))),
+        }
+    }
+    pub fn id(&self) -> Uuid {
+        self.read().id()
+    }
+
+    pub fn read(&self) -> RwLockReadGuard<'_, NeuronTopologyInner> {
+        self.inner.read().unwrap()
+    }
+    pub fn write(&self) -> RwLockWriteGuard<'_, NeuronTopologyInner> {
+        self.inner.write().unwrap()
+    }
+
+    pub fn deep_clone(&self) -> Self {
+        let neuron = self.read().deep_clone();
+        Self {
+            inner: Arc::new(RwLock::new(neuron)),
+        }
+    }
+
+    pub fn is(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.inner, &other.inner)
+    }
+}
+
+/// This defines a node's topology. What does this mean?
+///
+/// this node has an identifier.
+///
+/// Its props are its inputs.
+#[derive(Clone, Debug)]
+pub struct NeuronTopologyInner {
     id: Uuid,
     neuron_props: Option<NeuronProps<Topology>>,
 }
 
-impl NeuronTopology {
+impl NeuronTopologyInner {
     /// This creates a topological input node. There are no props
     /// for this type.
     pub fn input(id: Uuid) -> Self {
@@ -58,7 +114,7 @@ impl NeuronTopology {
 
     /// Note that inputs are reset here.
     pub fn deep_clone(&self) -> Self {
-        NeuronTopology {
+        NeuronTopologyInner {
             id: Uuid::new_v4(),
             neuron_props: self.neuron_props.as_ref().map(|props| props.deep_clone()),
         }

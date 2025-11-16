@@ -132,7 +132,7 @@ impl NaiveNeuronInner {
     }
 }
 
-pub fn to_neuron(topology: &NeuronTopology, neurons: &mut Vec<NaiveNeuron>) {
+pub fn to_neuron(topology: &NeuronTopologyInner, neurons: &mut Vec<NaiveNeuron>) {
     for neuron in neurons.iter() {
         if neuron.id() == topology.id() {
             return;
@@ -146,13 +146,13 @@ pub fn to_neuron(topology: &NeuronTopology, neurons: &mut Vec<NaiveNeuron>) {
             for topology_input in topology_props.inputs() {
                 if let Some(topology_input_neuron) = topology_input.neuron() {
                     {
-                        let read_lock = topology_input_neuron.read().unwrap();
+                        let read_lock = topology_input_neuron.read();
                         to_neuron(&read_lock, neurons);
                     }
 
                     let neuron_in_array = neurons
                         .iter()
-                        .find(|n| n.id() == topology_input_neuron.read().unwrap().id())
+                        .find(|n| n.id() == topology_input_neuron.read().id())
                         .unwrap();
 
                     new_neuron_inputs.push(NeuronInput::new(
