@@ -43,7 +43,6 @@ organism = {path = "organism"}
 [profile.dev]
 opt-level = 1
 panic = "abort"  # drop unwinder
-debug = false
 
 [profile.dev.package."*"]
 opt-level = 3

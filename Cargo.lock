@@ -4123,6 +4123,7 @@ dependencies = [
  "bus",
  "ev_core",
  "nora_neat",
+ "pretty_assertions",
  "rand",
  "strum",
  "uuid",
