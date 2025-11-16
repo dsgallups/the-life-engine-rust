@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::ff_network::{
     CellGenome, CellMap, Genome, Hidden, Input, NeuronInput, NeuronInputType, NeuronTopology,
-    TakesInput, TopologyNeuron,
+    TakesInput,
 };
 
 pub struct Replicator<'a> {
@@ -74,22 +74,18 @@ impl<'a> Replicator<'a> {
         match &neuron_input.input_type {
             NeuronInputType::Hidden(hidden_neuron_inner) => {
                 let hidden_neuron_inner = hidden_neuron_inner.upgrade()?;
-                let hidden_neuron_inner = hidden_neuron_inner.lock().unwrap();
                 let id = hidden_neuron_inner.id();
 
                 match self.new_hidden.get(&id) {
                     Some(new_hidden_neuron) => Some(NeuronInput {
-                        input_type: NeuronInputType::Hidden(Arc::downgrade(
-                            &new_hidden_neuron.inner,
-                        )),
+                        input_type: NeuronInputType::hidden(new_hidden_neuron),
                         weight: neuron_input.weight,
                     }),
                     None => {
-                        let new_hidden_neuron = self.new_takes_input_neuron(&*hidden_neuron_inner);
+                        let new_hidden_neuron =
+                            self.new_takes_input_neuron(&*hidden_neuron_inner.lock());
                         let result = NeuronInput {
-                            input_type: NeuronInputType::Hidden(Arc::downgrade(
-                                &new_hidden_neuron.inner,
-                            )),
+                            input_type: NeuronInputType::hidden(&new_hidden_neuron),
                             weight: neuron_input.weight,
                         };
                         self.new_hidden.insert(id, new_hidden_neuron);
@@ -99,20 +95,17 @@ impl<'a> Replicator<'a> {
             }
             NeuronInputType::Input(input_neuron_inner) => {
                 let input_neuron_inner = input_neuron_inner.upgrade()?;
-                let input_neuron_inner = input_neuron_inner.lock().unwrap();
                 let id = input_neuron_inner.id();
 
                 match self.new_inputs.get(&id) {
                     Some(new_input_neuron) => Some(NeuronInput {
-                        input_type: NeuronInputType::Input(Arc::downgrade(&new_input_neuron.inner)),
+                        input_type: NeuronInputType::input(new_input_neuron),
                         weight: neuron_input.weight,
                     }),
                     None => {
                         let new_input_neuron = NeuronTopology::input();
                         let result = NeuronInput {
-                            input_type: NeuronInputType::Input(Arc::downgrade(
-                                &new_input_neuron.inner,
-                            )),
+                            input_type: NeuronInputType::input(&new_input_neuron),
                             weight: neuron_input.weight,
                         };
                         self.new_inputs.insert(id, new_input_neuron);

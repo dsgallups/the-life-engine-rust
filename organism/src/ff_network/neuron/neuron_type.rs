@@ -76,15 +76,55 @@ pub struct NeuronInput {
     pub input_type: NeuronInputType,
     pub weight: f32,
 }
+impl NeuronInput {
+    pub fn is_alive(&self) -> bool {
+        match &self.input_type {
+            NeuronInputType::Hidden(h) => h.upgrade().is_some(),
+            NeuronInputType::Input(i) => i.upgrade().is_some(),
+        }
+    }
+
+    pub fn id(&self) -> Option<Uuid> {
+        match &self.input_type {
+            NeuronInputType::Hidden(h) => {
+                let h = h.upgrade()?;
+                Some(h.id())
+            }
+            NeuronInputType::Input(i) => {
+                let i = i.upgrade()?;
+                Some(i.id())
+            }
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct NeuronInputInner<T>(Weak<Mutex<T>>);
+impl<T> NeuronInputInner<T> {
+    /// Attempts to upgrade this inner type to the associated neuron topology, if the link is still valid.
+    pub fn upgrade(&self) -> Option<NeuronTopology<T>> {
+        let upgraded = self.0.upgrade()?;
+        Some(NeuronTopology::from_inner(upgraded))
+    }
+}
+
 #[derive(Clone)]
 pub enum NeuronInputType {
-    Input(Weak<Mutex<Input>>),
-    Hidden(Weak<Mutex<Hidden>>),
+    Input(NeuronInputInner<Input>),
+    Hidden(NeuronInputInner<Hidden>),
+}
+impl NeuronInputType {
+    pub fn hidden(topology: &NeuronTopology<Hidden>) -> Self {
+        Self::Hidden(NeuronInputInner(Arc::downgrade(&topology.inner)))
+    }
+    pub fn input(topology: &NeuronTopology<Input>) -> Self {
+        Self::Input(NeuronInputInner(Arc::downgrade(&topology.inner)))
+    }
 }
 
 impl CanBeInput for NeuronTopology<Input> {
     fn to_input_type(&self) -> NeuronInputType {
-        NeuronInputType::Input(Arc::downgrade(&self.inner))
+        NeuronInputType::Input(NeuronInputInner(Arc::downgrade(&self.inner)))
     }
     fn equals(&self, other: &NeuronInputType) -> bool {
         match other {
@@ -92,7 +132,7 @@ impl CanBeInput for NeuronTopology<Input> {
                 let Some(input) = other.upgrade() else {
                     return false;
                 };
-                Arc::ptr_eq(&self.inner, &input)
+                Arc::ptr_eq(&self.inner, &input.inner)
             }
             NeuronInputType::Hidden(_) => false,
         }
@@ -100,7 +140,7 @@ impl CanBeInput for NeuronTopology<Input> {
 }
 impl CanBeInput for NeuronTopology<Hidden> {
     fn to_input_type(&self) -> NeuronInputType {
-        NeuronInputType::Hidden(Arc::downgrade(&self.inner))
+        NeuronInputType::Hidden(NeuronInputInner(Arc::downgrade(&self.inner)))
     }
     fn equals(&self, other: &NeuronInputType) -> bool {
         match other {
@@ -108,7 +148,7 @@ impl CanBeInput for NeuronTopology<Hidden> {
                 let Some(input) = other.upgrade() else {
                     return false;
                 };
-                Arc::ptr_eq(&self.inner, &input)
+                Arc::ptr_eq(&self.inner, &input.inner)
             }
             NeuronInputType::Input(_) => false,
         }

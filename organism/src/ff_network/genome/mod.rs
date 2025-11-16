@@ -8,6 +8,8 @@ pub use cell_map::*;
 
 mod mutator;
 
+mod decycler;
+
 mod direction;
 pub use direction::*;
 

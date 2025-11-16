@@ -55,7 +55,7 @@ impl<T: TakesInput> NeuronTopology<T> {
         R: Rng,
         F: FnOnce(&mut NeuronInput, &'rng mut R) -> V,
     {
-        self.with_lock(|lock| {
+        self.with_mut(|lock| {
             if let Some(rand_input) = lock.random_input(rng) {
                 return Some(func(rand_input, rng));
             } else {
@@ -64,7 +64,15 @@ impl<T: TakesInput> NeuronTopology<T> {
         })
     }
 
-    pub fn with_lock<F, V>(&self, func: F) -> V
+    pub fn with_ref<F, V>(&self, func: F) -> V
+    where
+        F: FnOnce(&T) -> V,
+    {
+        let lock = self.lock();
+        func(&*lock)
+    }
+
+    pub fn with_mut<F, V>(&self, func: F) -> V
     where
         F: FnOnce(&mut T) -> V,
     {

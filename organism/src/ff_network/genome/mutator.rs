@@ -206,13 +206,13 @@ impl OutputTask {
                 OutputTaskReturn::None
             }
             OutputTask::MutateActivation => {
-                output.with_lock(|lock| {
+                output.with_mut(|lock| {
                     lock.set_activation(activations::random_activation(rng));
                 });
                 OutputTaskReturn::None
             }
             OutputTask::Split => {
-                let Some(removed_input) = output.with_lock(|lock| {
+                let Some(removed_input) = output.with_mut(|lock| {
                     if lock.inputs().is_empty() {
                         return None;
                     }
@@ -226,7 +226,6 @@ impl OutputTask {
                 match removed_input.input_type {
                     NeuronInputType::Hidden(input_for_neuron) => {
                         if let Some(hidden) = input_for_neuron.upgrade() {
-                            let hidden = NeuronTopology::from_inner(hidden);
                             new_hidden_node.add_input(&hidden);
                         } else {
                             return OutputTaskReturn::None;
@@ -234,7 +233,6 @@ impl OutputTask {
                     }
                     NeuronInputType::Input(input_for_neuron) => {
                         if let Some(hidden) = input_for_neuron.upgrade() {
-                            let hidden = NeuronTopology::from_inner(hidden);
                             new_hidden_node.add_input(&hidden);
                         } else {
                             return OutputTaskReturn::None;
