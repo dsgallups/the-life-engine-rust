@@ -40,6 +40,11 @@ impl Cell {
             output.propagate_reset()
         }
     }
+
+    pub fn input_neurons(&self) -> &[CpuNeuron] {
+        &self.inputs
+    }
+
     pub fn output_neurons(&self) -> &[CpuNeuron] {
         &self.outputs
     }

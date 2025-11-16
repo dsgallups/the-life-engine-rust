@@ -7,7 +7,15 @@ mod node;
 use ev_core::RenderLayer;
 pub use node::*;
 
-use bevy::{asset::uuid::Uuid, camera::visibility::RenderLayers, prelude::*};
+use bevy::{
+    asset::uuid::Uuid,
+    camera::visibility::RenderLayers,
+    color::palettes::{
+        css::BLUE,
+        tailwind::{BLUE_400, RED_400},
+    },
+    prelude::*,
+};
 use bimap::BiMap;
 use organism::{
     ActiveOrganism, Cells,
@@ -136,12 +144,28 @@ fn neuron_spawner(
 
         map.insert(neuron_entity, id);
 
-        commands.spawn((
-            Text2d::new(name),
-            RenderLayers::from(RenderLayer::NODE_VISUAL),
-            TextColor(Color::BLACK),
-            ChildOf(neuron_entity),
-        ));
+        let name = commands
+            .spawn((
+                Text2d::new(name),
+                RenderLayers::from(RenderLayer::NODE_VISUAL),
+                TextColor(RED_400.into()),
+                ChildOf(neuron_entity),
+            ))
+            .id();
+
+        let value = commands
+            .spawn((
+                Text2d::new("VALUE"),
+                RenderLayers::from(RenderLayer::NODE_VISUAL),
+                Transform::from_xyz(0., -20., 0.),
+                TextColor(BLUE_400.into()),
+                ChildOf(neuron_entity),
+            ))
+            .id();
+
+        commands
+            .entity(neuron_entity)
+            .insert(NodeValueText { name, value });
         *x += 12.;
         *y *= -1.;
     }

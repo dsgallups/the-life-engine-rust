@@ -1,4 +1,5 @@
 use bevy::{color::palettes::tailwind::RED_400, platform::collections::HashMap, prelude::*};
+use organism::cpu_net::Cell;
 use uuid::Uuid;
 
 use crate::node_visual::{Edge, EntityGraphMap};
@@ -7,7 +8,10 @@ use crate::node_visual::{Edge, EntityGraphMap};
 pub struct Nid(pub Uuid);
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(Update, (space_out_nodes, update_node_colors));
+    app.add_systems(
+        Update,
+        (space_out_nodes, update_node_colors, update_node_text),
+    );
 
     app.add_message::<NodeUpdates>();
 }
@@ -208,4 +212,55 @@ fn update_node_colors(
         }
         //todo
     }
+}
+#[derive(Component)]
+pub struct NodeValueText {
+    pub name: Entity,
+    pub value: Entity,
+}
+
+fn update_node_text(
+    map: Res<EntityGraphMap>,
+    nodes: Query<&NodeValueText>,
+    cells: Query<&Cell>,
+    mut text: Query<&mut Text2d>,
+) {
+    for cell in cells {
+        for (i, output_neuron) in cell.output_neurons().iter().enumerate() {
+            let id = output_neuron.id();
+            if let Some(entity) = map.get_entity(&id)
+                && let Ok(texts) = nodes.get(*entity)
+            {
+                if let Ok(mut name) = text.get_mut(texts.name) {
+                    name.0 = format!("{:?}\nOutput Neuron {}", cell.kind(), i);
+                }
+
+                if let Ok(mut value) = text.get_mut(texts.value) {
+                    let node_val = output_neuron.process();
+                    value.0 = format!("{node_val}");
+                }
+
+                //todo
+            }
+        }
+
+        for (i, input_neuron) in cell.input_neurons().iter().enumerate() {
+            let id = input_neuron.id();
+            if let Some(entity) = map.get_entity(&id)
+                && let Ok(texts) = nodes.get(*entity)
+            {
+                if let Ok(mut name) = text.get_mut(texts.name) {
+                    name.0 = format!("{:?}\nInput Neuron {}", cell.kind(), i);
+                }
+
+                if let Ok(mut value) = text.get_mut(texts.value) {
+                    let node_val = input_neuron.process();
+                    value.0 = format!("{node_val}");
+                }
+
+                //todo
+            }
+        }
+    }
+    //todo
 }

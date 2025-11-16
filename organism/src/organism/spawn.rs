@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    ActiveOrganism, CellAssets, CellKind, CellOf, DataCell, Eye, Foot, Launcher, Organism,
-    cpu_net::CpuNetwork, genome::Genome,
+    CellAssets, CellKind, CellOf, DataCell, Eye, Foot, Launcher, Organism, cpu_net::CpuNetwork,
+    genome::Genome,
 };
 
 #[derive(Message)]
@@ -51,17 +51,6 @@ fn spawn_genomes(
                 Transform::from_xyz(location.x as f32, location.y as f32, 0.),
                 Mesh2d(assets.cell.clone()),
             ));
-            // let network_inputs = cell.network_inputs();
-            // // notice how we invert the names, since this will be from
-            // // the perspective of the cell.
-            // if !network_inputs.is_empty() {
-            //     commands.insert(CellOutput::new(network_inputs.len()));
-            // }
-
-            // let network_outputs = cell.network_outputs();
-            // if !network_outputs.is_empty() {
-            //     commands.insert(CellInput::new(network_outputs.len()));
-            // }
 
             match kind {
                 CellKind::Foot => {

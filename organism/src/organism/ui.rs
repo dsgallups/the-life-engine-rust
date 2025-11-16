@@ -16,6 +16,7 @@ pub(super) fn set_active(
     ev: On<Pointer<Click>>,
     mut commands: Commands,
     actives: Query<Entity, With<ActiveOrganism>>,
+    visuals: Query<Entity, With<CellVisual>>,
 ) {
     info!("settings active");
     for active in actives {
@@ -23,6 +24,11 @@ pub(super) fn set_active(
     }
 
     commands.entity(ev.entity).insert(ActiveOrganism);
+
+    for visual in visuals {
+        commands.entity(visual).despawn();
+    }
+
     commands.trigger(SpawnOrganismUi);
 }
 
