@@ -6,7 +6,10 @@ mod neuron_type;
 pub use neuron_type::*;
 
 #[cfg(test)]
-use rand::{Rng, SeedableRng, rngs::StdRng};
+use {
+    pretty_assertions::assert_eq,
+    rand::{Rng, SeedableRng, rngs::StdRng},
+};
 
 #[test]
 fn test_input_neuron_creation() {

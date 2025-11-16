@@ -178,6 +178,7 @@ pub struct CellGenome {
 use {
     crate::ff_network::TakesInput,
     bevy::prelude::*,
+    pretty_assertions::assert_eq,
     rand::{SeedableRng, rngs::StdRng},
 };
 

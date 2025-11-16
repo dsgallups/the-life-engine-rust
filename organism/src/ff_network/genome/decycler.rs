@@ -127,6 +127,7 @@ fn dfs<T: TakesInput>(
 use {
     crate::ff_network::CellKind,
     bevy::prelude::*,
+    pretty_assertions::assert_eq,
     rand::{SeedableRng, rngs::StdRng},
 };
 
