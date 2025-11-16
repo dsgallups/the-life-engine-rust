@@ -2,13 +2,16 @@ use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct CellInput {
-    outputs: Vec<f32>,
+    inputs: Vec<f32>,
 }
 impl CellInput {
     pub fn new(num_inputs: usize) -> Self {
         Self {
-            outputs: vec![0.; num_inputs],
+            inputs: vec![0.; num_inputs],
         }
+    }
+    pub fn get(&self, index: usize) -> f32 {
+        self.inputs[index]
     }
 }
 

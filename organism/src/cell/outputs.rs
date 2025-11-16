@@ -10,6 +10,9 @@ impl CellOutput {
             outputs: vec![0.; num_outputs],
         }
     }
+    pub fn set(&mut self, index: usize, value: f32) {
+        self.outputs[index] = value;
+    }
 }
 
 pub(super) fn plugin(app: &mut App) {
