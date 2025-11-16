@@ -9,7 +9,7 @@ pub use node::*;
 use bevy::{
     asset::uuid::Uuid,
     camera::visibility::RenderLayers,
-    color::palettes::tailwind::{BLUE_400, RED_400},
+    color::palettes::tailwind::{BLUE_400, GREEN_400, RED_400},
     prelude::*,
 };
 use bimap::BiMap;
@@ -166,6 +166,11 @@ fn neuron_spawner(
             .entity(neuron_entity)
             .insert(NodeValueText { name, value });
         *x += 12.;
+        if *y > 0. {
+            *y += 6.;
+        } else {
+            *y -= 6.;
+        }
         *y *= -1.;
     }
 
@@ -207,11 +212,27 @@ fn edge_spawner(
                     GraphComponent,
                     RenderLayers::from(RenderLayer::NODE_VISUAL),
                     Edge::new(connection_id, receives_from, neuron_e),
-                    Mesh2d(meshes.add(Rectangle::new(LINE_MESH_X, LINE_MESH_Y))),
-                    MeshMaterial2d(materials.add(Color::WHITE)),
+                    // Mesh2d(meshes.add(Rectangle::new(LINE_MESH_X, LINE_MESH_Y))),
+                    // MeshMaterial2d(materials.add(Color::WHITE)),
                     Transform::from_xyz(0., 0., EDGE_LAYER),
+                    InheritedVisibility::VISIBLE,
                 ))
                 .id();
+
+            commands.spawn((
+                EdgeRectangleOf(edge),
+                RenderLayers::from(RenderLayer::NODE_VISUAL),
+                Mesh2d(meshes.add(Rectangle::new(LINE_MESH_X, LINE_MESH_Y))),
+                MeshMaterial2d(materials.add(Color::WHITE)),
+                ChildOf(edge),
+            ));
+            commands.spawn((
+                EdgeCircleOf(edge),
+                RenderLayers::from(RenderLayer::NODE_VISUAL),
+                Mesh2d(meshes.add(Circle::new(10.))),
+                MeshMaterial2d(materials.add(Color::from(GREEN_400))),
+                ChildOf(edge),
+            ));
 
             map.insert(edge, connection_id);
 

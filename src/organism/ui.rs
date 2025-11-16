@@ -65,7 +65,7 @@ fn spawn_organism_ui(
                 target: image_handle.clone().into(),
                 ..default()
             },
-            Transform::from_scale(Vec3::splat(2.)),
+            Transform::from_scale(Vec3::splat(1.4)),
             RenderLayers::from(RenderLayer::NODE_VISUAL),
         ))
         .id();
@@ -78,8 +78,8 @@ fn spawn_organism_ui(
                 position_type: PositionType::Absolute,
                 top: px(50),
                 left: px(50),
-                width: px(800),
-                height: px(600),
+                width: px(1400),
+                height: px(800),
                 border: px(5).all(),
                 ..default()
             },
