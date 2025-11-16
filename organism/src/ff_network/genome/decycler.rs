@@ -57,27 +57,52 @@ impl<'a> Cleaner<'a> {
                 break;
             }
             for (_, cell) in self.genome.cells.map_mut() {
-                for input in cell.outputs.iter_mut() {
-                    if let Some(inputs) = remove_queue.0.get(&input.id()) {
-                        remove_tool(input, inputs);
+                for output_neuron in cell.outputs.iter_mut() {
+                    if let Some(inputs) = remove_queue.0.get(&output_neuron.id()) {
+                        let self_referencing = inputs.contains(&output_neuron.id());
+                        remove_tool(output_neuron, inputs, self_referencing);
                     }
                 }
             }
-            for hidden in self.genome.hidden.iter_mut() {
-                if let Some(inputs) = remove_queue.0.get(&hidden.id()) {
-                    remove_tool(hidden, inputs);
+            for hidden_neuron in self.genome.hidden.iter_mut() {
+                if let Some(inputs) = remove_queue.0.get(&hidden_neuron.id()) {
+                    let self_referencing = inputs.contains(&hidden_neuron.id());
+                    remove_tool(hidden_neuron, inputs, self_referencing);
                 }
             }
         }
     }
 }
 
-fn remove_tool<T: TakesInput>(node: &mut NeuronTopology<T>, values: &HashSet<Uuid>) {
-    node.with_mut(|neuron| {
-        neuron
-            .inputs_mut()
-            .retain(|input| input.id().is_some_and(|id| !values.contains(&id)));
-    })
+fn remove_tool<T: TakesInput>(
+    node: &mut NeuronTopology<T>,
+    values: &HashSet<Uuid>,
+    self_reference: bool,
+) {
+    if self_reference {
+        let bad_indices = node.with_ref(|neuron| {
+            let mut bad_indices = Vec::new();
+            for (i, input) in neuron.inputs().iter().enumerate() {
+                if input.id().is_some_and(|id| values.contains(&id)) {
+                    bad_indices.push(i);
+                }
+            }
+            bad_indices
+        });
+
+        node.with_mut(|neuron| {
+            let inputs = neuron.inputs_mut();
+            for indice in bad_indices.into_iter().rev() {
+                inputs.remove(indice);
+            }
+        })
+    } else {
+        node.with_mut(|neuron| {
+            neuron
+                .inputs_mut()
+                .retain(|input| input.id().is_some_and(|id| !values.contains(&id)));
+        })
+    }
 }
 
 #[derive(Debug, Default)]
@@ -118,6 +143,7 @@ fn dfs<T: TakesInput>(
             }
         }
     });
+    println!("out of node ref");
 
     if !self_remove.is_empty() {
         total_remove.0.insert(node_id, self_remove);

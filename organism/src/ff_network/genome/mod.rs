@@ -62,6 +62,7 @@ impl Genome {
                 }
             }
         }
+        this.hidden = hidden_nodes;
 
         this
     }

@@ -10,6 +10,7 @@ pub trait TopologyNeuron {
 }
 
 pub trait CanBeInput {
+    fn id(&self) -> Uuid;
     fn to_input_type(&self) -> NeuronInputType;
 
     fn equals(&self, other: &NeuronInputType) -> bool;
@@ -123,6 +124,9 @@ impl NeuronInputType {
 }
 
 impl CanBeInput for NeuronTopology<Input> {
+    fn id(&self) -> Uuid {
+        self.id()
+    }
     fn to_input_type(&self) -> NeuronInputType {
         NeuronInputType::Input(NeuronInputInner(Arc::downgrade(&self.inner)))
     }
@@ -139,6 +143,9 @@ impl CanBeInput for NeuronTopology<Input> {
     }
 }
 impl CanBeInput for NeuronTopology<Hidden> {
+    fn id(&self) -> Uuid {
+        self.id()
+    }
     fn to_input_type(&self) -> NeuronInputType {
         NeuronInputType::Hidden(NeuronInputInner(Arc::downgrade(&self.inner)))
     }

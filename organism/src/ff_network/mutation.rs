@@ -90,7 +90,7 @@ impl MutationChance {
     }
 }
 
-pub const MAX_MUTATIONS: u8 = 200;
+pub const MAX_MUTATIONS: usize = 200;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MutationChances {
@@ -176,8 +176,7 @@ impl<'a> MutationIter<'a> {
     }
 
     pub fn next(&mut self, rng: &mut impl Rng) -> Option<MutationAction> {
-        pub const MAX_MUTATIONS: usize = 200;
-        if !self.keep_yielding || self.count > MAX_MUTATIONS {
+        if !self.keep_yielding || self.count >= MAX_MUTATIONS {
             return None;
         }
         let mut chance = rng.random_range(0_f32..self.total);
@@ -405,15 +404,12 @@ fn test_mutation_chances_adjust() {
 
     while iter.next(&mut rng).is_some() {
         count += 1;
-        if count > MAX_MUTATIONS as usize {
-            break; // Prevent infinite loop
+        if count > MAX_MUTATIONS {
+            break;
         }
     }
 
-    assert!(
-        count <= MAX_MUTATIONS as usize,
-        "Should not exceed MAX_MUTATIONS"
-    );
+    assert!(count <= MAX_MUTATIONS, "Should not exceed MAX_MUTATIONS");
 }
 
 #[test]
@@ -426,15 +422,12 @@ fn test_mutation_iter_max_mutations() {
 
     while iter.next(&mut rng).is_some() {
         count += 1;
-        if count > MAX_MUTATIONS as usize + 10 {
+        if count > MAX_MUTATIONS {
             panic!("MutationIter exceeded MAX_MUTATIONS limit");
         }
     }
 
-    assert!(
-        count <= MAX_MUTATIONS as usize,
-        "Should respect MAX_MUTATIONS limit"
-    );
+    assert_eq!(count, MAX_MUTATIONS, "Should respect MAX_MUTATIONS limit");
 }
 
 #[test]
