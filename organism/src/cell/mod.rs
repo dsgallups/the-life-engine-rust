@@ -7,6 +7,12 @@ pub use kind::*;
 mod genome;
 pub use genome::*;
 
+mod inputs;
+pub use inputs::*;
+
+mod outputs;
+pub use outputs::*;
+
 // mod template;
 // pub use template::*;
 
@@ -52,5 +58,5 @@ impl FromWorld for CellAssets {
 
 pub(super) fn plugin(app: &mut App) {
     app.init_resource::<CellAssets>();
-    app.add_plugins(cell_types::plugin);
+    app.add_plugins((cell_types::plugin, inputs::plugin, outputs::plugin));
 }

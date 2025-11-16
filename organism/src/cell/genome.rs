@@ -8,8 +8,18 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct CellGenome {
     pub kind: CellKind,
+    /// These are only topological. They don't have or process data.
     pub inputs: Vec<NeuronTopology<Input>>,
+    /// These are only topological. They don't have or process data.
     pub outputs: Vec<NeuronTopology<Output>>,
+}
+impl CellGenome {
+    pub fn network_inputs(&self) -> &[NeuronTopology<Input>] {
+        &self.inputs
+    }
+    pub fn network_outputs(&self) -> &[NeuronTopology<Output>] {
+        &self.outputs
+    }
 }
 
 // #[derive(Clone)]
