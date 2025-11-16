@@ -1,5 +1,7 @@
 use std::sync::{Arc, RwLock};
 
+use uuid::Uuid;
+
 pub struct CpuNeuronInputs {
     pub(crate) inputs: Vec<(CpuNeuron, f32)>,
     pub bias: f32,
@@ -7,6 +9,7 @@ pub struct CpuNeuronInputs {
 }
 
 pub struct CpuNeuronInner {
+    pub id: Uuid,
     pub inputs: Option<CpuNeuronInputs>,
     pub value: Option<f32>,
 }
@@ -17,9 +20,27 @@ pub struct CpuNeuron {
 }
 
 impl CpuNeuron {
+    pub fn id(&self) -> Uuid {
+        let read = self.inner.read().unwrap();
+        read.id
+    }
+
+    pub fn on_inputs<F>(&self, mut func: F)
+    where
+        F: FnMut(&CpuNeuron),
+    {
+        let read = self.inner.read().unwrap();
+        if let Some(n_inputs) = &read.inputs {
+            for (neuron, _) in &n_inputs.inputs {
+                func(neuron);
+            }
+        }
+    }
+
     pub fn input() -> Self {
         Self {
             inner: Arc::new(RwLock::new(CpuNeuronInner {
+                id: Uuid::new_v4(),
                 inputs: None,
                 value: None,
             })),

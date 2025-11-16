@@ -7,6 +7,10 @@ pub use node::*;
 
 use bevy::{asset::uuid::Uuid, camera::visibility::RenderLayers, prelude::*};
 use bimap::BiMap;
+use organism::{
+    ActiveOrganism, Cells,
+    cpu_net::{Cell, CpuNeuron},
+};
 
 const NODE_LAYER: f32 = 1.;
 const EDGE_LAYER: f32 = 0.;
@@ -49,43 +53,92 @@ pub(super) fn plugin(app: &mut App) {
 
 fn spawn_new_nodes(
     mut commands: Commands,
-    //cell: Single<&BrainCell, With<ActiveCell>>,
+    organism: Single<&Cells, With<ActiveOrganism>>,
+    cells: Query<&Cell>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut map: ResMut<EntityGraphMap>,
 ) {
-    let brain = cell.network();
-
     let circle = meshes.add(Circle::new(NODE_RADIUS));
 
     let mut x = 0.;
     let mut y = -20.;
 
-    for neuron in brain.neurons() {
-        if map.get_entity(&neuron.id()).is_none() {
-            let neuron_entity = commands
-                .spawn((
-                    GraphComponent,
-                    RenderLayers::from(RenderLayer::NODE_VISUAL),
-                    Nid(neuron.id()),
-                    Mesh2d(circle.clone()),
-                    MeshMaterial2d(materials.add(Color::WHITE)),
-                    Transform::from_xyz(x, y, NODE_LAYER),
-                ))
-                .id();
+    // let spawner = |neuron: &CpuNeuron, name| {
+    //     let id = neuron.id();
+    //     if map.get_entity(&id).is_none() {
+    //         let neuron_entity = commands
+    //             .spawn((
+    //                 GraphComponent,
+    //                 RenderLayers::from(RenderLayer::NODE_VISUAL),
+    //                 Nid(id),
+    //                 Mesh2d(circle.clone()),
+    //                 MeshMaterial2d(materials.add(Color::WHITE)),
+    //                 Transform::from_xyz(x, y, NODE_LAYER),
+    //             ))
+    //             .id();
 
-            map.insert(neuron_entity, neuron.id());
+    //         map.insert(neuron_entity, id);
 
-            commands.spawn((
-                Text2d::new(neuron.name()),
-                RenderLayers::from(RenderLayer::NODE_VISUAL),
-                TextColor(Color::BLACK),
-                ChildOf(neuron_entity),
-            ));
-            x += 12.;
-            y *= -1.;
+    //         commands.spawn((
+    //             Text2d::new(name),
+    //             RenderLayers::from(RenderLayer::NODE_VISUAL),
+    //             TextColor(Color::BLACK),
+    //             ChildOf(neuron_entity),
+    //         ));
+    //         x += 12.;
+    //         y *= -1.;
+    //     }
+    //     neuron.on_inputs(|input_neuron| {
+    //         spawner(input_neuron, "Node".to_string());
+    //     });
+    // };
+
+    for cell in organism.cells() {
+        let Ok(cell) = cells.get(*cell) else {
+            warn!("CELL MISSING CELL");
+            continue;
+        };
+        for (i, neuron) in cell.output_neurons().iter().enumerate() {
+            let name = format!("{:?} Output {i}", cell.kind());
+            neuron_spawner(
+                commands.reborrow(),
+                &circle,
+                materials.as_mut(),
+                &mut x,
+                &mut y,
+                map.as_mut(),
+                neuron,
+                name,
+            );
         }
     }
+
+    // for neuron in brain.neurons() {
+    //     if map.get_entity(&neuron.id()).is_none() {
+    //         let neuron_entity = commands
+    //             .spawn((
+    //                 GraphComponent,
+    //                 RenderLayers::from(RenderLayer::NODE_VISUAL),
+    //                 Nid(neuron.id()),
+    //                 Mesh2d(circle.clone()),
+    //                 MeshMaterial2d(materials.add(Color::WHITE)),
+    //                 Transform::from_xyz(x, y, NODE_LAYER),
+    //             ))
+    //             .id();
+
+    //         map.insert(neuron_entity, neuron.id());
+
+    //         commands.spawn((
+    //             Text2d::new(neuron.name()),
+    //             RenderLayers::from(RenderLayer::NODE_VISUAL),
+    //             TextColor(Color::BLACK),
+    //             ChildOf(neuron_entity),
+    //         ));
+    //         x += 12.;
+    //         y *= -1.;
+    //     }
+    // }
 
     for neuron in brain.neurons() {
         let neuron_e = *map.get_entity(&neuron.id()).unwrap();
@@ -155,4 +208,53 @@ fn despawn_dead_edges(
             commands.entity(entity).despawn();
         }
     }
+}
+
+fn neuron_spawner(
+    mut commands: Commands,
+    circle: &Handle<Mesh>,
+    materials: &mut Assets<ColorMaterial>,
+    x: &mut f32,
+    y: &mut f32,
+    map: &mut EntityGraphMap,
+    neuron: &CpuNeuron,
+    name: String,
+) {
+    let id = neuron.id();
+    if map.get_entity(&id).is_none() {
+        let neuron_entity = commands
+            .spawn((
+                GraphComponent,
+                RenderLayers::from(RenderLayer::NODE_VISUAL),
+                Nid(id),
+                Mesh2d(circle.clone()),
+                MeshMaterial2d(materials.add(Color::WHITE)),
+                Transform::from_xyz(*x, *y, NODE_LAYER),
+            ))
+            .id();
+
+        map.insert(neuron_entity, id);
+
+        commands.spawn((
+            Text2d::new(name),
+            RenderLayers::from(RenderLayer::NODE_VISUAL),
+            TextColor(Color::BLACK),
+            ChildOf(neuron_entity),
+        ));
+        *x += 12.;
+        *y *= -1.;
+    }
+
+    neuron.on_inputs(|input_neuron| {
+        neuron_spawner(
+            commands.reborrow(),
+            circle,
+            materials,
+            x,
+            y,
+            map,
+            input_neuron,
+            "Node".to_string(),
+        );
+    });
 }

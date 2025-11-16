@@ -24,6 +24,11 @@ use bevy::{color::palettes::tailwind::*, prelude::*};
 #[derive(Component, Reflect)]
 #[relationship_target(relationship = CellOf)]
 pub struct Cells(Vec<Entity>);
+impl Cells {
+    pub fn cells(&self) -> &[Entity] {
+        &self.0
+    }
+}
 
 #[derive(Component, Reflect)]
 #[relationship(relationship_target = Cells)]

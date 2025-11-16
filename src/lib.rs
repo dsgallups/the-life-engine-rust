@@ -5,7 +5,7 @@ mod dev_tools;
 
 pub mod camera;
 pub mod game;
-//pub mod node_visual;
+pub mod node_visual;
 pub mod settings;
 pub mod utils;
 pub mod widgets;
@@ -40,7 +40,7 @@ pub fn plugin(app: &mut App) {
 
     app.add_plugins((
         camera::plugin,
-        //node_visual::plugin,
+        node_visual::plugin,
         settings::plugin,
         utils::plugin,
         game::plugin,

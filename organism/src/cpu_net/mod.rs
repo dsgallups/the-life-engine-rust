@@ -7,7 +7,7 @@ use bevy::prelude::*;
 use uuid::Uuid;
 
 mod neuron;
-use neuron::*;
+pub use neuron::*;
 
 use crate::{
     CellKind,
@@ -39,6 +39,9 @@ impl Cell {
         for output in &self.outputs {
             output.propagate_reset()
         }
+    }
+    pub fn output_neurons(&self) -> &[CpuNeuron] {
+        &self.outputs
     }
 }
 
@@ -142,6 +145,7 @@ fn process_topology<T: TakesInput>(
         activation: read.activation(),
     };
     let inner = CpuNeuronInner {
+        id: Uuid::new_v4(),
         inputs: Some(cpu_neuron_inputs),
         value: None,
     };
