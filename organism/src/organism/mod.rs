@@ -1,6 +1,8 @@
 mod spawn;
 pub use spawn::*;
 
+mod ui;
+
 use crate::{
     cpu_net::Cell,
     genome::Genome, //old_genome::Genome,
@@ -32,7 +34,7 @@ pub fn plugin(app: &mut App) {
         (OrganismSet::ProcessInput, OrganismSet::ProcessOutput).chain(),
     );
 
-    app.add_plugins(spawn::plugin);
+    app.add_plugins((spawn::plugin, ui::plugin));
     app.add_systems(PostUpdate, reset_cells);
 }
 

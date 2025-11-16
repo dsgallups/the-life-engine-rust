@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    CellAssets, CellKind, CellOf, DataCell, Eye, Foot, Launcher, Organism, cpu_net::CpuNetwork,
-    genome::Genome,
+    ActiveOrganism, CellAssets, CellKind, CellOf, DataCell, Eye, Foot, Launcher, Organism,
+    cpu_net::CpuNetwork, genome::Genome,
 };
 
 #[derive(Message)]
@@ -36,6 +36,7 @@ fn spawn_genomes(
                 Pickable::default(),
                 Transform::from_xyz(msg.location.x, msg.location.y, 0.),
             ))
+            .observe(super::ui::set_active)
             .id();
 
         let cpu_net = CpuNetwork::new(&msg.genome);
