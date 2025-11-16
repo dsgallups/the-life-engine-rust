@@ -4,6 +4,7 @@ pub use cell::*;
 //mod old_genome;
 //pub use old_genome::*;
 
+pub mod cpu_net;
 pub mod genome;
 
 mod organism;

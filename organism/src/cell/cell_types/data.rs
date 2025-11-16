@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{CellInput, CellOutput, OrganismSet};
+use crate::{OrganismSet, cpu_net::Cell};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, update_outputs.in_set(OrganismSet::ProcessInput));
@@ -13,7 +13,7 @@ pub struct DataCell {
     data: [f32; 4],
 }
 
-fn update_outputs(data_cells: Query<(&DataCell, &mut CellOutput)>) {
+fn update_outputs(data_cells: Query<(&DataCell, &mut Cell)>) {
     for (cell, mut outputs) in data_cells {
         outputs.set(0, cell.data[0]);
         outputs.set(1, cell.data[0]);
@@ -22,7 +22,7 @@ fn update_outputs(data_cells: Query<(&DataCell, &mut CellOutput)>) {
     }
 }
 
-fn update_inputs(data_cells: Query<(&mut DataCell, &CellInput)>) {
+fn update_inputs(data_cells: Query<(&mut DataCell, &Cell)>) {
     for (mut cell, input) in data_cells {
         cell.data[0] = input.get(0);
         cell.data[1] = input.get(1);

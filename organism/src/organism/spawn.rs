@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    CellAssets, CellInput, CellKind, CellOf, CellOutput, DataCell, Eye, Foot, Launcher, Organism,
+    CellAssets, CellKind, CellOf, DataCell, Eye, Foot, Launcher, Organism, cpu_net::CpuNetwork,
     genome::Genome,
 };
 
@@ -28,8 +28,6 @@ fn spawn_genomes(
     assets: Res<CellAssets>,
 ) {
     for msg in msgs.read() {
-        let mut organism_genome = msg.genome.deep_clone();
-        organism_genome.scramble(&mut rand::rng());
         let organism = commands
             .spawn((
                 Name::new("Organism"),
@@ -40,28 +38,31 @@ fn spawn_genomes(
             ))
             .id();
 
-        for (location, cell) in msg.genome.cells().map() {
+        let cpu_net = CpuNetwork::new(&msg.genome);
+
+        for (location, cell) in cpu_net.cells {
+            let kind = cell.kind;
             let mut commands = commands.spawn((
-                cell.kind,
+                cell,
                 ChildOf(organism),
                 CellOf(organism),
                 Pickable::default(),
                 Transform::from_xyz(location.x as f32, location.y as f32, 0.),
                 Mesh2d(assets.cell.clone()),
             ));
-            let network_inputs = cell.network_inputs();
-            // notice how we invert the names, since this will be from
-            // the perspective of the cell.
-            if !network_inputs.is_empty() {
-                commands.insert(CellOutput::new(network_inputs.len()));
-            }
+            // let network_inputs = cell.network_inputs();
+            // // notice how we invert the names, since this will be from
+            // // the perspective of the cell.
+            // if !network_inputs.is_empty() {
+            //     commands.insert(CellOutput::new(network_inputs.len()));
+            // }
 
-            let network_outputs = cell.network_outputs();
-            if !network_outputs.is_empty() {
-                commands.insert(CellInput::new(network_outputs.len()));
-            }
+            // let network_outputs = cell.network_outputs();
+            // if !network_outputs.is_empty() {
+            //     commands.insert(CellInput::new(network_outputs.len()));
+            // }
 
-            match cell.kind {
+            match kind {
                 CellKind::Foot => {
                     commands.insert((
                         Name::new("Collagen"),
