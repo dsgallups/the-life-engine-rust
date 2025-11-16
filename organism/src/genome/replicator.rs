@@ -157,7 +157,8 @@ use {
 
 #[test]
 fn test_basic_genome_replication() {
-    let original = Genome::sandbox();
+    let mut rng = StdRng::seed_from_u64(42);
+    let original = Genome::sandbox(&mut rng);
     let cloned = original.deep_clone();
 
     // Basic structure should be preserved
@@ -185,7 +186,7 @@ fn test_empty_genome_replication() {
 #[test]
 fn test_replicated_genome_independence() {
     let mut rng = StdRng::seed_from_u64(42);
-    let original = Genome::sandbox();
+    let original = Genome::sandbox(&mut rng);
     let mut cloned = original.deep_clone();
 
     let original_cell_count = original.cell_count();
@@ -218,12 +219,16 @@ fn test_replicated_genome_independence() {
 
 #[test]
 fn test_cell_positions_preserved() {
-    let genome = Genome::from_cells(vec![
-        (CellKind::Eye, IVec2::new(0, 0)),
-        (CellKind::Launcher, IVec2::new(5, 5)),
-        (CellKind::Data, IVec2::new(-3, 2)),
-        (CellKind::Foot, IVec2::new(10, -10)),
-    ]);
+    let mut rng = StdRng::seed_from_u64(42);
+    let genome = Genome::from_cells(
+        vec![
+            (CellKind::Eye, IVec2::new(0, 0)),
+            (CellKind::Launcher, IVec2::new(5, 5)),
+            (CellKind::Data, IVec2::new(-3, 2)),
+            (CellKind::Foot, IVec2::new(10, -10)),
+        ],
+        &mut rng,
+    );
 
     let cloned = genome.deep_clone();
 
@@ -266,17 +271,24 @@ fn test_cell_positions_preserved() {
 
 #[test]
 fn test_complex_connections_preserved() {
+    let mut rng = StdRng::seed_from_u64(42);
     let mut genome = Genome::empty();
 
     // Create a network with multiple cells and connections
-    genome.cells.add_cell(IVec2::new(0, 0), CellKind::Eye);
-    genome.cells.add_cell(IVec2::new(1, 0), CellKind::Data);
-    genome.cells.add_cell(IVec2::new(2, 0), CellKind::Launcher);
+    genome
+        .cells
+        .add_cell(IVec2::new(0, 0), CellKind::Eye, &mut rng);
+    genome
+        .cells
+        .add_cell(IVec2::new(1, 0), CellKind::Data, &mut rng);
+    genome
+        .cells
+        .add_cell(IVec2::new(2, 0), CellKind::Launcher, &mut rng);
 
     // Add hidden neurons
-    let hidden1 = NeuronTopology::hidden();
-    let hidden2 = NeuronTopology::hidden();
-    let hidden3 = NeuronTopology::hidden();
+    let hidden1 = NeuronTopology::hidden(&mut rng);
+    let hidden2 = NeuronTopology::hidden(&mut rng);
+    let hidden3 = NeuronTopology::hidden(&mut rng);
 
     // Create complex connections
     // Eye inputs -> hidden1
@@ -338,7 +350,8 @@ fn test_complex_connections_preserved() {
 
 #[test]
 fn test_neuron_ids_are_different() {
-    let genome = Genome::simple_linear();
+    let mut rng = StdRng::seed_from_u64(42);
+    let genome = Genome::simple_linear(&mut rng);
     let cloned = genome.deep_clone();
 
     // Neuron IDs should be different between original and clone
@@ -394,10 +407,11 @@ fn test_mutation_chances_preserved() {
 
 #[test]
 fn test_deep_clone_with_dead_connections() {
-    let mut genome = Genome::simple_linear();
+    let mut rng = StdRng::seed_from_u64(42);
+    let mut genome = Genome::simple_linear(&mut rng);
 
     // Add a hidden neuron
-    let hidden = NeuronTopology::hidden();
+    let hidden = NeuronTopology::hidden(&mut rng);
 
     // Connect it to outputs
     for cell in genome.cells.map_mut().values_mut() {
@@ -422,7 +436,7 @@ fn test_deep_clone_with_dead_connections() {
 #[test]
 fn test_replicate_then_scramble() {
     let mut rng = StdRng::seed_from_u64(42);
-    let original = Genome::sandbox();
+    let original = Genome::sandbox(&mut rng);
     let mut cloned = original.deep_clone();
 
     // Scramble the clone
@@ -439,8 +453,9 @@ fn test_replicate_then_scramble() {
 
 #[test]
 fn test_multiple_replication_generations() {
+    let mut rng = StdRng::seed_from_u64(42);
     // Test that we can replicate multiple generations
-    let gen0 = Genome::sandbox();
+    let gen0 = Genome::sandbox(&mut rng);
     let gen1 = gen0.deep_clone();
     let gen2 = gen1.deep_clone();
     let gen3 = gen2.deep_clone();
@@ -449,7 +464,6 @@ fn test_multiple_replication_generations() {
     assert_eq!(gen0.cell_count(), gen3.cell_count());
 
     // But should be independent
-    let mut rng = StdRng::seed_from_u64(42);
     let mut gen3_mutated = gen3.deep_clone();
     for _ in 0..5 {
         MutationAction::AddCell.perform(
@@ -468,13 +482,16 @@ fn test_multiple_replication_generations() {
 #[test]
 fn test_replication_with_cycles() {
     let mut genome = Genome::empty();
+    let mut rng = StdRng::seed_from_u64(42);
 
     // Create cells
-    genome.cells.add_cell(IVec2::new(0, 0), CellKind::Data);
+    genome
+        .cells
+        .add_cell(IVec2::new(0, 0), CellKind::Data, &mut rng);
 
     // Create hidden neurons
-    let hidden1 = NeuronTopology::hidden();
-    let hidden2 = NeuronTopology::hidden();
+    let hidden1 = NeuronTopology::hidden(&mut rng);
+    let hidden2 = NeuronTopology::hidden(&mut rng);
 
     // Create a potential cycle: hidden1 -> hidden2 -> hidden1
     hidden2.add_input(&hidden1);
@@ -502,8 +519,8 @@ fn test_replication_with_cycles() {
 
 #[test]
 fn test_replication_preserves_weights() {
-    let mut genome = Genome::simple_linear();
     let mut rng = StdRng::seed_from_u64(42);
+    let mut genome = Genome::simple_linear(&mut rng);
 
     // Mutate weights to give them non-default values
     for _ in 0..10 {
@@ -527,8 +544,8 @@ fn test_replication_preserves_weights() {
 
 #[test]
 fn test_replication_preserves_activation_functions() {
-    let mut genome = Genome::simple_linear();
     let mut rng = StdRng::seed_from_u64(42);
+    let mut genome = Genome::simple_linear(&mut rng);
 
     // Mutate activation functions
     for _ in 0..10 {
@@ -555,12 +572,16 @@ fn test_replication_preserves_activation_functions() {
 
 #[test]
 fn test_cell_input_output_counts_preserved() {
-    let genome = Genome::from_cells(vec![
-        (CellKind::Eye, IVec2::new(0, 0)),      // 2 inputs, 0 outputs
-        (CellKind::Launcher, IVec2::new(1, 0)), // 0 inputs, 3 outputs
-        (CellKind::Data, IVec2::new(2, 0)),     // 4 inputs, 4 outputs
-        (CellKind::Foot, IVec2::new(3, 0)),     // 0 inputs, 0 outputs
-    ]);
+    let mut rng = StdRng::seed_from_u64(42);
+    let genome = Genome::from_cells(
+        vec![
+            (CellKind::Eye, IVec2::new(0, 0)),      // 2 inputs, 0 outputs
+            (CellKind::Launcher, IVec2::new(1, 0)), // 0 inputs, 3 outputs
+            (CellKind::Data, IVec2::new(2, 0)),     // 4 inputs, 4 outputs
+            (CellKind::Foot, IVec2::new(3, 0)),     // 0 inputs, 0 outputs
+        ],
+        &mut rng,
+    );
 
     let cloned = genome.deep_clone();
 
@@ -609,13 +630,13 @@ fn test_large_genome_replication_performance() {
                 2 => CellKind::Data,
                 _ => CellKind::Foot,
             };
-            genome.cells.add_cell(IVec2::new(i, j), cell_kind);
+            genome.cells.add_cell(IVec2::new(i, j), cell_kind, &mut rng);
         }
     }
 
     // Add many hidden neurons
     for _ in 0..100 {
-        genome.hidden.push(NeuronTopology::hidden());
+        genome.hidden.push(NeuronTopology::hidden(&mut rng));
     }
 
     // Add connections

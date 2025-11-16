@@ -212,7 +212,7 @@ impl OutputTask {
                     return OutputTaskReturn::None;
                 };
 
-                let new_hidden_node = NeuronTopology::hidden();
+                let new_hidden_node = NeuronTopology::hidden(rng);
                 match removed_input.input_type {
                     NeuronInputType::Hidden(input_for_neuron) => {
                         if let Some(hidden) = input_for_neuron.upgrade() {

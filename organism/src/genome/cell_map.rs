@@ -55,7 +55,12 @@ impl CellMap {
         self.0.get(loc)
     }
     // does not check if a cell is here.
-    pub fn add_cell(&mut self, location: IVec2, cell_kind: CellKind) -> Option<CellGenome> {
+    pub fn add_cell(
+        &mut self,
+        location: IVec2,
+        cell_kind: CellKind,
+        rng: &mut impl Rng,
+    ) -> Option<CellGenome> {
         let mut cell_inputs = Vec::new();
         let mut cell_outputs = Vec::new();
         let CellRequirements {
@@ -68,7 +73,7 @@ impl CellMap {
         }
 
         for _ in 0..num_outputs {
-            let new_output = NeuronTopology::output();
+            let new_output = NeuronTopology::output(rng);
             cell_outputs.push(new_output.clone());
         }
 

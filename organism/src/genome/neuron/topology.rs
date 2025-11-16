@@ -4,7 +4,7 @@ use rand::Rng;
 use uuid::Uuid;
 
 use crate::genome::{
-    CanBeInput, Hidden, Input, NeuronInput, Output, TopologyNeuron, neuron::TakesInput,
+    CanBeInput, Hidden, Input, NeuronInput, Output, TopologyNeuron, activations, neuron::TakesInput,
 };
 
 #[derive(Clone, Debug)]
@@ -36,12 +36,12 @@ impl NeuronTopology<Input> {
     }
 }
 impl NeuronTopology<Hidden> {
-    pub fn hidden() -> Self {
+    pub fn hidden(rng: &mut impl Rng) -> Self {
         Self {
             inner: Arc::new(RwLock::new(Hidden::new_from_raw_parts(
                 Vec::new(),
-                0.,
-                |_| 0.,
+                activations::random_bias(rng),
+                activations::random_activation(rng),
             ))),
         }
     }
@@ -84,12 +84,12 @@ impl<T: TakesInput> NeuronTopology<T> {
     }
 }
 impl NeuronTopology<Output> {
-    pub fn output() -> Self {
+    pub fn output(rng: &mut impl Rng) -> Self {
         Self {
             inner: Arc::new(RwLock::new(Output::new_from_raw_parts(
                 Vec::new(),
-                0.,
-                |_| 0.,
+                activations::random_bias(rng),
+                activations::random_activation(rng),
             ))),
         }
     }

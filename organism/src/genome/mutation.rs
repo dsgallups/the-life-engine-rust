@@ -32,7 +32,7 @@ impl MutationAction {
             MutationAction::AddCell => {
                 let new_cell_kind = CellKind::iter().choose(rng).unwrap();
                 let new_spot = cells.find_free_spot(rng);
-                cells.add_cell(new_spot, new_cell_kind);
+                cells.add_cell(new_spot, new_cell_kind, rng);
             }
             MutationAction::DeleteCell => {
                 if cells.is_empty() {
@@ -50,7 +50,7 @@ impl MutationAction {
                 let new_cell_kind = CellKind::iter().choose(rng).unwrap();
                 let rand_index = rng.random_range(0..cells.len());
                 let random_cell_loc = cells.map().keys().nth(rand_index).unwrap();
-                cells.add_cell(*random_cell_loc, new_cell_kind);
+                cells.add_cell(*random_cell_loc, new_cell_kind, rng);
             }
             MutationAction::AddConnection => {
                 Mutator::new(cells, hidden).with_random_input_and_output(rng, ConnectionTask::Add);
@@ -227,11 +227,14 @@ fn test_mutation_action_add_cell() {
 #[test]
 fn test_mutation_action_delete_cell() {
     let mut rng = StdRng::seed_from_u64(42);
-    let mut genome = Genome::from_cells(vec![
-        (CellKind::Eye, IVec2::new(0, 0)),
-        (CellKind::Launcher, IVec2::new(1, 0)),
-        (CellKind::Data, IVec2::new(2, 0)),
-    ]);
+    let mut genome = Genome::from_cells(
+        vec![
+            (CellKind::Eye, IVec2::new(0, 0)),
+            (CellKind::Launcher, IVec2::new(1, 0)),
+            (CellKind::Data, IVec2::new(2, 0)),
+        ],
+        &mut rng,
+    );
 
     assert_eq!(genome.cell_count(), 3);
 
@@ -255,7 +258,7 @@ fn test_mutation_action_delete_cell_empty_genome() {
 #[test]
 fn test_mutation_action_mutate_cell() {
     let mut rng = StdRng::seed_from_u64(42);
-    let mut genome = Genome::from_cells(vec![(CellKind::Eye, IVec2::new(0, 0))]);
+    let mut genome = Genome::from_cells(vec![(CellKind::Eye, IVec2::new(0, 0))], &mut rng);
 
     // Mutate the cell multiple times
     for _ in 0..10 {
@@ -277,7 +280,7 @@ fn test_mutation_action_mutate_cell() {
 #[test]
 fn test_mutation_action_add_connection() {
     let mut rng = StdRng::seed_from_u64(42);
-    let mut genome = Genome::simple_linear();
+    let mut genome = Genome::simple_linear(&mut rng);
 
     let initial_hidden_count = genome.hidden_count();
 
@@ -293,7 +296,7 @@ fn test_mutation_action_add_connection() {
 #[test]
 fn test_mutation_action_split_connection() {
     let mut rng = StdRng::seed_from_u64(42);
-    let mut genome = Genome::simple_linear();
+    let mut genome = Genome::simple_linear(&mut rng);
 
     let initial_hidden_count = genome.hidden_count();
 
@@ -310,11 +313,11 @@ fn test_mutation_action_split_connection() {
 #[test]
 fn test_mutation_action_remove_neuron() {
     let mut rng = StdRng::seed_from_u64(42);
-    let mut genome = Genome::simple_linear();
+    let mut genome = Genome::simple_linear(&mut rng);
 
     // Add some hidden neurons first
     for _ in 0..5 {
-        genome.hidden.push(NeuronTopology::hidden());
+        genome.hidden.push(NeuronTopology::hidden(&mut rng));
     }
 
     let initial_count = genome.hidden_count();
@@ -341,7 +344,7 @@ fn test_mutation_action_remove_neuron_empty() {
 #[test]
 fn test_mutation_action_mutate_weight() {
     let mut rng = StdRng::seed_from_u64(42);
-    let mut genome = Genome::simple_linear();
+    let mut genome = Genome::simple_linear(&mut rng);
 
     // This should modify weights on existing connections
     for _ in 0..10 {
@@ -355,7 +358,7 @@ fn test_mutation_action_mutate_weight() {
 #[test]
 fn test_mutation_action_mutate_activation() {
     let mut rng = StdRng::seed_from_u64(42);
-    let mut genome = Genome::simple_linear();
+    let mut genome = Genome::simple_linear(&mut rng);
 
     // This should modify activation functions on neurons
     for _ in 0..10 {
@@ -433,7 +436,7 @@ fn test_mutation_iter_max_mutations() {
 #[test]
 fn test_genome_scramble_multiple_times() {
     let mut rng = StdRng::seed_from_u64(42);
-    let mut genome = Genome::sandbox();
+    let mut genome = Genome::sandbox(&mut rng);
 
     for _ in 0..10 {
         genome.scramble(&mut rng);
@@ -443,7 +446,7 @@ fn test_genome_scramble_multiple_times() {
 #[test]
 fn test_mutation_on_complex_genome() {
     let mut rng = StdRng::seed_from_u64(42);
-    let mut genome = Genome::sandbox();
+    let mut genome = Genome::sandbox(&mut rng);
 
     // Apply many random mutations
     let actions = [
@@ -469,8 +472,12 @@ fn test_split_connection_creates_hidden() {
 
     // Create a genome with a direct connection we can split
     let mut genome = Genome::empty();
-    genome.cells.add_cell(IVec2::new(0, 0), CellKind::Eye);
-    genome.cells.add_cell(IVec2::new(1, 0), CellKind::Launcher);
+    genome
+        .cells
+        .add_cell(IVec2::new(0, 0), CellKind::Eye, &mut rng);
+    genome
+        .cells
+        .add_cell(IVec2::new(1, 0), CellKind::Launcher, &mut rng);
 
     // Connect input to output directly
     let eye_inputs = genome.cells.get(&IVec2::new(0, 0)).unwrap().inputs.clone();
@@ -508,7 +515,7 @@ fn test_mutations_preserve_cell_requirements() {
 
     for cell_kind in cell_types {
         let mut genome = Genome::empty();
-        genome.cells.add_cell(IVec2::new(0, 0), cell_kind);
+        genome.cells.add_cell(IVec2::new(0, 0), cell_kind, &mut rng);
 
         // Apply mutations
         for _ in 0..5 {

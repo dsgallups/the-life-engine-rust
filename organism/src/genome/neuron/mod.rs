@@ -29,7 +29,8 @@ fn test_input_neuron_creation() {
 
 #[test]
 fn test_hidden_neuron_creation() {
-    let hidden = NeuronTopology::hidden();
+    let mut rng = StdRng::seed_from_u64(238102);
+    let hidden = NeuronTopology::hidden(&mut rng);
 
     // Hidden neurons start with no inputs
     hidden.with_ref(|neuron| {
@@ -42,7 +43,7 @@ fn test_hidden_neuron_creation() {
     });
 
     // Hidden neurons have unique IDs
-    let hidden2 = NeuronTopology::hidden();
+    let hidden2 = NeuronTopology::hidden(&mut rng);
     assert_ne!(
         hidden.id(),
         hidden2.id(),
@@ -52,7 +53,8 @@ fn test_hidden_neuron_creation() {
 
 #[test]
 fn test_output_neuron_creation() {
-    let output = NeuronTopology::output();
+    let mut rng = StdRng::seed_from_u64(238102);
+    let output = NeuronTopology::output(&mut rng);
 
     // Output neurons start with no inputs
     output.with_ref(|neuron| {
@@ -65,7 +67,7 @@ fn test_output_neuron_creation() {
     });
 
     // Output neurons have unique IDs
-    let output2 = NeuronTopology::output();
+    let output2 = NeuronTopology::output(&mut rng);
     assert_ne!(
         output.id(),
         output2.id(),
@@ -75,7 +77,8 @@ fn test_output_neuron_creation() {
 
 #[test]
 fn test_add_input_to_hidden() {
-    let hidden = NeuronTopology::hidden();
+    let mut rng = StdRng::seed_from_u64(238102);
+    let hidden = NeuronTopology::hidden(&mut rng);
     let input1 = NeuronTopology::input();
     let input2 = NeuronTopology::input();
 
@@ -97,9 +100,10 @@ fn test_add_input_to_hidden() {
 
 #[test]
 fn test_add_input_to_output() {
-    let output = NeuronTopology::output();
-    let hidden1 = NeuronTopology::hidden();
-    let hidden2 = NeuronTopology::hidden();
+    let mut rng = StdRng::seed_from_u64(238102);
+    let output = NeuronTopology::output(&mut rng);
+    let hidden1 = NeuronTopology::hidden(&mut rng);
+    let hidden2 = NeuronTopology::hidden(&mut rng);
 
     // Add inputs
     output.add_input(&hidden1);
@@ -113,7 +117,8 @@ fn test_add_input_to_output() {
 
 #[test]
 fn test_hidden_can_take_input_neurons() {
-    let hidden = NeuronTopology::hidden();
+    let mut rng = StdRng::seed_from_u64(238102);
+    let hidden = NeuronTopology::hidden(&mut rng);
     let input = NeuronTopology::input();
 
     hidden.add_input(&input);
@@ -129,8 +134,9 @@ fn test_hidden_can_take_input_neurons() {
 
 #[test]
 fn test_hidden_can_take_hidden_neurons() {
-    let hidden1 = NeuronTopology::hidden();
-    let hidden2 = NeuronTopology::hidden();
+    let mut rng = StdRng::seed_from_u64(238102);
+    let hidden1 = NeuronTopology::hidden(&mut rng);
+    let hidden2 = NeuronTopology::hidden(&mut rng);
 
     hidden1.add_input(&hidden2);
 
@@ -145,8 +151,9 @@ fn test_hidden_can_take_hidden_neurons() {
 
 #[test]
 fn test_weak_reference_cleanup() {
-    let output = NeuronTopology::output();
-    let hidden = NeuronTopology::hidden();
+    let mut rng = StdRng::seed_from_u64(238102);
+    let output = NeuronTopology::output(&mut rng);
+    let hidden = NeuronTopology::hidden(&mut rng);
 
     // Add hidden as input to output
     output.add_input(&hidden);
@@ -169,7 +176,8 @@ fn test_weak_reference_cleanup() {
 
 #[test]
 fn test_neuron_input_id_retrieval() {
-    let hidden = NeuronTopology::hidden();
+    let mut rng = StdRng::seed_from_u64(238102);
+    let hidden = NeuronTopology::hidden(&mut rng);
     let input = NeuronTopology::input();
 
     let input_id = input.id();
@@ -187,9 +195,10 @@ fn test_neuron_input_id_retrieval() {
 
 #[test]
 fn test_neuron_input_dead_id() {
-    let output = NeuronTopology::output();
+    let mut rng = StdRng::seed_from_u64(238102);
+    let output = NeuronTopology::output(&mut rng);
     {
-        let hidden = NeuronTopology::hidden();
+        let hidden = NeuronTopology::hidden(&mut rng);
         output.add_input(&hidden);
     } // hidden dropped here
 
@@ -204,7 +213,8 @@ fn test_neuron_input_dead_id() {
 
 #[test]
 fn test_bias_manipulation() {
-    let hidden = NeuronTopology::hidden();
+    let mut rng = StdRng::seed_from_u64(238102);
+    let hidden = NeuronTopology::hidden(&mut rng);
 
     // Set bias
     hidden.with_mut(|neuron| {
@@ -219,7 +229,8 @@ fn test_bias_manipulation() {
 
 #[test]
 fn test_activation_function_setting() {
-    let hidden = NeuronTopology::hidden();
+    let mut rng = StdRng::seed_from_u64(238102);
+    let hidden = NeuronTopology::hidden(&mut rng);
 
     // Set different activation functions
     hidden.with_mut(|neuron| {
@@ -267,7 +278,7 @@ fn test_activation_function_setting() {
 #[test]
 fn test_random_input_selection() {
     let mut rng = StdRng::seed_from_u64(42);
-    let hidden = NeuronTopology::hidden();
+    let hidden = NeuronTopology::hidden(&mut rng);
 
     // Add multiple inputs
     let inputs: Vec<_> = (0..5).map(|_| NeuronTopology::input()).collect();
@@ -300,7 +311,7 @@ fn test_random_input_selection() {
 #[test]
 fn test_random_input_on_empty() {
     let mut rng = StdRng::seed_from_u64(42);
-    let hidden = NeuronTopology::hidden();
+    let hidden = NeuronTopology::hidden(&mut rng);
 
     // Try to select random input when there are none
     let result = hidden.for_random_input(&mut rng, |input, _rng| {
@@ -314,11 +325,11 @@ fn test_random_input_on_empty() {
 #[test]
 fn test_weight_mutation() {
     let mut rng = StdRng::seed_from_u64(42);
-    let output = NeuronTopology::output();
+    let output = NeuronTopology::output(&mut rng);
 
     // Add inputs
     for _ in 0..3 {
-        let hidden = NeuronTopology::hidden();
+        let hidden = NeuronTopology::hidden(&mut rng);
         output.add_input(&hidden);
     }
 
@@ -342,8 +353,9 @@ fn test_weight_mutation() {
 
 #[test]
 fn test_can_be_input_trait() {
+    let mut rng = StdRng::seed_from_u64(238102);
     let input_neuron = NeuronTopology::input();
-    let hidden_neuron = NeuronTopology::hidden();
+    let hidden_neuron = NeuronTopology::hidden(&mut rng);
 
     // Both Input and Hidden implement CanBeInput
     let input_type_from_input = input_neuron.to_input_type();
@@ -362,8 +374,9 @@ fn test_can_be_input_trait() {
 
 #[test]
 fn test_neuron_topology_clone() {
+    let mut rng = StdRng::seed_from_u64(238102);
     use std::f32::consts::PI;
-    let hidden1 = NeuronTopology::hidden();
+    let hidden1 = NeuronTopology::hidden(&mut rng);
     let hidden2 = hidden1.clone();
 
     // Cloned topology should share the same underlying neuron
@@ -381,14 +394,15 @@ fn test_neuron_topology_clone() {
 
 #[test]
 fn test_complex_network_construction() {
+    let mut rng = StdRng::seed_from_u64(271);
     // Build a small network to test interconnections
     let input1 = NeuronTopology::input();
     let input2 = NeuronTopology::input();
-    let hidden1 = NeuronTopology::hidden();
-    let hidden2 = NeuronTopology::hidden();
-    let hidden3 = NeuronTopology::hidden();
-    let output1 = NeuronTopology::output();
-    let output2 = NeuronTopology::output();
+    let hidden1 = NeuronTopology::hidden(&mut rng);
+    let hidden2 = NeuronTopology::hidden(&mut rng);
+    let hidden3 = NeuronTopology::hidden(&mut rng);
+    let output1 = NeuronTopology::output(&mut rng);
+    let output2 = NeuronTopology::output(&mut rng);
 
     // Layer 1: Inputs to first hidden layer
     hidden1.add_input(&input1);
@@ -426,7 +440,8 @@ fn test_complex_network_construction() {
 
 #[test]
 fn test_upgrade_weak_references() {
-    let hidden = NeuronTopology::hidden();
+    let mut rng = StdRng::seed_from_u64(238102);
+    let hidden = NeuronTopology::hidden(&mut rng);
     let input = NeuronTopology::input();
 
     hidden.add_input(&input);
@@ -452,11 +467,12 @@ fn test_upgrade_weak_references() {
 
 #[test]
 fn test_mixed_input_types() {
-    let output = NeuronTopology::output();
+    let mut rng = StdRng::seed_from_u64(238102);
+    let output = NeuronTopology::output(&mut rng);
     let input1 = NeuronTopology::input();
     let input2 = NeuronTopology::input();
-    let hidden1 = NeuronTopology::hidden();
-    let hidden2 = NeuronTopology::hidden();
+    let hidden1 = NeuronTopology::hidden(&mut rng);
+    let hidden2 = NeuronTopology::hidden(&mut rng);
 
     // Add mixed types of inputs
     output.add_input(&input1);
@@ -512,8 +528,9 @@ fn test_new_from_raw_parts() {
 fn test_thread_safety() {
     use std::sync::Arc;
     use std::thread;
+    let mut rng = StdRng::seed_from_u64(238102);
 
-    let hidden = NeuronTopology::hidden();
+    let hidden = NeuronTopology::hidden(&mut rng);
     let hidden_arc = Arc::new(hidden);
 
     let mut handles = vec![];

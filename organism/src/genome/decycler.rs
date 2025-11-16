@@ -163,15 +163,21 @@ use {
 
 #[test]
 fn test_cleaner_removes_dead_connections() {
+    let mut rng = StdRng::seed_from_u64(238102);
     let mut genome = Genome::empty();
 
     // Create cells with inputs and outputs
-    genome.cells.add_cell(IVec2::new(0, 0), CellKind::Eye);
-    genome.cells.add_cell(IVec2::new(1, 0), CellKind::Launcher);
+    genome
+        .cells
+        .add_cell(IVec2::new(0, 0), CellKind::Eye, &mut rng);
+    genome
+        .cells
+        .add_cell(IVec2::new(1, 0), CellKind::Launcher, &mut rng);
 
+    let mut rng = StdRng::seed_from_u64(271);
     // Create hidden neurons
-    let hidden1 = NeuronTopology::hidden();
-    let hidden2 = NeuronTopology::hidden();
+    let hidden1 = NeuronTopology::hidden(&mut rng);
+    let hidden2 = NeuronTopology::hidden(&mut rng);
 
     // Create connections
     if let Some(eye) = genome.cells.map_mut().get_mut(&IVec2::new(0, 0)) {
@@ -216,13 +222,16 @@ fn test_cleaner_removes_dead_connections() {
 #[test]
 fn test_decycler_simple_cycle() {
     let mut genome = Genome::empty();
+    let mut rng = StdRng::seed_from_u64(271);
 
     // Create a Data cell (has both inputs and outputs)
-    genome.cells.add_cell(IVec2::new(0, 0), CellKind::Data);
+    genome
+        .cells
+        .add_cell(IVec2::new(0, 0), CellKind::Data, &mut rng);
 
     // Create two hidden neurons
-    let hidden1 = NeuronTopology::hidden();
-    let hidden2 = NeuronTopology::hidden();
+    let hidden1 = NeuronTopology::hidden(&mut rng);
+    let hidden2 = NeuronTopology::hidden(&mut rng);
 
     // Create a cycle: hidden1 -> hidden2 -> hidden1
     hidden2.add_input(&hidden1);
@@ -250,12 +259,16 @@ fn test_decycler_simple_cycle() {
 
 #[test]
 fn test_decycler_self_loop() {
+    let mut rng = StdRng::seed_from_u64(238102);
     let mut genome = Genome::empty();
 
-    genome.cells.add_cell(IVec2::new(0, 0), CellKind::Launcher);
+    genome
+        .cells
+        .add_cell(IVec2::new(0, 0), CellKind::Launcher, &mut rng);
 
+    let mut rng = StdRng::seed_from_u64(271);
     // Create a hidden neuron with a self-loop
-    let hidden = NeuronTopology::hidden();
+    let hidden = NeuronTopology::hidden(&mut rng);
     hidden.add_input(&hidden); // Self-loop
 
     // Connect to output
@@ -288,14 +301,18 @@ fn test_decycler_self_loop() {
 #[test]
 fn test_decycler_complex_cycle() {
     let mut genome = Genome::empty();
+    let mut rng = StdRng::seed_from_u64(238102);
 
-    genome.cells.add_cell(IVec2::new(0, 0), CellKind::Data);
+    genome
+        .cells
+        .add_cell(IVec2::new(0, 0), CellKind::Data, &mut rng);
 
+    let mut rng = StdRng::seed_from_u64(271);
     // Create a complex cycle: h1 -> h2 -> h3 -> h4 -> h2
-    let h1 = NeuronTopology::hidden();
-    let h2 = NeuronTopology::hidden();
-    let h3 = NeuronTopology::hidden();
-    let h4 = NeuronTopology::hidden();
+    let h1 = NeuronTopology::hidden(&mut rng);
+    let h2 = NeuronTopology::hidden(&mut rng);
+    let h3 = NeuronTopology::hidden(&mut rng);
+    let h4 = NeuronTopology::hidden(&mut rng);
 
     h2.add_input(&h1);
     h3.add_input(&h2);
@@ -326,19 +343,24 @@ fn test_decycler_complex_cycle() {
 #[test]
 fn test_decycler_multiple_independent_cycles() {
     let mut genome = Genome::empty();
+    let mut rng = StdRng::seed_from_u64(271);
 
-    genome.cells.add_cell(IVec2::new(0, 0), CellKind::Data);
-    genome.cells.add_cell(IVec2::new(1, 0), CellKind::Launcher);
+    genome
+        .cells
+        .add_cell(IVec2::new(0, 0), CellKind::Data, &mut rng);
+    genome
+        .cells
+        .add_cell(IVec2::new(1, 0), CellKind::Launcher, &mut rng);
 
     // Create first cycle: h1 <-> h2
-    let h1 = NeuronTopology::hidden();
-    let h2 = NeuronTopology::hidden();
+    let h1 = NeuronTopology::hidden(&mut rng);
+    let h2 = NeuronTopology::hidden(&mut rng);
     h1.add_input(&h2);
     h2.add_input(&h1);
 
     // Create second cycle: h3 <-> h4
-    let h3 = NeuronTopology::hidden();
-    let h4 = NeuronTopology::hidden();
+    let h3 = NeuronTopology::hidden(&mut rng);
+    let h4 = NeuronTopology::hidden(&mut rng);
     h3.add_input(&h4);
     h4.add_input(&h3);
 
@@ -373,13 +395,16 @@ fn test_decycler_multiple_independent_cycles() {
 #[test]
 fn test_clean_combines_dead_removal_and_decycling() {
     let mut genome = Genome::empty();
+    let mut rng = StdRng::seed_from_u64(271);
 
-    genome.cells.add_cell(IVec2::new(0, 0), CellKind::Data);
+    genome
+        .cells
+        .add_cell(IVec2::new(0, 0), CellKind::Data, &mut rng);
 
     // Create neurons
-    let h1 = NeuronTopology::hidden();
-    let h2 = NeuronTopology::hidden();
-    let h3 = NeuronTopology::hidden();
+    let h1 = NeuronTopology::hidden(&mut rng);
+    let h2 = NeuronTopology::hidden(&mut rng);
+    let h3 = NeuronTopology::hidden(&mut rng);
 
     // Create a cycle
     h1.add_input(&h2);
@@ -423,15 +448,22 @@ fn test_clean_combines_dead_removal_and_decycling() {
 fn test_decycler_preserves_valid_paths() {
     let mut genome = Genome::empty();
 
+    let mut rng = StdRng::seed_from_u64(271);
     // Create a more complex network
-    genome.cells.add_cell(IVec2::new(0, 0), CellKind::Eye);
-    genome.cells.add_cell(IVec2::new(1, 0), CellKind::Data);
-    genome.cells.add_cell(IVec2::new(2, 0), CellKind::Launcher);
+    genome
+        .cells
+        .add_cell(IVec2::new(0, 0), CellKind::Eye, &mut rng);
+    genome
+        .cells
+        .add_cell(IVec2::new(1, 0), CellKind::Data, &mut rng);
+    genome
+        .cells
+        .add_cell(IVec2::new(2, 0), CellKind::Launcher, &mut rng);
 
-    let h1 = NeuronTopology::hidden();
-    let h2 = NeuronTopology::hidden();
-    let h3 = NeuronTopology::hidden();
-    let h4 = NeuronTopology::hidden();
+    let h1 = NeuronTopology::hidden(&mut rng);
+    let h2 = NeuronTopology::hidden(&mut rng);
+    let h3 = NeuronTopology::hidden(&mut rng);
+    let h4 = NeuronTopology::hidden(&mut rng);
 
     // Create valid forward connections
     if let Some(eye) = genome.cells.map_mut().get_mut(&IVec2::new(0, 0)) {
@@ -475,14 +507,20 @@ fn test_decycler_preserves_valid_paths() {
 fn test_decycler_handles_disconnected_components() {
     let mut genome = Genome::empty();
 
-    genome.cells.add_cell(IVec2::new(0, 0), CellKind::Launcher);
-    genome.cells.add_cell(IVec2::new(1, 0), CellKind::Launcher);
+    let mut rng = StdRng::seed_from_u64(271);
+
+    genome
+        .cells
+        .add_cell(IVec2::new(0, 0), CellKind::Launcher, &mut rng);
+    genome
+        .cells
+        .add_cell(IVec2::new(1, 0), CellKind::Launcher, &mut rng);
 
     // Create two separate subgraphs
-    let h1 = NeuronTopology::hidden();
-    let h2 = NeuronTopology::hidden();
-    let h3 = NeuronTopology::hidden();
-    let h4 = NeuronTopology::hidden();
+    let h1 = NeuronTopology::hidden(&mut rng);
+    let h2 = NeuronTopology::hidden(&mut rng);
+    let h3 = NeuronTopology::hidden(&mut rng);
+    let h4 = NeuronTopology::hidden(&mut rng);
 
     // First subgraph with cycle
     h1.add_input(&h2);
@@ -532,7 +570,8 @@ fn test_clean_on_empty_genome() {
 
 #[test]
 fn test_clean_on_genome_with_no_cycles() {
-    let mut genome = Genome::simple_linear();
+    let mut rng = StdRng::seed_from_u64(271);
+    let mut genome = Genome::simple_linear(&mut rng);
 
     let initial_hidden = genome.hidden_count();
     let initial_cells = genome.cell_count();
@@ -549,10 +588,13 @@ fn test_clean_on_genome_with_no_cycles() {
 fn test_decycler_with_deeply_nested_cycles() {
     let mut genome = Genome::empty();
 
-    genome.cells.add_cell(IVec2::new(0, 0), CellKind::Data);
+    let mut rng = StdRng::seed_from_u64(271);
+    genome
+        .cells
+        .add_cell(IVec2::new(0, 0), CellKind::Data, &mut rng);
 
     // Create a deep nested structure with multiple cycles
-    let neurons: Vec<_> = (0..10).map(|_| NeuronTopology::hidden()).collect();
+    let neurons: Vec<_> = (0..10).map(|_| NeuronTopology::hidden(&mut rng)).collect();
 
     // Create forward connections
     for i in 0..9 {
@@ -587,12 +629,15 @@ fn test_decycler_with_deeply_nested_cycles() {
 #[test]
 fn test_multiple_clean_calls_are_idempotent() {
     let mut genome = Genome::empty();
+    let mut rng = StdRng::seed_from_u64(271);
 
-    genome.cells.add_cell(IVec2::new(0, 0), CellKind::Data);
+    genome
+        .cells
+        .add_cell(IVec2::new(0, 0), CellKind::Data, &mut rng);
 
     // Create a cycle
-    let h1 = NeuronTopology::hidden();
-    let h2 = NeuronTopology::hidden();
+    let h1 = NeuronTopology::hidden(&mut rng);
+    let h2 = NeuronTopology::hidden(&mut rng);
     h1.add_input(&h2);
     h2.add_input(&h1);
 
@@ -632,12 +677,17 @@ fn test_multiple_clean_calls_are_idempotent() {
 fn test_clean_preserves_input_to_output_connectivity() {
     let mut genome = Genome::empty();
 
+    let mut rng = StdRng::seed_from_u64(271);
     // Create a network with inputs and outputs
-    genome.cells.add_cell(IVec2::new(0, 0), CellKind::Eye);
-    genome.cells.add_cell(IVec2::new(1, 0), CellKind::Launcher);
+    genome
+        .cells
+        .add_cell(IVec2::new(0, 0), CellKind::Eye, &mut rng);
+    genome
+        .cells
+        .add_cell(IVec2::new(1, 0), CellKind::Launcher, &mut rng);
 
-    let h1 = NeuronTopology::hidden();
-    let h2 = NeuronTopology::hidden();
+    let h1 = NeuronTopology::hidden(&mut rng);
+    let h2 = NeuronTopology::hidden(&mut rng);
 
     // Connect input -> h1 -> h2 -> output
     if let Some(eye) = genome.cells.map_mut().get_mut(&IVec2::new(0, 0)) {
@@ -675,11 +725,14 @@ fn test_clean_preserves_input_to_output_connectivity() {
 fn test_cleaner_with_partially_dead_connections() {
     let mut genome = Genome::empty();
 
-    genome.cells.add_cell(IVec2::new(0, 0), CellKind::Data);
+    let mut rng = StdRng::seed_from_u64(271);
+    genome
+        .cells
+        .add_cell(IVec2::new(0, 0), CellKind::Data, &mut rng);
 
-    let h1 = NeuronTopology::hidden();
-    let h2 = NeuronTopology::hidden();
-    let h3 = NeuronTopology::hidden();
+    let h1 = NeuronTopology::hidden(&mut rng);
+    let h2 = NeuronTopology::hidden(&mut rng);
+    let h3 = NeuronTopology::hidden(&mut rng);
 
     // Connect h1 and h2 to outputs
     if let Some(cell) = genome.cells.map_mut().get_mut(&IVec2::new(0, 0)) {
@@ -725,10 +778,12 @@ fn test_genome_scramble_includes_cleaning() {
     let mut rng = StdRng::seed_from_u64(42);
 
     // Create a genome with a cycle
-    genome.cells.add_cell(IVec2::new(0, 0), CellKind::Data);
+    genome
+        .cells
+        .add_cell(IVec2::new(0, 0), CellKind::Data, &mut rng);
 
-    let h1 = NeuronTopology::hidden();
-    let h2 = NeuronTopology::hidden();
+    let h1 = NeuronTopology::hidden(&mut rng);
+    let h2 = NeuronTopology::hidden(&mut rng);
     h1.add_input(&h2);
     h2.add_input(&h1);
 

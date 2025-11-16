@@ -29,7 +29,7 @@ pub struct Genome {
     pub(crate) mutation: MutationChances,
 }
 impl Genome {
-    pub fn sandbox() -> Self {
+    pub fn sandbox(rng: &mut impl Rng) -> Self {
         let template = [
             (CellKind::Eye, IVec2::new(0, 0)),
             (CellKind::Launcher, IVec2::new(1, 1)),
@@ -44,14 +44,14 @@ impl Genome {
 
         //outputs first
         for (kind, location) in template {
-            this.cells.add_cell(location, kind);
+            this.cells.add_cell(location, kind, rng);
         }
         let mut hidden_nodes = Vec::new();
 
         for cell in this.cells.map_mut().values_mut() {
             for output in cell.outputs.iter_mut() {
                 //go 1:1 between hidden and output nodes
-                let hidden = NeuronTopology::hidden();
+                let hidden = NeuronTopology::hidden(rng);
                 output.add_input(&hidden);
                 hidden_nodes.push(hidden);
             }
@@ -100,17 +100,19 @@ impl Genome {
 
     /// Create a simple linear genome with one input cell, one hidden, and one output cell
     #[cfg(test)]
-    pub fn simple_linear() -> Self {
+    pub fn simple_linear(rng: &mut impl Rng) -> Self {
         let mut genome = Self::empty();
 
         // Add an Eye cell (input)
-        genome.cells.add_cell(IVec2::new(0, 0), CellKind::Eye);
+        genome.cells.add_cell(IVec2::new(0, 0), CellKind::Eye, rng);
 
         // Add a Launcher cell (output)
-        genome.cells.add_cell(IVec2::new(1, 0), CellKind::Launcher);
+        genome
+            .cells
+            .add_cell(IVec2::new(1, 0), CellKind::Launcher, rng);
 
         // Connect them through a hidden neuron
-        let hidden = NeuronTopology::hidden();
+        let hidden = NeuronTopology::hidden(rng);
 
         // Connect input to hidden
         if let Some(eye_cell) = genome.cells.map_mut().get_mut(&IVec2::new(0, 0)) {
@@ -132,11 +134,11 @@ impl Genome {
 
     /// Create a genome with custom cells at specific positions
     #[cfg(test)]
-    pub fn from_cells(cells: Vec<(CellKind, IVec2)>) -> Self {
+    pub fn from_cells(cells: Vec<(CellKind, IVec2)>, rng: &mut impl Rng) -> Self {
         let mut genome = Self::empty();
 
         for (kind, location) in cells {
-            genome.cells.add_cell(location, kind);
+            genome.cells.add_cell(location, kind, rng);
         }
 
         genome
@@ -189,7 +191,8 @@ fn test_genome_empty_construction() {
 
 #[test]
 fn test_genome_sandbox_construction() {
-    let genome = Genome::sandbox();
+    let mut rng = StdRng::seed_from_u64(238102);
+    let genome = Genome::sandbox(&mut rng);
 
     // Sandbox should have specific cells
     assert_eq!(genome.cell_count(), 3, "Sandbox should have 3 cells");
@@ -231,7 +234,8 @@ fn test_genome_sandbox_construction() {
 
 #[test]
 fn test_genome_simple_linear_construction() {
-    let genome = Genome::simple_linear();
+    let mut rng = StdRng::seed_from_u64(238102);
+    let genome = Genome::simple_linear(&mut rng);
 
     assert_eq!(genome.cell_count(), 2, "Simple linear should have 2 cells");
     assert_eq!(
@@ -270,7 +274,8 @@ fn test_genome_from_cells_construction() {
         (CellKind::Foot, IVec2::new(10, -10)),
     ];
 
-    let genome = Genome::from_cells(cells);
+    let mut rng = StdRng::seed_from_u64(238102);
+    let genome = Genome::from_cells(cells, &mut rng);
 
     assert_eq!(genome.cell_count(), 4, "Should have 4 cells");
     assert_eq!(
@@ -304,7 +309,7 @@ fn test_cell_map_find_free_spot() {
     let mut rng = StdRng::seed_from_u64(42);
 
     // Add a cell at origin
-    genome.cells.add_cell(IVec2::ZERO, CellKind::Eye);
+    genome.cells.add_cell(IVec2::ZERO, CellKind::Eye, &mut rng);
 
     // Find free spot should not return origin
     let free_spot = genome.cells.find_free_spot(&mut rng);
@@ -331,7 +336,9 @@ fn test_cell_map_find_free_spot_multiple() {
     for x in -1..=1 {
         for y in -1..=1 {
             if x != 0 || y != 0 {
-                genome.cells.add_cell(IVec2::new(x, y), CellKind::Foot);
+                genome
+                    .cells
+                    .add_cell(IVec2::new(x, y), CellKind::Foot, &mut rng);
             }
         }
     }
@@ -347,12 +354,16 @@ fn test_cell_map_find_free_spot_multiple() {
 
 #[test]
 fn test_cell_map_num_inputs_outputs() {
-    let genome = Genome::from_cells(vec![
-        (CellKind::Eye, IVec2::new(0, 0)),      // 2 inputs, 0 outputs
-        (CellKind::Launcher, IVec2::new(1, 0)), // 0 inputs, 3 outputs
-        (CellKind::Data, IVec2::new(2, 0)),     // 4 inputs, 4 outputs
-        (CellKind::Foot, IVec2::new(3, 0)),     // 0 inputs, 0 outputs
-    ]);
+    let mut rng = StdRng::seed_from_u64(238102);
+    let genome = Genome::from_cells(
+        vec![
+            (CellKind::Eye, IVec2::new(0, 0)),      // 2 inputs, 0 outputs
+            (CellKind::Launcher, IVec2::new(1, 0)), // 0 inputs, 3 outputs
+            (CellKind::Data, IVec2::new(2, 0)),     // 4 inputs, 4 outputs
+            (CellKind::Foot, IVec2::new(3, 0)),     // 0 inputs, 0 outputs
+        ],
+        &mut rng,
+    );
 
     let (num_inputs, num_outputs) = genome.cells.num_inputs_outputs();
 
@@ -366,8 +377,11 @@ fn test_cell_map_num_inputs_outputs() {
 fn test_cell_map_add_and_remove() {
     let mut genome = Genome::empty();
 
+    let mut rng = StdRng::seed_from_u64(238102);
     // Add cell
-    let replaced = genome.cells.add_cell(IVec2::new(5, 5), CellKind::Eye);
+    let replaced = genome
+        .cells
+        .add_cell(IVec2::new(5, 5), CellKind::Eye, &mut rng);
     assert!(
         replaced.is_none(),
         "Should return None when adding to empty location"
@@ -375,7 +389,9 @@ fn test_cell_map_add_and_remove() {
     assert_eq!(genome.cell_count(), 1);
 
     // Replace cell at same location
-    let replaced = genome.cells.add_cell(IVec2::new(5, 5), CellKind::Launcher);
+    let replaced = genome
+        .cells
+        .add_cell(IVec2::new(5, 5), CellKind::Launcher, &mut rng);
     assert!(
         replaced.is_some(),
         "Should return previous cell when replacing"
@@ -424,12 +440,21 @@ fn test_cell_requirements() {
 #[test]
 fn test_cell_creation_respects_requirements() {
     let mut genome = Genome::empty();
+    let mut rng = StdRng::seed_from_u64(238102);
 
     // Add each type of cell
-    genome.cells.add_cell(IVec2::new(0, 0), CellKind::Eye);
-    genome.cells.add_cell(IVec2::new(1, 0), CellKind::Launcher);
-    genome.cells.add_cell(IVec2::new(2, 0), CellKind::Data);
-    genome.cells.add_cell(IVec2::new(3, 0), CellKind::Foot);
+    genome
+        .cells
+        .add_cell(IVec2::new(0, 0), CellKind::Eye, &mut rng);
+    genome
+        .cells
+        .add_cell(IVec2::new(1, 0), CellKind::Launcher, &mut rng);
+    genome
+        .cells
+        .add_cell(IVec2::new(2, 0), CellKind::Data, &mut rng);
+    genome
+        .cells
+        .add_cell(IVec2::new(3, 0), CellKind::Foot, &mut rng);
 
     // Check Eye
     let eye = genome.cells.get(&IVec2::new(0, 0)).unwrap();
@@ -455,11 +480,12 @@ fn test_cell_creation_respects_requirements() {
 #[test]
 fn test_genome_hidden_neuron_management() {
     let mut genome = Genome::empty();
+    let mut rng = StdRng::seed_from_u64(238102);
 
     // Add hidden neurons
-    let h1 = NeuronTopology::hidden();
-    let h2 = NeuronTopology::hidden();
-    let h3 = NeuronTopology::hidden();
+    let h1 = NeuronTopology::hidden(&mut rng);
+    let h2 = NeuronTopology::hidden(&mut rng);
+    let h3 = NeuronTopology::hidden(&mut rng);
 
     genome.hidden_neurons_mut().push(h1);
     genome.hidden_neurons_mut().push(h2);
@@ -520,15 +546,22 @@ fn test_direction_random_order() {
 #[test]
 fn test_genome_with_interconnected_cells() {
     let mut genome = Genome::empty();
+    let mut rng = StdRng::seed_from_u64(238102);
 
     // Create a small network
-    genome.cells.add_cell(IVec2::new(0, 0), CellKind::Eye);
-    genome.cells.add_cell(IVec2::new(1, 0), CellKind::Data);
-    genome.cells.add_cell(IVec2::new(2, 0), CellKind::Launcher);
+    genome
+        .cells
+        .add_cell(IVec2::new(0, 0), CellKind::Eye, &mut rng);
+    genome
+        .cells
+        .add_cell(IVec2::new(1, 0), CellKind::Data, &mut rng);
+    genome
+        .cells
+        .add_cell(IVec2::new(2, 0), CellKind::Launcher, &mut rng);
 
     // Add hidden neurons and create connections
-    let h1 = NeuronTopology::hidden();
-    let h2 = NeuronTopology::hidden();
+    let h1 = NeuronTopology::hidden(&mut rng);
+    let h2 = NeuronTopology::hidden(&mut rng);
 
     // Connect Eye inputs to h1
     if let Some(eye) = genome.cells.map_mut().get_mut(&IVec2::new(0, 0)) {
@@ -577,6 +610,7 @@ fn test_cell_map_capacity() {
 #[test]
 fn test_large_genome_construction() {
     let mut cells = Vec::new();
+    let mut rng = StdRng::seed_from_u64(238102);
 
     // Create a 10x10 grid of cells
     for x in -5..5_i32 {
@@ -591,7 +625,7 @@ fn test_large_genome_construction() {
         }
     }
 
-    let genome = Genome::from_cells(cells);
+    let genome = Genome::from_cells(cells, &mut rng);
 
     assert_eq!(genome.cell_count(), 100, "Should have 100 cells");
 
@@ -631,7 +665,8 @@ fn test_genome_mutation_chances() {
 
 #[test]
 fn test_genome_sandbox_has_connections() {
-    let genome = Genome::sandbox();
+    let mut rng = StdRng::seed_from_u64(238102);
+    let genome = Genome::sandbox(&mut rng);
 
     // Sandbox genome should have connected neurons
     // Check that outputs have inputs (hidden neurons)
@@ -661,12 +696,17 @@ fn test_genome_sandbox_has_connections() {
 fn test_cell_at_negative_coordinates() {
     let mut genome = Genome::empty();
 
+    let mut rng = StdRng::seed_from_u64(238102);
     // Test cells at negative coordinates work properly
-    genome.cells.add_cell(IVec2::new(-100, -100), CellKind::Eye);
     genome
         .cells
-        .add_cell(IVec2::new(-50, 50), CellKind::Launcher);
-    genome.cells.add_cell(IVec2::new(75, -75), CellKind::Data);
+        .add_cell(IVec2::new(-100, -100), CellKind::Eye, &mut rng);
+    genome
+        .cells
+        .add_cell(IVec2::new(-50, 50), CellKind::Launcher, &mut rng);
+    genome
+        .cells
+        .add_cell(IVec2::new(75, -75), CellKind::Data, &mut rng);
 
     assert_eq!(genome.cell_count(), 3);
     assert!(genome.cells.get(&IVec2::new(-100, -100)).is_some());
@@ -676,7 +716,8 @@ fn test_cell_at_negative_coordinates() {
 
 #[test]
 fn test_genome_accessors() {
-    let genome = Genome::sandbox();
+    let mut rng = StdRng::seed_from_u64(238102);
+    let genome = Genome::sandbox(&mut rng);
 
     // Test read-only accessors
     let cells = genome.cells();
