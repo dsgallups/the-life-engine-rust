@@ -2,6 +2,8 @@ mod spawn;
 pub use spawn::*;
 
 use crate::{
+    CellInput,
+    CellOutput,
     genome::Genome, //old_genome::Genome,
 };
 use bevy::prelude::*;
@@ -38,4 +40,15 @@ pub fn plugin(app: &mut App) {
     );
 
     app.add_plugins(spawn::plugin);
+    app.add_systems(Update, process_organism.in_set(OrganismSet::Brain));
+}
+
+fn process_organism(
+    organisms: Query<&Organism>,
+    cell_outputs: Query<&CellOutput>,
+    cell_inputs: Query<&mut CellInput>,
+) {
+    for organism in organisms {
+        todo!()
+    }
 }
