@@ -41,7 +41,7 @@ fn spawn_genomes(
         let cpu_net = CpuNetwork::new(&msg.genome);
 
         for (location, cell) in cpu_net.cells {
-            let kind = cell.kind;
+            let kind = cell.kind();
             let mut commands = commands.spawn((
                 cell,
                 ChildOf(organism),

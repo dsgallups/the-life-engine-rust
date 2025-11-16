@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{CellInput, OrganismSet};
+use crate::{OrganismSet, cpu_net::Cell};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, update_inputs.in_set(OrganismSet::ProcessOutput));
@@ -9,7 +9,7 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Component, Default)]
 pub struct Launcher {}
 
-fn update_inputs(feet: Query<(&Launcher, &mut CellInput)>, time: Res<Time>) {
+fn update_inputs(feet: Query<(&Launcher, &Cell)>, time: Res<Time>) {
     let delta = time.delta_secs();
     for (_, input) in feet {
         let should_fire = input.get(0);

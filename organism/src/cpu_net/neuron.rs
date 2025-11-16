@@ -25,6 +25,24 @@ impl CpuNeuron {
             })),
         }
     }
+    pub fn propagate_reset(&self) {
+        {
+            let read_lock = self.inner.read().unwrap();
+            if read_lock.value.is_none() {
+                return;
+            }
+            if let Some(inputs) = &read_lock.inputs {
+                for (neuron, _) in &inputs.inputs {
+                    neuron.propagate_reset();
+                }
+            }
+        }
+
+        {
+            let mut write_lock = self.inner.write().unwrap();
+            write_lock.value = None
+        }
+    }
     pub fn process(&self) -> f32 {
         let determined_value = {
             let read_lock = self.inner.read().unwrap();

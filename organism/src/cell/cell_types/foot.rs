@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{CellInput, CellOf, Cells, OrganismSet};
+use crate::{CellOf, Cells, OrganismSet, cpu_net::Cell};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, update_inputs.in_set(OrganismSet::ProcessOutput));
@@ -10,7 +10,7 @@ pub(super) fn plugin(app: &mut App) {
 pub struct Foot {}
 
 fn update_inputs(
-    feet: Query<(&Foot, &mut CellInput, &CellOf)>,
+    feet: Query<(&Foot, &Cell, &CellOf)>,
     mut organisms: Query<&mut Transform, With<Cells>>,
     time: Res<Time>,
 ) {

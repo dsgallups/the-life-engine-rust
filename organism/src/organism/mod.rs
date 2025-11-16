@@ -2,6 +2,7 @@ mod spawn;
 pub use spawn::*;
 
 use crate::{
+    cpu_net::Cell,
     genome::Genome, //old_genome::Genome,
 };
 use bevy::prelude::*;
@@ -9,7 +10,6 @@ use bevy::prelude::*;
 #[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum OrganismSet {
     ProcessInput,
-    Brain,
     ProcessOutput,
 }
 
@@ -29,24 +29,19 @@ impl Organism {
 pub fn plugin(app: &mut App) {
     app.configure_sets(
         Update,
-        (
-            OrganismSet::ProcessInput,
-            OrganismSet::Brain,
-            OrganismSet::ProcessOutput,
-        )
-            .chain(),
+        (OrganismSet::ProcessInput, OrganismSet::ProcessOutput).chain(),
     );
 
     app.add_plugins(spawn::plugin);
-    app.add_systems(Update, process_organism.in_set(OrganismSet::Brain));
+    app.add_systems(PostUpdate, reset_cells);
 }
 
-fn process_organism(
-    organisms: Query<&Organism>,
+fn reset_cells(
+    cells: Query<&Cell>,
     // cell_outputs: Query<&CellOutput>,
     // cell_inputs: Query<&mut CellInput>,
 ) {
-    for organism in organisms {
-        todo!()
+    for cell in cells {
+        cell.reset();
     }
 }

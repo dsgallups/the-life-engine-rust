@@ -35,6 +35,11 @@ impl Cell {
         let output = &self.outputs[index];
         output.process()
     }
+    pub fn reset(&self) {
+        for output in &self.outputs {
+            output.propagate_reset()
+        }
+    }
 }
 
 pub struct CpuNetwork {
