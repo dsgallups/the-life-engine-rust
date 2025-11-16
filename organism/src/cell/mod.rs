@@ -7,8 +7,8 @@ pub use details::*;
 mod genome;
 pub use genome::*;
 
-mod template;
-pub use template::*;
+// mod template;
+// pub use template::*;
 
 use bevy::{color::palettes::tailwind::*, prelude::*};
 

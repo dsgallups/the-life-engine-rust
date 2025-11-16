@@ -1,7 +1,7 @@
 mod cell;
 pub use cell::*;
 
-mod old_genome;
+//mod old_genome;
 //pub use old_genome::*;
 
 pub mod genome;
