@@ -20,7 +20,7 @@ impl CellKind {
         let num_outputs = match self {
             Launcher => 3,
             Eye => 0,
-            Foot => 2,
+            Foot => 3,
             Data => 4,
         };
         CellRequirements {

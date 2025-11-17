@@ -18,6 +18,7 @@ pub enum MutationAction {
     SplitConnection,
     RemoveNeuron,
     MutateWeight,
+    MutateBias,
     MutateActivation,
 }
 
@@ -71,6 +72,9 @@ impl MutationAction {
             MutationAction::MutateActivation => {
                 Mutator::new(cells, hidden).with_random_output(rng, OutputTask::MutateActivation);
             }
+            MutationAction::MutateBias => {
+                Mutator::new(cells, hidden).with_random_output(rng, OutputTask::MutateBias);
+            }
         }
     }
 }
@@ -87,6 +91,7 @@ impl MutationChance {
 
         let add_to = if rng.random_bool(0.5) { -value } else { value };
         self.chance += add_to;
+        self.chance = self.chance.min(0.);
     }
 }
 
@@ -104,10 +109,7 @@ impl MutationChances {
         Self {
             self_mutation: self_mutation_rate,
             chances: MutationAction::iter()
-                .map(|action| MutationChance {
-                    action,
-                    chance: 1. / len as f32,
-                })
+                .map(|action| MutationChance { action, chance: 1. })
                 .collect(),
         }
     }
@@ -176,7 +178,7 @@ impl<'a> MutationIter<'a> {
     }
 
     pub fn next(&mut self, rng: &mut impl Rng) -> Option<MutationAction> {
-        if !self.keep_yielding || self.count >= MAX_MUTATIONS || self.total == 0_f32 {
+        if !self.keep_yielding || self.count >= MAX_MUTATIONS || self.total < 0.2_f32 {
             return None;
         }
 

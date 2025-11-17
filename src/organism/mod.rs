@@ -1,4 +1,5 @@
 mod spawn;
+use avian2d::prelude::*;
 use rand::Rng;
 pub use spawn::*;
 
@@ -28,6 +29,11 @@ pub struct ActiveOrganism;
 pub struct Organism {
     genome: Genome,
 }
+impl Organism {
+    pub fn genome(&self) -> &Genome {
+        &self.genome
+    }
+}
 
 #[derive(Component, Reflect, Default)]
 pub struct TicksAlive(u32);
@@ -46,6 +52,7 @@ pub fn plugin(app: &mut App) {
         Update,
         (OrganismSet::ProcessInput, OrganismSet::ProcessOutput).chain(),
     );
+    app.init_resource::<Wave>();
 
     app.add_systems(PreUpdate, kill_unhealthy_organisms);
     app.add_systems(Update, update_ticks_alive);
@@ -69,15 +76,23 @@ fn kill_unhealthy_organisms(
         if health.0 != 0 {
             continue;
         }
-        commands.entity(organism).insert(Dead).despawn_children();
+        commands
+            .entity(organism)
+            .insert(Dead)
+            .remove::<RigidBody>()
+            .despawn_children();
     }
 }
 
+#[derive(Resource, Default)]
+pub struct Wave(pub u32);
+
 fn produce_new_wave(
     mut commands: Commands,
-    alive_organisms: Query<&Organism, Without<Dead>>,
+    alive_organisms: Query<(Entity, &Organism), Without<Dead>>,
     dead_organisms: Query<(Entity, &Organism, &TicksAlive), With<Dead>>,
     mut rand: ResMut<Random>,
+    mut wave: ResMut<Wave>,
     mut msgs: MessageWriter<SpawnOrganism>,
 ) {
     if !alive_organisms.is_empty() {
@@ -105,6 +120,7 @@ fn produce_new_wave(
             messages.push(SpawnOrganism::new(child, Vec2::new(x, y)));
         }
     }
+    wave.0 += 1;
 
     msgs.write_batch(messages);
 }

@@ -4,11 +4,16 @@ pub fn random_bias(rng: &mut impl Rng) -> f32 {
     rng.random_range(-1_f32..=1_f32)
 }
 pub fn random_activation(rng: &mut impl Rng) -> fn(f32) -> f32 {
-    match rng.random_range(0..3) {
+    match rng.random_range(0..4) {
         0 => sigmoid,
         1 => relu,
+        2 => cos,
         _ => linear_activation,
     }
+}
+
+pub fn cos(n: f32) -> f32 {
+    n.cos()
 }
 
 pub fn sigmoid(n: f32) -> f32 {

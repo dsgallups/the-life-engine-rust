@@ -20,7 +20,10 @@ mod settings;
 mod utils;
 mod widgets;
 
-use bevy::{prelude::*, window::WindowResolution};
+use bevy::{
+    prelude::*,
+    window::{PresentMode, WindowResolution},
+};
 
 fn main() {
     let mut app = App::new();
@@ -29,8 +32,10 @@ fn main() {
             primary_window: Some(Window {
                 title: "The Brain Engine".to_string(),
                 resolution: WindowResolution::new(1920, 1080),
+                present_mode: PresentMode::Mailbox,
                 ..default()
             }),
+
             ..default()
         }),
         MeshPickingPlugin,

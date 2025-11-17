@@ -25,9 +25,12 @@ fn update_inputs(
         };
         let dir_x = input.get(0);
         let dir_y = input.get(1);
+        let magnitude = input.get(2);
 
-        organism_trns.translation.x += dir_x.clamp(-1., 1.) * delta;
-        organism_trns.translation.x += dir_y.clamp(-1., 1.) * delta;
+        let magnitude = delta * 10. * magnitude.clamp(0_f32, 1_f32);
+
+        organism_trns.translation.x += dir_x.clamp(-1., 1.) * magnitude;
+        organism_trns.translation.y += dir_y.clamp(-1., 1.) * magnitude;
     }
 
     //todo

@@ -56,15 +56,21 @@ fn update_outputs(
         // -1 if thing
         // 1 if food
         // Note: this isn't ordered by distance :)
-        if let Some(first) = collisions.first() {
-            if let Ok(trns) = transforms.get(*first) {
-                x = trns.translation.x - transform.translation.x;
-                y = trns.translation.y - transform.translation.y;
-            }
-            if food.get(*first).is_ok() {
-                t_val = 1.;
-            } else if cell_transforms.get(*first).is_ok() {
-                t_val = -1.;
+        for collision in collisions {
+            if let Ok(trns) = transforms.get(collision) {
+                let maybe_x = trns.translation.x - transform.translation.x;
+                let maybe_y = trns.translation.y - transform.translation.y;
+
+                if maybe_x * maybe_y < x * y {
+                    x = maybe_x;
+                    y = maybe_y;
+
+                    if food.get(collision).is_ok() {
+                        t_val = 1.;
+                    } else if cell_transforms.get(collision).is_ok() {
+                        t_val = -1.;
+                    }
+                }
             }
         }
 

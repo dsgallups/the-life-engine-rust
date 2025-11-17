@@ -177,6 +177,7 @@ pub enum OutputTask {
     MutateWeight,
     Split,
     MutateActivation,
+    MutateBias,
 }
 
 impl OutputTask {
@@ -198,6 +199,12 @@ impl OutputTask {
             OutputTask::MutateActivation => {
                 output.with_mut(|lock| {
                     lock.set_activation(activations::random_activation(rng));
+                });
+                OutputTaskReturn::None
+            }
+            OutputTask::MutateBias => {
+                output.with_mut(|lock| {
+                    *lock.bias_mut() += rng.random_range(-1.0..=1.0);
                 });
                 OutputTaskReturn::None
             }
