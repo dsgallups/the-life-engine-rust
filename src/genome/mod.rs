@@ -33,6 +33,7 @@ impl Genome {
         let template = [
             (CellKind::Eye, IVec2::new(0, 0)),
             (CellKind::Launcher, IVec2::new(1, 1)),
+            (CellKind::Foot, IVec2::new(0, 1)),
             (CellKind::Data, IVec2::new(-1, -1)),
         ];
 

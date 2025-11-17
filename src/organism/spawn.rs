@@ -1,3 +1,4 @@
+use avian2d::prelude::{Collider, LockedAxes, RigidBody};
 use bevy::prelude::*;
 
 use crate::{
@@ -34,6 +35,8 @@ fn spawn_genomes(
             .spawn((
                 Name::new("Organism"),
                 Organism::new(msg.genome.clone()),
+                RigidBody::Dynamic,
+                LockedAxes::ROTATION_LOCKED,
                 InheritedVisibility::VISIBLE,
                 Pickable::default(),
                 Transform::from_xyz(msg.location.x, msg.location.y, 0.),
@@ -49,6 +52,7 @@ fn spawn_genomes(
                 cell,
                 ChildOf(organism),
                 CellOf(organism),
+                Collider::rectangle(1., 1.),
                 Pickable::default(),
                 Transform::from_xyz(location.x as f32, location.y as f32, 0.),
                 Mesh2d(assets.cell.clone()),

@@ -3,19 +3,22 @@
 #[cfg(feature = "dev")]
 mod dev_tools;
 
-pub mod cell;
+mod cell;
+mod food;
+mod third_party;
+mod wall;
 
-pub mod cpu_net;
-pub mod genome;
+mod cpu_net;
+mod genome;
 
-pub mod organism;
+mod organism;
 
-pub mod camera;
-pub mod game;
-pub mod node_visual;
-pub mod settings;
-pub mod utils;
-pub mod widgets;
+mod camera;
+mod game;
+mod node_visual;
+mod settings;
+mod utils;
+mod widgets;
 
 use bevy::{prelude::*, window::WindowResolution};
 
@@ -42,13 +45,17 @@ fn main() {
         require_markers: true,
     });
 
+    app.add_plugins(third_party::plugin);
+
     app.add_plugins((
         camera::plugin,
+        utils::plugin,
+        food::plugin,
+        wall::plugin,
         cell::plugin,
         organism::plugin,
         node_visual::plugin,
         settings::plugin,
-        utils::plugin,
         game::plugin,
     ));
 
