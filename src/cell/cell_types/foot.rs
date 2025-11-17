@@ -16,9 +16,8 @@ pub struct Foot {}
 fn update_inputs(
     feet: Query<(&Foot, &Cell, &CellOf)>,
     mut organisms: Query<&mut Transform, With<Cells>>,
-    time: Res<Time>,
 ) {
-    let delta = time.delta_secs();
+    //let delta = time.delta_secs();
     for (_, input, cell_of) in feet {
         let Ok(mut organism_trns) = organisms.get_mut(cell_of.0) else {
             continue;
@@ -27,7 +26,7 @@ fn update_inputs(
         let dir_y = input.get(1);
         let magnitude = input.get(2);
 
-        let magnitude = delta * 10. * magnitude.clamp(0_f32, 1_f32);
+        let magnitude = magnitude.clamp(0_f32, 1_f32);
 
         organism_trns.translation.x += dir_x.clamp(-1., 1.) * magnitude;
         organism_trns.translation.y += dir_y.clamp(-1., 1.) * magnitude;
