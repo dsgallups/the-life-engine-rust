@@ -1,5 +1,7 @@
+use std::time::Duration;
+
 use avian2d::prelude::{Collider, CollisionEventsEnabled, CollisionStart, Sensor};
-use bevy::{color::palettes::tailwind::BLUE_600, prelude::*};
+use bevy::{color::palettes::tailwind::BLUE_600, prelude::*, time::common_conditions::on_timer};
 use rand::Rng;
 
 use crate::{
@@ -16,15 +18,20 @@ pub struct Health(pub u32);
 
 impl Default for Health {
     fn default() -> Self {
-        Self(50 * 60)
+        Self(50)
     }
 }
 
 pub(super) fn plugin(app: &mut App) {
     app.init_resource::<FoodAssets>()
         .init_resource::<FoodTimer>();
-    app.add_systems(Update, spawn_food)
-        .add_systems(PostUpdate, (on_full_belly, update_health));
+    app.add_systems(Update, spawn_food).add_systems(
+        PostUpdate,
+        (
+            on_full_belly,
+            update_health.run_if(on_timer(Duration::from_millis(200))),
+        ),
+    );
 }
 
 #[derive(Resource)]
@@ -44,9 +51,16 @@ impl FromWorld for FoodAssets {
     }
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource)]
 pub struct FoodTimer {
-    timer: u32,
+    timer: Timer,
+}
+impl Default for FoodTimer {
+    fn default() -> Self {
+        Self {
+            timer: Timer::new(Duration::from_secs(1), TimerMode::Repeating),
+        }
+    }
 }
 
 #[derive(Component)]
@@ -57,12 +71,12 @@ fn spawn_food(
     assets: Res<FoodAssets>,
     mut food_timer: ResMut<FoodTimer>,
     mut rand: ResMut<Random>,
+    time: Res<Time>,
 ) {
-    food_timer.timer += 1;
-    if food_timer.timer < 1000 {
+    food_timer.timer.tick(time.delta());
+    if !food_timer.timer.just_finished() {
         return;
     }
-    food_timer.timer = 0;
     let x = rand.0.random_range(-90_f32..=90_f32);
     let y = rand.0.random_range(-90_f32..=90_f32);
 
@@ -87,7 +101,7 @@ fn food_collision(
     if let Some(body) = ev.body2
         && let Ok((mut health, mut food_eaten)) = organisms.get_mut(body)
     {
-        health.0 += 25 * 60;
+        health.0 += 25;
         food_eaten.0 += 1;
         commands.entity(ev.collider1).try_despawn();
     };
