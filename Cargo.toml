@@ -50,8 +50,15 @@ opt-level = 3
 
 
 [profile.release]
-codegen-units = 1
-lto = "thin"
+opt-level = 3            # maximum optimisation
+codegen-units = 1        # maximise cross-function inlining
+lto = "fat"              # full-program link‑time optimisation
+panic = "abort"          # drop unwinder
+incremental = false
+debug = false
+debug-assertions = false
+overflow-checks = false
+strip = "none"           # symbols don't hurt runtime speed
 
 
 [lints.rust]
