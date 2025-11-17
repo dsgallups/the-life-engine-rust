@@ -13,7 +13,7 @@ impl CellKind {
         use CellKind::*;
         let num_inputs = match self {
             Launcher => 0,
-            Eye => 2,
+            Eye => 3,
             Foot => 0,
             Data => 4,
         };

@@ -176,10 +176,11 @@ impl<'a> MutationIter<'a> {
     }
 
     pub fn next(&mut self, rng: &mut impl Rng) -> Option<MutationAction> {
-        if !self.keep_yielding || self.count >= MAX_MUTATIONS {
+        if !self.keep_yielding || self.count >= MAX_MUTATIONS || self.total == 0_f32 {
             return None;
         }
-        let mut chance = rng.random_range(0_f32..self.total);
+
+        let mut chance = rng.random_range(0_f32..=self.total);
         for mutation_chance in self.chances.chances.iter() {
             let mut_chance = mutation_chance.chance;
             if chance > mut_chance {

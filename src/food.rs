@@ -1,14 +1,30 @@
 use std::time::Duration;
 
-use bevy::{color::palettes::tailwind::BLUE_600, prelude::*};
+use avian2d::prelude::{Collider, Sensor};
+use bevy::{color::palettes::tailwind::BLUE_600, prelude::*, time::common_conditions::on_timer};
 use rand::Rng;
 
 use crate::utils::Random;
 
+#[derive(Component, Reflect, Default)]
+pub struct FoodEaten(pub u32);
+
+#[derive(Component, Reflect)]
+pub struct Health(pub u32);
+
+impl Default for Health {
+    fn default() -> Self {
+        Self(50)
+    }
+}
+
 pub(super) fn plugin(app: &mut App) {
     app.init_resource::<FoodAssets>()
         .init_resource::<FoodTimer>();
-    app.add_systems(Update, spawn_food);
+    app.add_systems(Update, spawn_food).add_systems(
+        PostUpdate,
+        update_health.run_if(on_timer(Duration::from_millis(250))),
+    );
 }
 
 #[derive(Resource)]
@@ -54,13 +70,21 @@ fn spawn_food(
     if !food_timer.timer.just_finished() {
         return;
     }
-    let x = rand.0.random_range(-50_f32..=50_f32);
-    let y = rand.0.random_range(-50_f32..=50_f32);
+    let x = rand.0.random_range(-90_f32..=90_f32);
+    let y = rand.0.random_range(-90_f32..=90_f32);
 
     commands.spawn((
         Food,
+        Sensor,
+        Collider::rectangle(1., 1.),
         Mesh2d(assets.mesh.clone()),
         MeshMaterial2d(assets.material.clone()),
         Transform::from_xyz(x, y, 0.),
     ));
+}
+
+fn update_health(health: Query<&mut Health>) {
+    for mut health in health {
+        health.0 = health.0.saturating_sub(1);
+    }
 }
