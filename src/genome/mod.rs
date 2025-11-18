@@ -53,7 +53,7 @@ impl Genome {
             for output in cell.outputs.iter_mut() {
                 //go 1:1 between hidden and output nodes
                 let hidden = NeuronTopology::hidden(rng);
-                output.add_input(&hidden);
+                output.add_input(&hidden, rng);
                 hidden_nodes.push(hidden);
             }
         }
@@ -61,7 +61,7 @@ impl Genome {
         for cell in this.cells.map_mut().values_mut() {
             for hidden_node in hidden_nodes.iter_mut() {
                 for input in cell.inputs.iter() {
-                    hidden_node.add_input(input);
+                    hidden_node.add_input(input, rng);
                 }
             }
         }

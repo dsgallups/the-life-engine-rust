@@ -81,7 +81,7 @@ impl<'a> Mutator<'a> {
                 }
                 let input_neuron = &self.hidden[input_neuron_i];
                 let output_neuron = &self.hidden[output_neuron_i];
-                thing_to_do.do_thing(input_neuron, output_neuron);
+                thing_to_do.do_thing(input_neuron, output_neuron, rng);
             }
             (true, false) => {
                 let input_neuron_i = input_neuron - num_inputs;
@@ -91,7 +91,7 @@ impl<'a> Mutator<'a> {
                     for output_neuron in cell.outputs.iter() {
                         if i == output_neuron_i {
                             let input_neuron = &self.hidden[input_neuron_i];
-                            thing_to_do.do_thing(input_neuron, output_neuron);
+                            thing_to_do.do_thing(input_neuron, output_neuron, rng);
                             return;
                         }
                         i += 1;
@@ -106,7 +106,7 @@ impl<'a> Mutator<'a> {
                     for input_neuron in cell.inputs.iter() {
                         if i == input_neuron_i {
                             let output_neuron = &self.hidden[output_neuron_i];
-                            thing_to_do.do_thing(input_neuron, output_neuron);
+                            thing_to_do.do_thing(input_neuron, output_neuron, rng);
                             break 'outer;
                         }
                         i += 1;
@@ -148,7 +148,7 @@ impl<'a> Mutator<'a> {
                 if let Some(input_neuron) = found_input_neuron
                     && let Some(output_neuron) = found_output_neuron
                 {
-                    thing_to_do.do_thing(input_neuron, output_neuron);
+                    thing_to_do.do_thing(input_neuron, output_neuron, rng);
                 }
             }
         }
@@ -163,12 +163,13 @@ impl ConnectionTask {
         &self,
         input: &NeuronTopology<Input>,
         output: &NeuronTopology<Output>,
+        rng: &mut impl Rng,
     ) where
         NeuronTopology<Input>: CanBeInput,
         Output: TakesInput,
     {
         match self {
-            Self::Add => output.add_input(input),
+            Self::Add => output.add_input(input, rng),
         }
     }
 }
@@ -223,21 +224,21 @@ impl OutputTask {
                 match removed_input.input_type {
                     NeuronInputType::Hidden(input_for_neuron) => {
                         if let Some(hidden) = input_for_neuron.upgrade() {
-                            new_hidden_node.add_input(&hidden);
+                            new_hidden_node.add_input(&hidden, rng);
                         } else {
                             return OutputTaskReturn::None;
                         }
                     }
                     NeuronInputType::Input(input_for_neuron) => {
                         if let Some(hidden) = input_for_neuron.upgrade() {
-                            new_hidden_node.add_input(&hidden);
+                            new_hidden_node.add_input(&hidden, rng);
                         } else {
                             return OutputTaskReturn::None;
                         }
                     }
                 }
 
-                output.add_input(&new_hidden_node);
+                output.add_input(&new_hidden_node, rng);
                 OutputTaskReturn::NewHiddenNode(new_hidden_node)
             }
         }

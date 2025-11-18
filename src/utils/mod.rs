@@ -18,7 +18,7 @@ pub struct Random(pub StdRng);
 
 impl Default for Random {
     fn default() -> Self {
-        Self(StdRng::seed_from_u64(832910))
+        Self(StdRng::seed_from_u64(1892110))
     }
 }
 

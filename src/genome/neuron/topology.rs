@@ -53,8 +53,8 @@ impl<T: TopologyNeuron> NeuronTopology<T> {
 }
 
 impl<T: TakesInput> NeuronTopology<T> {
-    pub fn add_input(&self, input: &impl CanBeInput) {
-        self.write().add_input(input);
+    pub fn add_input(&self, input: &impl CanBeInput, rng: &mut impl Rng) {
+        self.write().add_input(input, rng);
     }
     pub fn for_random_input<'rng, R, F, V>(&self, rng: &'rng mut R, func: F) -> Option<V>
     where

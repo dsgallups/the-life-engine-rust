@@ -16,7 +16,7 @@ pub trait CanBeInput {
 
 pub trait TakesInput: TopologyNeuron {
     fn new_from_raw_parts(inputs: Vec<NeuronInput>, bias: f32, activation: fn(f32) -> f32) -> Self;
-    fn add_input(&mut self, input: &impl CanBeInput);
+    fn add_input(&mut self, input: &impl CanBeInput, rng: &mut impl Rng);
     // returns true if the input was an input of this type prior to removing it
     //fn remove_input(&mut self, input: &impl CanBeInput) -> Option<NeuronInput>;
     fn inputs(&self) -> &[NeuronInput];
@@ -175,10 +175,10 @@ impl TakesInput for Hidden {
             activation,
         }
     }
-    fn add_input(&mut self, input: &impl CanBeInput) {
+    fn add_input(&mut self, input: &impl CanBeInput, rng: &mut impl Rng) {
         self.inputs.push(NeuronInput {
             input_type: input.to_input_type(),
-            weight: 1.,
+            weight: rng.random_range(-2_f32..=2_f32),
         })
     }
     fn inputs_mut(&mut self) -> &mut Vec<NeuronInput> {
@@ -237,10 +237,10 @@ impl TakesInput for Output {
         }
     }
 
-    fn add_input(&mut self, input: &impl CanBeInput) {
+    fn add_input(&mut self, input: &impl CanBeInput, rng: &mut impl Rng) {
         self.inputs.push(NeuronInput {
             input_type: input.to_input_type(),
-            weight: 1.,
+            weight: rng.random_range(-2_f32..=2_f32),
         })
     }
 
